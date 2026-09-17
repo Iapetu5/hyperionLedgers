@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #050810;
+  --foreground: #e8eef7;
+  --nebula-overlay: rgba(0, 0, 0, 0.52);
+}
+
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+  min-height: 100vh;
+}
+
+.nebula-surface {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+}
+
+.nebula-surface::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image: url("/nebula-bg.svg");
+  background-size: cover;
+  background-position: center;
+  background-color: #050810;
+}
+
+.nebula-surface::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--nebula-overlay);
+  pointer-events: none;
+}
+
+@layer components {
+  /* App chrome + marketing panels: dark glass on nebula */
+  .card {
+    @apply rounded-xl border border-white/10 bg-white/[0.06] text-slate-100 shadow-soft backdrop-blur-xl;
+  }
+
+  /* Real documents (invoice/quote sheets) sitting on the dark field */
+  .doc-card {
+    @apply rounded-xl border border-slate-200/70 bg-white/95 text-slate-900 shadow-card backdrop-blur-md;
+  }
+
+  .doc-header {
+    @apply border-b border-white/10 px-5 py-4 text-white;
+    background:
+      radial-gradient(circle at 85% 20%, rgba(34, 211, 238, 0.16), transparent 34%),
+      linear-gradient(115deg, #020617 0%, #0f172a 48%, #1e103b 100%);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .card-inset {
+    @apply rounded-lg border border-white/10 bg-black/25;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-glow transition hover:bg-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-950;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-950;
+  }
+
+  .doc-row-actions {
+    @apply flex min-w-[9rem] max-w-[17.5rem] flex-wrap content-start gap-1.5;
+  }
+
+  /* Wide enough that overflow menu is off — let actions breathe in one or two rows */
+  @media (min-width: 900px) {
+    .doc-row-actions {
+      max-width: 26rem;
+    }
+  }
+
+  /* Overflow menu items: stretch compact buttons full-width for thumb taps */
+  .doc-row-actions-menu-item > a,
+  .doc-row-actions-menu-item > button {
+    @apply !w-full !justify-start;
+  }
+
+
+  .doc-card .btn-secondary {
+    @apply border-slate-200 bg-white text-slate-800 hover:bg-slate-50 focus:ring-offset-white;
+  }
+
+  .doc-card .btn-primary {
+    @apply focus:ring-offset-white;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/30;
+  }
+
+  /* Native <select> on dark glass — option list stays readable */
+  select.input {
+    color-scheme: dark;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%94a3b8' d='M1.4.6L6 5.2 10.6.6 12 2 6 8 0 2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  select.input option,
+  select.input optgroup {
+    background-color: #0b1220;
+    color: #e2e8f0;
+  }
+
+  .doc-card .input {
+    @apply border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:ring-brand-500/20;
+  }
+
+  .doc-card select.input {
+    color-scheme: light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%64748b' d='M1.4.6L6 5.2 10.6.6 12 2 6 8 0 2z'/%3E%3C/svg%3E");
+  }
+
+  .doc-card select.input option,
+  .doc-card select.input optgroup {
+    background-color: #ffffff;
+    color: #0f172a;
+  }
+
+  /* Native radios/checkboxes on dark glass */
+  input[type="radio"],
+  input[type="checkbox"] {
+    accent-color: #22d3ee;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    color-scheme: dark;
+  }
+
+  .doc-card input[type="radio"],
+  .doc-card input[type="checkbox"] {
+    accent-color: #0891b2;
+    color-scheme: light;
+  }
+
+  /* Selectable radio/checkbox cards (onboarding, account) */
+  .choice-card {
+    @apply flex cursor-pointer items-start gap-2 rounded-lg border border-white/10 bg-black/20 p-3 text-sm text-slate-100 transition hover:border-white/25 hover:bg-white/[0.04];
+  }
+
+  .choice-card-active {
+    @apply border-brand-400/50 bg-brand-500/10 shadow-glow;
+  }
+
+  .choice-card input[type="radio"],
+  .choice-card input[type="checkbox"] {
+    @apply mt-0.5;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400;
+  }
+
+  .page-hero {
+    @apply border-b border-white/10 bg-black/25;
+  }
+
+  .demo-banner {
+    @apply border-b border-cyan-400/25 bg-gradient-to-r from-cyan-500/10 via-fuchsia-500/10 to-transparent text-slate-100;
+  }
+
+  .table-head {
+    @apply border-b border-white/10 bg-white/[0.04] text-xs uppercase tracking-wide text-slate-400;
+  }
+
+  .table-row {
+    @apply text-slate-200;
+  }
+}
+
+@media print {
+  body {
+    background: #fff !important;
+    color: #0f172a !important;
+  }
+  .nebula-surface::before,
+  .nebula-surface::after {
+    display: none !important;
+  }
+  .no-print,
+  .page-hero,
+  aside,
+  nav,
+  [data-demo-banner],
+  [data-ai-assistant],
+  .btn-primary,
+  .btn-secondary {
+    display: none !important;
+  }
+  /* Keep the print document itself */
+  #tax-doc-print,
+  #tax-doc-print * {
+    visibility: visible;
+  }
+  #tax-doc-print {
+    position: static !important;
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #tax-doc-print .doc-header {
+    background:
+      radial-gradient(circle at 85% 20%, rgba(34, 211, 238, 0.16), transparent 34%),
+      linear-gradient(115deg, #020617 0%, #0f172a 48%, #1e103b 100%) !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .card,
+  .doc-card {
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #0f172a !important;
+  }
+  a[href]::after {
+    content: "" !important;
+  }
+}

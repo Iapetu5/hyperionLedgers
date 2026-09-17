@@ -1,0 +1,6 @@
+date,description,amount,balance
+10/09/2026,Office supplies EFT,-89.50,4910.50
+12/09/2026,Client receipt — Acme Pty Ltd,1320.00,6230.50
+14/09/2026,Internet & phone,-119.00,6111.50
+15/09/2026,Software subscription,-49.00,6062.50
+18/09/2026,INTENTIONAL BAD ROW — missing amount (demo skip),,
