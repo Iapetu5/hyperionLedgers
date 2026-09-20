@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { openAssistant } from "@/components/demo/AiAssistant";
+import { MoreMenu } from "@/components/demo/MoreMenu";
 import { formatAUD, formatDateAU } from "@/lib/format";
 import { accounts } from "@/lib/sample-data";
 import { suggestCategory } from "@/lib/chart-of-accounts";
@@ -327,7 +328,7 @@ export default function BankingPage() {
       `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
         remaining > 0
           ? `${remaining} unmatched line${remaining === 1 ? "" : "s"} remain — apply the next suggestion below.`
-          : "All caught up — review it under Recently categorised, or Unmatch anytime."
+          : "All caught up — review it under Recently categorised, or Undo match anytime."
       }`,
     );
   }
@@ -350,7 +351,7 @@ export default function BankingPage() {
         : `Applied ${applied} high-confidence categorisation${applied === 1 ? "" : "s"}. ${
             remaining > 0
               ? `${remaining} unmatched line${remaining === 1 ? "" : "s"} remain — use Ask AI for anything uncertain.`
-              : "All caught up — review them under Recently categorised, or Unmatch anytime."
+              : "All caught up — review them under Recently categorised, or Undo match anytime."
           }`,
     );
   }
@@ -358,7 +359,7 @@ export default function BankingPage() {
   function unmatch(t: BankTransaction) {
     const updated = clearCategoryFromTransaction(t.id);
     if (!updated) {
-      setError(`Could not unmatch “${t.description}”.`);
+      setError(`Could not undo match for “${t.description}”.`);
       setSuccess(null);
       setSuccessSkipped([]);
       return;
@@ -366,7 +367,7 @@ export default function BankingPage() {
     setTxns(loadBankTransactions(mode));
     setError(null);
     setSuccessSkipped([]);
-    setSuccess(`Unmatched “${t.description}” — back in the reconciliation queue.`);
+    setSuccess(`Undid match for “${t.description}” — back in the reconciliation queue.`);
   }
 
   function resetCats() {
@@ -407,31 +408,19 @@ export default function BankingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Banking</h1>
-          <p className="text-sm text-white/70">
-            {mode === "blank"
-              ? `${orgLabel} cheque account — browser-side CSV only. No live bank feeds, and Harbour sample lines stay out of this blank ledger.`
-              : "Sample balances and browser-side CSV import only — no live bank feeds or APIs."}
-          </p>
-        </div>
-        <button
-          type="button"
-          className="btn-secondary !border-white/30 !bg-white/10 !text-white hover:!bg-white/20 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:!bg-white/10"
-          onClick={() => openAssistant("Categorise unmatched bank lines")}
-          disabled={!canAskAi}
-          title={canAskAi ? "Ask AI to suggest account codes for unmatched lines" : "Nothing to categorise — import or unmatch a bank line first"}
-        >
-          <Sparkles size={16} />
-          {canAskAi ? "Ask AI: categorise" : "Ask AI: nothing to categorise"}
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-white">Banking</h1>
+        <p className="text-sm text-white/70">
+          {mode === "blank"
+            ? `${orgLabel} cheque account — browser-side CSV only. No live bank feeds, and Harbour sample lines stay out of this blank ledger.`
+            : "Sample balances and browser-side CSV import only — no live bank feeds or APIs."}
+        </p>
       </div>
 
       {mode === "blank" ? (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="card p-5">
-            <p className="font-semibold text-white">Business cheque account</p>
+            <p className="font-semibold text-white">1. Opening balance</p>
             <p className="text-xs text-slate-400">
               {orgLabel} · demo account (browser only)
             </p>
@@ -481,21 +470,23 @@ export default function BankingPage() {
               <button type="button" className="btn-secondary !px-3 !py-2 text-xs" onClick={saveOpening}>
                 Save opening
               </button>
-              <button
-                type="button"
-                className="btn-secondary !px-3 !py-2 text-xs"
-                onClick={clearOpening}
-                disabled={!openingSet}
-                title="Unset opening (cash total = movements only)"
-              >
-                Clear opening
-              </button>
+              <MoreMenu buttonClassName="btn-secondary !px-3 !py-2 text-xs" title="More opening actions">
+                <button
+                  type="button"
+                  className="btn-secondary !px-3 !py-2 text-xs"
+                  onClick={clearOpening}
+                  disabled={!openingSet}
+                  title="Unset opening (cash total = movements only)"
+                >
+                  Clear opening
+                </button>
+              </MoreMenu>
             </div>
             <p className="mt-2 text-xs text-slate-400">
               Cash total = opening + categorised movements. Unmatched lines do not move cash until you Apply.
               A starter CSV with a balance column can set opening automatically <em>only when opening is still unset</em>{" "}
-              — it will not overwrite a saved opening (including $0). Unmatch, Reset categorisations, or Clear CSV
-              imports drops those movements and leaves opening; use Clear opening separately.
+              — it will not overwrite a saved opening (including $0). Undo match, Reset categorisations, or Clear CSV
+              imports (under More) drops those movements and leaves opening; use Clear opening separately.
             </p>
           </div>
           <div className="card p-5">
@@ -509,7 +500,7 @@ export default function BankingPage() {
                   <strong className="text-slate-100">Set opening cash.</strong>{" "}
                   {openingSet
                     ? `${formatAUD(opening)} is saved.`
-                    : "Enter it on the left, or leave it unset and the starter CSV will infer $5,000 from its running balance."}
+                    : "Enter it on the left, then Save opening — or leave it unset and the starter CSV will infer $5,000 from its running balance."}
                 </span>
               </li>
               <li className="flex gap-3">
@@ -517,10 +508,10 @@ export default function BankingPage() {
                   {txns.some((t) => t.source === "import") ? "✓" : "2"}
                 </span>
                 <span>
-                  <strong className="text-slate-100">Import transactions.</strong>{" "}
+                  <strong className="text-slate-100">Import CSV.</strong>{" "}
                   {txns.some((t) => t.source === "import")
                     ? `${txns.filter((t) => t.source === "import").length} CSV lines are in this cheque account.`
-                    : "Try the generic starter below, or choose your own CSV and confirm the preview."}
+                    : "Use Import CSV below, or Try starter CSV, then confirm the preview."}
                 </span>
               </li>
               <li className="flex gap-3">
@@ -530,8 +521,8 @@ export default function BankingPage() {
                 <span>
                   <strong className="text-slate-100">Categorise a line.</strong>{" "}
                   {categorised.length > 0
-                    ? `${categorised.length} line${categorised.length === 1 ? " is" : "s are"} categorised; Unmatch or Reset stays available.`
-                    : "Use Apply on a suggested account code in Reconciliation."}
+                    ? `${categorised.length} line${categorised.length === 1 ? " is" : "s are"} categorised; Undo match or Reset stays under More.`
+                    : "Use Apply on a suggested account code in Reconciliation. Undo match puts a line back."}
                 </span>
               </li>
             </ol>
@@ -574,46 +565,29 @@ export default function BankingPage() {
       {mode === "sample" && (
         <div className="rounded-xl border border-brand-400/25 bg-brand-500/10 px-4 py-3 text-sm text-slate-200">
           <strong className="text-white">First visit?</strong>{" "}
-          Your sample cheque already has an opening balance. Next: <strong>Try sample CSV</strong>, review and
-          import the preview, then use <strong>Apply</strong> on a suggested account code below. Imported lines
-          are labelled separately and can be cleared without removing Harbour&apos;s pre-loaded sample.
+          Your sample cheque already has an opening balance. Next: <strong>Import CSV</strong> or{" "}
+          <strong>Try sample CSV</strong>, review and import the preview, then use <strong>Apply</strong> on a
+          suggested account code below. Debit/credit samples and Clear CSV imports live under{" "}
+          <strong>More</strong>. Imported lines are labelled separately and can be cleared without removing
+          Harbour&apos;s pre-loaded sample.
         </div>
       )}
 
       <div ref={importSectionRef} id="import" className="card scroll-mt-4 space-y-4 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="font-semibold text-white">Import bank statement (CSV)</h2>
-            <p className="mt-1 text-sm text-slate-300">
-              Upload a CSV with <code className="rounded bg-white/10 px-1 text-brand-200">date</code>,{" "}
-              <code className="rounded bg-white/10 px-1 text-brand-200">description</code>, and either{" "}
-              <code className="rounded bg-white/10 px-1 text-brand-200">amount</code> or separate{" "}
-              <code className="rounded bg-white/10 px-1 text-brand-200">debit</code>/
-              <code className="rounded bg-white/10 px-1 text-brand-200">credit</code> columns
-              {mode === "sample" && sampleCheque ? ` for ${sampleCheque.name}` : " for your cheque account"}.
-              Dates: DD/MM/YYYY. Amounts: −42.50 or ($42.50). Parsed in your browser — nothing is sent to a
-              server.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={sampleCsvPath}
-              download={sampleCsvDownloadName}
-              className="btn-secondary shrink-0 !px-3 !py-2 text-xs"
-            >
-              <Download size={14} />
-              Download {mode === "blank" ? "starter" : "sample"} CSV
-            </a>
-            <a
-              href={debitCreditCsvPath}
-              download={debitCreditDownloadName}
-              className="btn-secondary shrink-0 !px-3 !py-2 text-xs"
-              title="Same demo lines with separate Debit and Credit columns"
-            >
-              <Download size={14} />
-              Debit/credit CSV
-            </a>
-          </div>
+        <div>
+          <h2 className="font-semibold text-white">
+            {mode === "blank" ? "2. Import CSV" : "1. Import CSV"}
+          </h2>
+          <p className="mt-1 text-sm text-slate-300">
+            Upload a CSV with <code className="rounded bg-white/10 px-1 text-brand-200">date</code>,{" "}
+            <code className="rounded bg-white/10 px-1 text-brand-200">description</code>, and either{" "}
+            <code className="rounded bg-white/10 px-1 text-brand-200">amount</code> or separate{" "}
+            <code className="rounded bg-white/10 px-1 text-brand-200">debit</code>/
+            <code className="rounded bg-white/10 px-1 text-brand-200">credit</code> columns
+            {mode === "sample" && sampleCheque ? ` for ${sampleCheque.name}` : " for your cheque account"}.
+            Dates: DD/MM/YYYY. Amounts: −42.50 or ($42.50). Parsed in your browser — nothing is sent to a
+            server. No live bank feed.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -626,7 +600,7 @@ export default function BankingPage() {
           />
           <button type="button" className="btn-primary" onClick={() => fileRef.current?.click()}>
             <Upload size={16} />
-            Choose CSV file
+            Import CSV
           </button>
           <button
             type="button"
@@ -638,17 +612,36 @@ export default function BankingPage() {
             <FileSpreadsheet size={16} />
             {loadingSample ? "Loading…" : mode === "blank" ? "Try starter CSV" : "Try sample CSV"}
           </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => void loadSampleCsv("debit-credit")}
-            disabled={loadingSample}
-            aria-label="Try debit/credit CSV"
-            title="AU-style statement with separate Debit and Credit columns"
-          >
-            <FileSpreadsheet size={16} />
-            Try debit/credit CSV
-          </button>
+          <MoreMenu align="left" buttonClassName="btn-secondary" title="More import options">
+            <a
+              href={sampleCsvPath}
+              download={sampleCsvDownloadName}
+              className="btn-secondary !px-3 !py-2 text-xs"
+            >
+              <Download size={14} />
+              Download {mode === "blank" ? "starter" : "sample"} CSV
+            </a>
+            <button
+              type="button"
+              className="btn-secondary !px-3 !py-2 text-xs"
+              onClick={() => void loadSampleCsv("debit-credit")}
+              disabled={loadingSample}
+              aria-label="Try debit/credit CSV"
+              title="AU-style statement with separate Debit and Credit columns"
+            >
+              <FileSpreadsheet size={16} />
+              Try debit/credit CSV
+            </button>
+            <a
+              href={debitCreditCsvPath}
+              download={debitCreditDownloadName}
+              className="btn-secondary !px-3 !py-2 text-xs"
+              title="Same demo lines with separate Debit and Credit columns"
+            >
+              <Download size={14} />
+              Download debit/credit CSV
+            </a>
+          </MoreMenu>
           {fileName && !preview && <span className="text-sm text-slate-300">{fileName}</span>}
         </div>
 
@@ -711,7 +704,7 @@ export default function BankingPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn-primary" onClick={confirmImport}>
-                Import {preview.length} as unmatched
+                Import CSV
               </button>
               <button type="button" className="btn-secondary" onClick={cancelPreview}>
                 Cancel
@@ -761,16 +754,17 @@ export default function BankingPage() {
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
           <div>
             <h2 className="font-semibold text-white">
-              Reconciliation — {mode === "blank" ? `${orgLabel} cheque` : "Business cheque account"}
+              {mode === "blank" ? "3. Categorise" : "2. Categorise"} —{" "}
+              {mode === "blank" ? `${orgLabel} cheque` : "Business cheque account"}
             </h2>
             <p className="text-xs text-slate-400">
               Unmatched transactions ({ledgerReady ? unmatched.length : "…"}).{" "}
               {canAskAi
-                ? "Ask AI to suggest account codes, or apply a high-confidence suggestion here."
-                : "Nothing to categorise right now — import a statement or unmatch a categorised line to continue."}
+                ? "Apply a suggested account code, or open More for Ask AI, Reset, and Clear CSV."
+                : "Nothing to categorise right now — Import CSV or Undo match a categorised line. Ask AI is under More."}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {unmatched.length > 0 && (
               <button
                 type="button"
@@ -778,45 +772,51 @@ export default function BankingPage() {
                 onClick={applyAllHighConfidence}
               >
                 <CheckCircle2 size={14} />
-                Apply all high-confidence
+                Apply all
               </button>
             )}
-            {categorised.length > 0 && (
+            <MoreMenu buttonClassName="btn-secondary !px-3 !py-1.5 text-xs" title="More categorise actions">
+              {categorised.length > 0 && (
+                <button
+                  type="button"
+                  className="btn-secondary !px-3 !py-1.5 text-xs"
+                  onClick={resetCats}
+                  title="Undo Apply / Ask AI categorisations for this cheque account (Harbour and blank stay separate)"
+                >
+                  <RotateCcw size={14} />
+                  Reset categorisations
+                </button>
+              )}
+              {txns.some((t) => t.source === "import") && (
+                <button
+                  type="button"
+                  className="btn-secondary !px-3 !py-1.5 text-xs"
+                  onClick={clearImports}
+                  title={
+                    mode === "blank"
+                      ? "Remove CSV-imported rows (opening balance kept)"
+                      : "Remove CSV-imported rows (Harbour sample lines stay)"
+                  }
+                >
+                  <Trash2 size={14} />
+                  Clear CSV imports
+                </button>
+              )}
               <button
                 type="button"
-                className="btn-secondary !px-3 !py-1.5 text-xs"
-                onClick={resetCats}
-                title="Undo Apply / Ask AI categorisations for this cheque account (Harbour and blank stay separate)"
-              >
-                <RotateCcw size={14} />
-                Reset categorisations
-              </button>
-            )}
-            {txns.some((t) => t.source === "import") && (
-              <button
-                type="button"
-                className="btn-secondary !px-3 !py-1.5 text-xs"
-                onClick={clearImports}
+                className="btn-secondary !px-3 !py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => openAssistant("Categorise unmatched bank lines")}
+                disabled={!canAskAi}
                 title={
-                  mode === "blank"
-                    ? "Remove CSV-imported rows (opening balance kept)"
-                    : "Remove CSV-imported rows (Harbour sample lines stay)"
+                  canAskAi
+                    ? "Ask AI to suggest account codes for unmatched lines"
+                    : "Nothing to categorise — import or undo match a bank line first"
                 }
               >
-                <Trash2 size={14} />
-                Clear CSV imports
+                <Sparkles size={14} />
+                {canAskAi ? "Ask AI" : "Ask AI (nothing to categorise)"}
               </button>
-            )}
-            <button
-              type="button"
-              className="btn-secondary !px-3 !py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={() => openAssistant("Categorise unmatched bank lines")}
-              disabled={!canAskAi}
-              title={canAskAi ? "Ask AI to suggest account codes for unmatched lines" : "Nothing to categorise — import or unmatch a bank line first"}
-            >
-              <Sparkles size={14} />
-              {canAskAi ? "Ask AI" : "Ask AI (nothing to categorise)"}
-            </button>
+            </MoreMenu>
             <Link
               href="/demo"
               className="text-xs font-semibold text-brand-300 underline-offset-2 hover:underline"
@@ -857,7 +857,7 @@ export default function BankingPage() {
                           <>
                             No unmatched transactions
                             {categorised.length > 0
-                              ? " — see Recently categorised below (Unmatch or Reset anytime)"
+                              ? " — see Recently categorised below (Undo match or Reset anytime)"
                               : ""}
                             . Use{" "}
                             <strong className="text-slate-200">
@@ -894,7 +894,7 @@ export default function BankingPage() {
                           className="btn-secondary !px-3 !py-1.5 text-xs"
                           onClick={() => fileRef.current?.click()}
                         >
-                          Choose your CSV
+                          Import CSV
                         </button>
                       </div>
                     ) : null}
@@ -949,7 +949,7 @@ export default function BankingPage() {
                                 Ask AI
                               </>
                             ) : (
-                              <>Apply {hint.accountCode}</>
+                              <>Apply</>
                             )}
                           </button>
                         </td>
@@ -967,7 +967,7 @@ export default function BankingPage() {
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Recently categorised</h2>
             <p className="text-xs text-slate-400">
-              Applied in this browser demo (including via Ask AI). Unmatch or reset anytime — demos are not
+              Applied in this browser demo (including via Ask AI). Undo match or Reset anytime — demos are not
               one-way.
             </p>
           </div>
@@ -997,7 +997,7 @@ export default function BankingPage() {
                       title="Return this line to unmatched"
                     >
                       <Undo2 size={12} />
-                      Unmatch
+                      Undo match
                     </button>
                   </div>
                 </li>

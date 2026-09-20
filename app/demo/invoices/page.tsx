@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Copy, ExternalLink, FileText, Package, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ExternalLink, FileText, Package, Pencil, Plus, Send, Trash2, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
@@ -87,7 +87,7 @@ export default function InvoicesPage() {
       setCopied(id);
       setTimeout(() => setCopied(null), 1500);
     } catch {
-      setFormError("Could not copy link — use View / View as customer and copy the URL from the address bar.");
+      setFormError("Could not copy link — use View and copy the URL from the address bar.");
     }
   }
 
@@ -390,22 +390,22 @@ export default function InvoicesPage() {
       {lastCreatedId && !editingId && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-3 py-2 text-xs text-cyan-50">
           <span className="font-semibold text-white">{lastCreatedId}</span>
-          <span className="text-cyan-100/80">ready — view, copy, or print the customer pay page</span>
+          <span className="text-cyan-100/80">ready — View, Send invoice, or print the customer pay page</span>
           <Link
             href={publicInvoiceUrl(lastCreatedId)}
             target="_blank"
             className="btn-primary !px-2.5 !py-1 text-xs"
           >
             <ExternalLink size={12} />
-            View pay link
+            View
           </Link>
           <button
             type="button"
             className="btn-secondary !px-2.5 !py-1 text-xs"
             onClick={() => copyLink(lastCreatedId)}
           >
-            <Copy size={12} />
-            {copied === lastCreatedId ? "Copied" : "Copy link"}
+            <Send size={12} />
+            {copied === lastCreatedId ? "Copied" : "Send invoice"}
           </button>
           <PrintDocButton kind="invoice" id={lastCreatedId} compact />
         </div>
@@ -441,7 +441,7 @@ export default function InvoicesPage() {
               Tip: <strong className="text-white">Create sample</strong> is enough for a{" "}
               <strong className="text-white">GST on Income</strong> +{" "}
               <strong className="text-white">GST Free Income</strong> demo — then{" "}
-              <strong className="text-white">View pay link</strong> for the nebula tax-invoice header.
+              <strong className="text-white">View</strong> for the nebula tax-invoice header.
             </p>
           )}
         </div>
@@ -521,9 +521,10 @@ export default function InvoicesPage() {
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
           onClick={() => copyLink(inv.id)}
+          title="Copy the customer pay link to send"
         >
-          <Copy size={12} />
-          {copied === inv.id ? "Copied" : "Copy link"}
+          <Send size={12} />
+          {copied === inv.id ? "Copied" : "Send invoice"}
         </button>
         <Link
           href={publicInvoiceUrl(inv.id)}
@@ -748,7 +749,7 @@ export default function InvoicesPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Harbour &amp; Co sample</h2>
           <p className="text-xs text-slate-400">
-            Copy a customer pay link or open the public page. INV-1042 is a mixed GST + GST Free example — View as customer to confirm the nebula tax-invoice header.
+            Send invoice copies the customer pay link. View opens the public page. Print and other extras sit under More. INV-1042 is a mixed GST + GST Free example.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">
@@ -759,7 +760,7 @@ export default function InvoicesPage() {
               <th className="px-4 py-3">Due</th>
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Customer link</th>
+              <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -797,9 +798,10 @@ export default function InvoicesPage() {
                       type="button"
                       className="btn-secondary !px-2 !py-1 text-xs"
                       onClick={() => copyLink(inv.id)}
+                      title="Copy the customer pay link to send"
                     >
-                      <Copy size={12} />
-                      {copied === inv.id ? "Copied" : "Copy link"}
+                      <Send size={12} />
+                      {copied === inv.id ? "Copied" : "Send invoice"}
                     </button>
                     <Link
                       href={publicInvoiceUrl(inv.id)}
@@ -807,7 +809,7 @@ export default function InvoicesPage() {
                       className="btn-secondary !px-2 !py-1 text-xs"
                     >
                       <ExternalLink size={12} />
-                      View as customer
+                      View
                     </Link>
                     <PrintDocButton kind="invoice" id={inv.id} compact />
                   </DocRowActions>
