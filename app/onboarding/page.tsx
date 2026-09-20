@@ -6,6 +6,7 @@ import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AbnField } from "@/components/abn/AbnField";
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
+import { clearUserOrganisationDocs } from "@/lib/user-docs";
 
 export default function OnboardingPage() {
   const { user, loading, completeOnboarding, skipOnboarding, needsOnboarding } = useAuth();
@@ -13,7 +14,7 @@ export default function OnboardingPage() {
   const [gstRegistered, setGstRegistered] = useState(true);
   const [method, setMethod] = useState<GstAccountingMethod>("accruals");
   const [fyEnd, setFyEnd] = useState("30 June");
-  const [ledgerMode, setLedgerMode] = useState<LedgerMode>("sample");
+  const [ledgerMode, setLedgerMode] = useState<LedgerMode>("blank");
   const [abn, setAbn] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +31,11 @@ export default function OnboardingPage() {
     if (user.abn) setAbn(user.abn);
   }, [user, loading, needsOnboarding, router]);
 
+  function goAfterSetup(mode: LedgerMode) {
+    // Blank orgs land on overview with a short create-first welcome.
+    router.push(mode === "blank" ? "/demo?welcome=1" : "/demo");
+  }
+
   function finish(e?: FormEvent) {
     e?.preventDefault();
     const res = completeOnboarding({
@@ -43,7 +49,8 @@ export default function OnboardingPage() {
       setError(res.error);
       return;
     }
-    router.push("/demo");
+    if (ledgerMode === "blank") clearUserOrganisationDocs();
+    goAfterSetup(ledgerMode);
   }
 
   function onSkip() {
@@ -66,7 +73,7 @@ export default function OnboardingPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 2 of 2 · Organisation setup</p>
         <h1 className="mt-1 text-xl font-bold text-white">Set up your organisation</h1>
         <p className="mt-1 text-sm text-slate-300">
-          A few preferences for {user.businessName}. You can change these later in Account.
+          A few preferences for {user.businessName}. Next you&apos;ll create a first invoice, quote, or bill — about two minutes total.
         </p>
         <form className="mt-6 space-y-5" onSubmit={finish}>
           <fieldset>
@@ -81,7 +88,7 @@ export default function OnboardingPage() {
                   <span>
                     <strong className="text-white">{v ? "Yes" : "No"}</strong>
                     <span className="mt-0.5 block text-xs text-slate-400">
-                      {v ? "Show BAS widgets and GST on sales/purchases." : "Still see due dates for education — mark unregistered."}
+                      {v ? "Show GST on sales and purchases, plus BAS due dates." : "Hide GST on documents; BAS due dates still shown for planning."}
                     </span>
                   </span>
                 </label>
@@ -125,8 +132,19 @@ export default function OnboardingPage() {
           <AbnField value={abn} onChange={setAbn} />
 
           <fieldset>
-            <legend className="label">Starting ledger</legend>
+            <legend className="label">How would you like to start?</legend>
             <div className="mt-2 space-y-2">
+              <label
+                className={`choice-card ${ledgerMode === "blank" ? "choice-card-active" : ""}`}
+              >
+                <input type="radio" name="ledgerMode" checked={ledgerMode === "blank"} onChange={() => setLedgerMode("blank")} />
+                <span>
+                  <strong className="text-white">Start empty</strong>
+                  <span className="mt-0.5 block text-slate-300">
+                    Default for a new organisation. Begin under your business name, then create a first invoice, quote, or bill — a ready-made example is one click away.
+                  </span>
+                </span>
+              </label>
               <label
                 className={`choice-card ${ledgerMode === "sample" ? "choice-card-active" : ""}`}
               >
@@ -134,30 +152,27 @@ export default function OnboardingPage() {
                 <span>
                   <strong className="text-white">Sample data</strong>
                   <span className="mt-0.5 block text-slate-300">
-                    Explore Harbour &amp; Co invoices, banking and BAS first — recommended for a first session.
-                  </span>
-                </span>
-              </label>
-              <label
-                className={`choice-card ${ledgerMode === "blank" ? "choice-card-active" : ""}`}
-              >
-                <input type="radio" name="ledgerMode" checked={ledgerMode === "blank"} onChange={() => setLedgerMode("blank")} />
-                <span>
-                  <strong className="text-white">Blank ledger</strong>
-                  <span className="mt-0.5 block text-slate-300">
-                    Start empty under your org name — try a mixed GST + GST Free invoice and the pay link when ready, plus quotes, bills, and light CSV banking. Harbour & Co sample figures stay in the guest demo.
+                    Optional tour of Harbour &amp; Co invoices, banking and BAS. Not your own first document.
                   </span>
                 </span>
               </label>
             </div>
           </fieldset>
 
+          {ledgerMode === "blank" && (
+            <div className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-3 py-2.5 text-xs text-cyan-100/90">
+              After Continue you&apos;ll land on Overview with clear shortcuts to create an invoice, quote, or bill.
+            </div>
+          )}
+
           {error && <p className="text-sm text-rose-300">{error}</p>}
 
           <div className="flex flex-wrap gap-2">
-            <button type="submit" className="btn-primary">Continue to your organisation</button>
+            <button type="submit" className="btn-primary">
+              {ledgerMode === "blank" ? "Continue — create your first document" : "Continue to your organisation"}
+            </button>
             <button type="button" className="btn-secondary" onClick={onSkip}>
-              Skip — GST on + sample ledger
+              Skip — use sample data
             </button>
           </div>
         </form>

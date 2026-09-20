@@ -12,6 +12,10 @@ export type EmptyStateAction = {
   primary?: boolean;
 };
 
+function looksLikeCreate(a: EmptyStateAction) {
+  return /^create\b/i.test(a.label.trim());
+}
+
 export function EmptyState({
   icon: Icon = FileText,
   title,
@@ -25,20 +29,37 @@ export function EmptyState({
   description: string;
   actions?: EmptyStateAction[];
   hint?: string;
-  /** Primary CTA: log out (if signed in) and open Harbour & Co guest sample. */
+  /** Adds Harbour sample as a secondary path — never steals primary from create CTAs. */
   showExploreSample?: boolean;
 }) {
   const explore = useExploreHarbourSample();
-  const mergedActions: EmptyStateAction[] = showExploreSample
-    ? [
+  const hasExplicitPrimary = actions.some((a) => a.primary);
+
+  const mergedActions: EmptyStateAction[] = (() => {
+    if (!showExploreSample) return actions;
+    if (actions.length === 0) {
+      return [
         {
           label: "Explore Harbour & Co sample",
           primary: true,
           onClick: explore,
         },
-        ...actions.map((a) => ({ ...a, primary: false })),
-      ]
-    : actions;
+      ];
+    }
+    const mapped = actions.map((a) => ({ ...a, primary: !!a.primary }));
+    if (!hasExplicitPrimary) {
+      const createIdx = mapped.findIndex(looksLikeCreate);
+      if (createIdx >= 0) mapped[createIdx].primary = true;
+    }
+    return [
+      ...mapped,
+      {
+        label: "Explore Harbour & Co sample",
+        primary: false,
+        onClick: explore,
+      },
+    ];
+  })();
 
   return (
     <div className="card relative overflow-hidden p-6 sm:p-8">
@@ -61,6 +82,7 @@ export function EmptyState({
             <div className="mt-4 flex flex-wrap gap-2">
               {mergedActions.map((a) => {
                 const cls = a.primary ? "btn-primary" : "btn-secondary";
+                const isExplore = a.label.startsWith("Explore Harbour");
                 if (a.href) {
                   return (
                     <Link key={a.label} href={a.href} className={cls}>
@@ -70,7 +92,7 @@ export function EmptyState({
                 }
                 return (
                   <button key={a.label} type="button" className={cls} onClick={a.onClick}>
-                    {a.primary && showExploreSample ? <Sparkles size={16} /> : null}
+                    {isExplore ? <Sparkles size={16} /> : null}
                     {a.label}
                   </button>
                 );
@@ -89,7 +111,7 @@ export function BlankLedgerHint() {
     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
       <span className="inline-flex items-center gap-1.5">
         <Sparkles size={12} className="text-brand-300" />
-        Blank ledger — browse the Harbour &amp; Co sample as a guest anytime.
+        Starting empty — browse the Harbour &amp; Co sample as a guest anytime.
       </span>
       <ExploreSampleButton primary={false} className="!px-2.5 !py-1 text-xs" label="Explore Harbour & Co sample" />
     </div>

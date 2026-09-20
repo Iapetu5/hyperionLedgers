@@ -52,12 +52,18 @@ import {
   type BankTransaction,
 } from "@/lib/bank-transactions";
 
+function reconcileLabel(count: number) {
+  return count === 1 ? "1 item to reconcile" : `${count} items to reconcile`;
+}
+
 export default function BankingPage() {
   const { usesSampleData, user } = useAuth();
   const mode: BankLedgerMode = usesSampleData ? "sample" : "blank";
   const chequeAccountId = mode === "blank" ? BLANK_CHEQUE_ACCOUNT_ID : CHEQUE_ACCOUNT_ID;
   const fileRef = useRef<HTMLInputElement>(null);
+  const openingInputRef = useRef<HTMLInputElement>(null);
   const importSectionRef = useRef<HTMLDivElement>(null);
+  const reconSectionRef = useRef<HTMLDivElement>(null);
 
   const [txns, setTxns] = useState<BankTransaction[]>([]);
   const [preview, setPreview] = useState<ParsedBankRow[] | null>(null);
@@ -134,6 +140,7 @@ export default function BankingPage() {
   );
   const sampleCheque = accounts.find((a) => a.id === CHEQUE_ACCOUNT_ID);
   const importedCount = unmatched.filter((t) => t.source === "import").length;
+  const canAskAi = unmatched.length > 0;
   const blankMovements = useMemo(() => blankChequeMovements(txns), [txns]);
   const blankBalance = useMemo(() => blankChequeBalance(txns, opening), [txns, opening]);
   const orgLabel = user?.businessName?.trim() || "Your organisation";
@@ -256,6 +263,9 @@ export default function BankingPage() {
     setSkipped([]);
     setFileName(null);
     if (fileRef.current) fileRef.current.value = "";
+    requestAnimationFrame(() => {
+      reconSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function saveOpening() {
@@ -279,7 +289,7 @@ export default function BankingPage() {
     setOpeningDraft(String(saved));
     setError(null);
     setSuccessSkipped([]);
-    setSuccess(`Opening balance saved as ${formatAUD(saved)}. Cash total = opening + imported movements.`);
+    setSuccess(`Opening balance saved as ${formatAUD(saved)}. Cash total = opening + categorised movements.`);
   }
 
   function cancelPreview() {
@@ -309,7 +319,17 @@ export default function BankingPage() {
     });
     setError(null);
     setSuccessSkipped([]);
-    setSuccess(`Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”.`);
+    const remaining = unmatchedForAccount(
+      loadBankTransactions(mode),
+      chequeAccountId,
+    ).length;
+    setSuccess(
+      `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
+        remaining > 0
+          ? `${remaining} unmatched line${remaining === 1 ? "" : "s"} remain — apply the next suggestion below.`
+          : "All caught up — review it under Recently categorised, or Unmatch anytime."
+      }`,
+    );
   }
 
   function applyAllHighConfidence() {
@@ -323,10 +343,15 @@ export default function BankingPage() {
     setTxns(loadBankTransactions(mode));
     setError(null);
     setSuccessSkipped([]);
+    const remaining = unmatchedForAccount(loadBankTransactions(mode), chequeAccountId).length;
     setSuccess(
       applied === 0
-        ? "No high-confidence suggestions left to apply — use Ask AI for the rest."
-        : `Applied ${applied} high-confidence categorisation${applied === 1 ? "" : "s"}.`,
+        ? "No high-confidence suggestions left — use Ask AI on a remaining line, or import another statement."
+        : `Applied ${applied} high-confidence categorisation${applied === 1 ? "" : "s"}. ${
+            remaining > 0
+              ? `${remaining} unmatched line${remaining === 1 ? "" : "s"} remain — use Ask AI for anything uncertain.`
+              : "All caught up — review them under Recently categorised, or Unmatch anytime."
+          }`,
     );
   }
 
@@ -345,7 +370,7 @@ export default function BankingPage() {
   }
 
   function resetCats() {
-    const n = resetAllCategorisations();
+    const n = resetAllCategorisations(mode);
     setTxns(loadBankTransactions(mode));
     setError(null);
     setSuccessSkipped([]);
@@ -393,11 +418,13 @@ export default function BankingPage() {
         </div>
         <button
           type="button"
-          className="btn-secondary !border-white/30 !bg-white/10 !text-white hover:!bg-white/20"
+          className="btn-secondary !border-white/30 !bg-white/10 !text-white hover:!bg-white/20 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:!bg-white/10"
           onClick={() => openAssistant("Categorise unmatched bank lines")}
+          disabled={!canAskAi}
+          title={canAskAi ? "Ask AI to suggest account codes for unmatched lines" : "Nothing to categorise — import or unmatch a bank line first"}
         >
           <Sparkles size={16} />
-          Ask AI: categorise
+          {canAskAi ? "Ask AI: categorise" : "Ask AI: nothing to categorise"}
         </button>
       </div>
 
@@ -421,12 +448,14 @@ export default function BankingPage() {
               )}
               {" · "}
               Movements {formatAUD(blankMovements)}
+              {" · "}
+              <span className="text-slate-400">cash = opening + movements</span>
             </p>
             <p className="mt-2 text-sm text-slate-300">
               {!ledgerReady
                 ? "Loading…"
                 : unmatched.length > 0
-                  ? `${unmatched.length} items to reconcile`
+                  ? reconcileLabel(unmatched.length)
                   : txns.length === 0
                     ? "No transactions yet — set opening or import a CSV"
                     : "Reconciled"}
@@ -439,6 +468,7 @@ export default function BankingPage() {
                   Opening balance
                 </label>
                 <input
+                  ref={openingInputRef}
                   id="blank-opening"
                   className="input"
                   type="number"
@@ -462,21 +492,56 @@ export default function BankingPage() {
               </button>
             </div>
             <p className="mt-2 text-xs text-slate-400">
-              Cash total = opening + imported movements. A starter CSV with a balance column can set opening
-              automatically <em>only when opening is still unset</em> — it will not overwrite a saved opening
-              (including $0). Clear CSV imports leaves opening alone; use Clear opening separately.
+              Cash total = opening + categorised movements. Unmatched lines do not move cash until you Apply.
+              A starter CSV with a balance column can set opening automatically <em>only when opening is still unset</em>{" "}
+              — it will not overwrite a saved opening (including $0). Unmatch, Reset categorisations, or Clear CSV
+              imports drops those movements and leaves opening; use Clear opening separately.
             </p>
           </div>
           <div className="card p-5">
-            <p className="font-semibold text-white">Honest demo limits</p>
-            <p className="mt-2 text-sm text-slate-300">
-              This blank org gets a light CSV workflow on <em>your</em> cheque account — not Harbour &amp; Co
-              balances. Use <strong className="text-slate-200">Try starter CSV</strong> for a few generic
-              lines, or upload your own. Want the fuller sample story (pre-loaded lines, savings account)?{" "}
+            <p className="font-semibold text-white">Your first bank session</p>
+            <ol className="mt-3 space-y-3 text-sm text-slate-300">
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500/20 text-xs font-bold text-brand-200">
+                  {openingSet ? "✓" : "1"}
+                </span>
+                <span>
+                  <strong className="text-slate-100">Set opening cash.</strong>{" "}
+                  {openingSet
+                    ? `${formatAUD(opening)} is saved.`
+                    : "Enter it on the left, or leave it unset and the starter CSV will infer $5,000 from its running balance."}
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500/20 text-xs font-bold text-brand-200">
+                  {txns.some((t) => t.source === "import") ? "✓" : "2"}
+                </span>
+                <span>
+                  <strong className="text-slate-100">Import transactions.</strong>{" "}
+                  {txns.some((t) => t.source === "import")
+                    ? `${txns.filter((t) => t.source === "import").length} CSV lines are in this cheque account.`
+                    : "Try the generic starter below, or choose your own CSV and confirm the preview."}
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500/20 text-xs font-bold text-brand-200">
+                  {categorised.length > 0 ? "✓" : "3"}
+                </span>
+                <span>
+                  <strong className="text-slate-100">Categorise a line.</strong>{" "}
+                  {categorised.length > 0
+                    ? `${categorised.length} line${categorised.length === 1 ? " is" : "s are"} categorised; Unmatch or Reset stays available.`
+                    : "Use Apply on a suggested account code in Reconciliation."}
+                </span>
+              </li>
+            </ol>
+            <p className="mt-4 border-t border-white/10 pt-3 text-xs text-slate-400">
+              Browser-only demo; no live feed. Generic starter lines stay separate from Harbour &amp; Co. Want the
+              pre-loaded sample story?{" "}
               <Link href="/demo" className="font-semibold text-brand-300 underline-offset-2 hover:underline">
                 Explore sample as guest
-              </Link>{" "}
-              from Account or empty states.
+              </Link>
+              .
             </p>
           </div>
         </div>
@@ -492,7 +557,7 @@ export default function BankingPage() {
                 </p>
                 <p className="mt-3 text-2xl font-bold text-white">{formatAUD(a.balance)}</p>
                 <p className="mt-2 text-sm text-slate-300">
-                  {count > 0 ? `${count} items to reconcile` : "Reconciled"}
+                  {count > 0 ? reconcileLabel(count) : "Reconciled"}
                   {a.id === CHEQUE_ACCOUNT_ID && importedCount > 0
                     ? ` · ${importedCount} from CSV`
                     : ""}
@@ -503,6 +568,15 @@ export default function BankingPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {mode === "sample" && (
+        <div className="rounded-xl border border-brand-400/25 bg-brand-500/10 px-4 py-3 text-sm text-slate-200">
+          <strong className="text-white">First visit?</strong>{" "}
+          Your sample cheque already has an opening balance. Next: <strong>Try sample CSV</strong>, review and
+          import the preview, then use <strong>Apply</strong> on a suggested account code below. Imported lines
+          are labelled separately and can be cleared without removing Harbour&apos;s pre-loaded sample.
         </div>
       )}
 
@@ -683,15 +757,17 @@ export default function BankingPage() {
         </div>
       )}
 
-      <div className="card overflow-hidden">
+      <div ref={reconSectionRef} className="card scroll-mt-4 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
           <div>
             <h2 className="font-semibold text-white">
               Reconciliation — {mode === "blank" ? `${orgLabel} cheque` : "Business cheque account"}
             </h2>
             <p className="text-xs text-slate-400">
-              Unmatched transactions ({ledgerReady ? unmatched.length : "…"}). Ask AI to suggest account codes, or apply a
-              high-confidence suggestion here.
+              Unmatched transactions ({ledgerReady ? unmatched.length : "…"}).{" "}
+              {canAskAi
+                ? "Ask AI to suggest account codes, or apply a high-confidence suggestion here."
+                : "Nothing to categorise right now — import a statement or unmatch a categorised line to continue."}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -710,7 +786,7 @@ export default function BankingPage() {
                 type="button"
                 className="btn-secondary !px-3 !py-1.5 text-xs"
                 onClick={resetCats}
-                title="Undo all Apply / Ask AI categorisations in this browser"
+                title="Undo Apply / Ask AI categorisations for this cheque account (Harbour and blank stay separate)"
               >
                 <RotateCcw size={14} />
                 Reset categorisations
@@ -733,11 +809,13 @@ export default function BankingPage() {
             )}
             <button
               type="button"
-              className="btn-secondary !px-3 !py-1.5 text-xs"
+              className="btn-secondary !px-3 !py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => openAssistant("Categorise unmatched bank lines")}
+              disabled={!canAskAi}
+              title={canAskAi ? "Ask AI to suggest account codes for unmatched lines" : "Nothing to categorise — import or unmatch a bank line first"}
             >
               <Sparkles size={14} />
-              Ask AI
+              {canAskAi ? "Ask AI" : "Ask AI (nothing to categorise)"}
             </button>
             <Link
               href="/demo"
@@ -789,6 +867,37 @@ export default function BankingPage() {
                           </>
                         )}
                     </p>
+                    {mode === "blank" && txns.length === 0 ? (
+                      <div className="mt-4 flex flex-wrap justify-center gap-2">
+                        <button
+                          type="button"
+                          className="btn-secondary !px-3 !py-1.5 text-xs"
+                          onClick={() => {
+                            openingInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                            openingInputRef.current?.focus();
+                          }}
+                        >
+                          Set opening balance
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-primary !px-3 !py-1.5 text-xs"
+                          onClick={() => {
+                            void loadSampleCsv("amount");
+                            importSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }}
+                        >
+                          Try starter CSV
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary !px-3 !py-1.5 text-xs"
+                          onClick={() => fileRef.current?.click()}
+                        >
+                          Choose your CSV
+                        </button>
+                      </div>
+                    ) : null}
                   </td>
                 </tr>
               ) : (

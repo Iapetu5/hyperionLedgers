@@ -154,13 +154,23 @@ type RawDocLine = {
 };
 
 function mapRawLines(stored: RawDocLine[]): DocLineItem[] {
-  return stored.map((li) => ({
-    description: li.description,
-    qty: li.qty,
-    unitPrice: li.unitPrice,
-    amount: li.amount,
-    taxRate: li.taxRate === "GST-free" ? "GST-free" : "GST",
-  }));
+  return stored.map((li) => {
+    const qty = Number.isFinite(li.qty) && li.qty > 0 ? li.qty : 1;
+    const amount = Number.isFinite(li.amount) ? li.amount : 0;
+    const unit =
+      Number.isFinite(li.unitPrice) && li.unitPrice > 0
+        ? li.unitPrice
+        : amount > 0
+          ? Math.round((amount / qty) * 100) / 100
+          : 0;
+    return {
+      description: li.description,
+      qty,
+      unitPrice: unit,
+      amount,
+      taxRate: li.taxRate === "GST-free" ? "GST-free" : "GST",
+    };
+  });
 }
 
 function resolveLineItems(

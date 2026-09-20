@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { ChevronsUpDown, Package, Plus, Search, Trash2, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatAUD } from "@/lib/format";
 import {
+  catalogueReturnFromPath,
   filterProducts,
   findProduct,
   lineAmountFromProduct,
   lineDescriptionFromProduct,
   loadProductsForMode,
+  productsAddHref,
   xeroTaxLabel,
   type Product,
   type ProductTax,
@@ -25,6 +28,8 @@ export type LineDraft = {
   key: string;
   description: string;
   qty: string;
+  /** Tax-exclusive unit price — drives amount when qty changes */
+  unitPriceEx: string;
   /** Tax-exclusive line amount (qty × unit price) */
   amountEx: string;
   taxRate: LineTaxRate;
@@ -32,11 +37,22 @@ export type LineDraft = {
   productId?: string;
 };
 
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function amountFromUnitQty(unit: number, qty: number): number {
+  if (!Number.isFinite(unit) || unit <= 0) return 0;
+  if (!Number.isFinite(qty) || qty <= 0) return 0;
+  return round2(unit * qty);
+}
+
 export function emptyLineDraft(partial?: Partial<LineDraft>): LineDraft {
   return {
     key: `ln-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     description: "",
     qty: "1",
+    unitPriceEx: "",
     amountEx: "",
     taxRate: "GST",
     productId: undefined,
@@ -47,7 +63,7 @@ export function emptyLineDraft(partial?: Partial<LineDraft>): LineDraft {
 /** Debounce Strict Mode / double-click / soft-nav ?mixed=1 on the same path (cross-page still allowed). */
 let mixedOneClickLockUntil = 0;
 let mixedOneClickLockPath = "";
-export function tryBeginMixedOneClick(cooldownMs = 700): boolean {
+export function tryBeginMixedOneClick(cooldownMs = 1400): boolean {
   const now = Date.now();
   const path = typeof window !== "undefined" ? window.location.pathname : "";
   if (now < mixedOneClickLockUntil && path === mixedOneClickLockPath) return false;
@@ -56,17 +72,48 @@ export function tryBeginMixedOneClick(cooldownMs = 700): boolean {
   return true;
 }
 
+/**
+ * Reopen the create form when returning from Products (`?compose=1`).
+ * The query is stripped on a short timer so React Strict Mode's double effect still sees it.
+ */
+export function useComposeQuery(open: () => void) {
+  const openRef = useRef(open);
+  openRef.current = open;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("compose") !== "1" || params.get("mixed") === "1") return;
+    openRef.current();
+    const timer = window.setTimeout(() => {
+      const nextParams = new URLSearchParams(window.location.search);
+      if (nextParams.get("compose") !== "1") return;
+      nextParams.delete("compose");
+      const qs = nextParams.toString();
+      window.history.replaceState(
+        {},
+        "",
+        `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
+      );
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, []);
+}
+
 /** Gentle two-line starter: one GST + one GST Free (tax-exclusive amounts). */
 export function mixedTaxStarterDrafts(scope: "income" | "expense" = "income"): LineDraft[] {
   if (scope === "expense") {
     return [
       emptyLineDraft({
         description: "Taxable supplies",
+        qty: "1",
+        unitPriceEx: "500",
         amountEx: "500",
         taxRate: "GST",
       }),
       emptyLineDraft({
         description: "GST-free supplier line",
+        qty: "1",
+        unitPriceEx: "165",
         amountEx: "165",
         taxRate: "GST-free",
       }),
@@ -75,11 +122,15 @@ export function mixedTaxStarterDrafts(scope: "income" | "expense" = "income"): L
   return [
     emptyLineDraft({
       description: "Design services",
+      qty: "1",
+      unitPriceEx: "500",
       amountEx: "500",
       taxRate: "GST",
     }),
     emptyLineDraft({
       description: "GST-free export pack",
+      qty: "1",
+      unitPriceEx: "200",
       amountEx: "200",
       taxRate: "GST-free",
     }),
@@ -103,21 +154,31 @@ export function lineItemsToDrafts(
         description: string;
         qty: number;
         amount: number;
+        unitPrice?: number;
         taxRate?: LineTaxRate;
         productId?: string;
       }[]
     | undefined,
 ): LineDraft[] {
   if (!items?.length) return [emptyLineDraft()];
-  return items.map((item) =>
-    emptyLineDraft({
+  return items.map((item) => {
+    const qty = Number.isFinite(item.qty) && item.qty > 0 ? item.qty : 1;
+    const amount = Number.isFinite(item.amount) && item.amount > 0 ? item.amount : 0;
+    let unit =
+      Number.isFinite(item.unitPrice) && (item.unitPrice as number) > 0
+        ? (item.unitPrice as number)
+        : amount > 0
+          ? round2(amount / qty)
+          : 0;
+    return emptyLineDraft({
       description: item.description,
-      qty: String(item.qty),
-      amountEx: Number.isFinite(item.amount) && item.amount > 0 ? String(item.amount) : "",
+      qty: String(qty),
+      unitPriceEx: unit > 0 ? String(unit) : "",
+      amountEx: amount > 0 ? String(amount) : "",
       taxRate: item.taxRate === "GST-free" ? "GST-free" : "GST",
       productId: item.productId || undefined,
-    }),
-  );
+    });
+  });
 }
 
 export function lineDraftsSubtotal(drafts: LineDraft[]): number {
@@ -145,6 +206,27 @@ function productTaxToLine(tax: ProductTax): LineTaxRate {
 
 /** Typeahead once the catalogue is large enough that a plain select is hard to scan. */
 const TYPEAHEAD_MIN = 5;
+
+/** Advance to the next field in this line. Enter must never submit the parent form. */
+function focusNextLineField(from: HTMLElement) {
+  const root = from.closest("[data-line-card]");
+  if (!root) return;
+  const nodes = Array.from(root.querySelectorAll<HTMLElement>("input, select, textarea")).filter((el) => {
+    if (el.hasAttribute("disabled")) return false;
+    if (el.tabIndex < 0) return false;
+    const type = (el as HTMLInputElement).type;
+    return type !== "hidden" && type !== "checkbox" && type !== "radio";
+  });
+  const idx = nodes.indexOf(from);
+  const next = idx >= 0 ? nodes[idx + 1] : undefined;
+  next?.focus();
+}
+
+function onLineFieldKeyDown(e: KeyboardEvent<HTMLInputElement | HTMLSelectElement>) {
+  if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+  e.preventDefault();
+  focusNextLineField(e.currentTarget);
+}
 
 function ProductTypeahead({
   id,
@@ -252,8 +334,14 @@ function ProductTypeahead({
       setActiveIndex(Math.max(0, optionCount - 1));
       return;
     }
-    if (e.key === "Enter" && open) {
+    if (e.key === "Enter") {
+      // Always swallow Enter. When the list is closed, implicit form submit
+      // would create the document and resetForm() — wiping the page.
       e.preventDefault();
+      if (!open || e.nativeEvent.isComposing) {
+        if (!e.nativeEvent.isComposing) focusNextLineField(e.currentTarget);
+        return;
+      }
       if (activeIndex === 0) {
         pick("");
         return;
@@ -415,6 +503,8 @@ export function LineItemsEditor({
   amountHint?: string;
 }) {
   const { usesSampleData } = useAuth();
+  const pathname = usePathname() || "";
+  const addProductHref = productsAddHref(catalogueReturnFromPath(pathname));
   const [products, setProducts] = useState<Product[]>([]);
   /** Avoid SSR/hydration flash of the empty-catalogue CTA before client load. */
   const [catalogueReady, setCatalogueReady] = useState(false);
@@ -468,6 +558,7 @@ export function LineItemsEditor({
       productId: product.id,
       description: lineDescriptionFromProduct(product),
       qty,
+      unitPriceEx: String(product.unitPriceExGst),
       amountEx: amount > 0 ? String(amount) : "",
       taxRate: productTaxToLine(product.tax),
     });
@@ -481,13 +572,75 @@ export function LineItemsEditor({
       const amount = lineAmountFromProduct(product, Number(qty));
       update(key, {
         qty,
+        unitPriceEx: String(product.unitPriceExGst),
         amountEx: amount > 0 ? String(amount) : "",
         description: lineDescriptionFromProduct(product),
         taxRate: productTaxToLine(product.tax),
       });
       return;
     }
+    // Custom line: keep unit price, auto-total amount (qty × unit)
+    const unit = Number(line.unitPriceEx);
+    if (Number.isFinite(unit) && unit > 0) {
+      const amount = amountFromUnitQty(unit, Number(qty));
+      update(key, {
+        qty,
+        amountEx: amount > 0 ? String(amount) : "",
+      });
+      return;
+    }
+    // No unit yet — if amount already set at qty 1, derive unit then scale
+    const prevQty = Number(line.qty);
+    const prevAmt = Number(line.amountEx);
+    if (
+      Number.isFinite(prevAmt) &&
+      prevAmt > 0 &&
+      Number.isFinite(prevQty) &&
+      prevQty > 0 &&
+      Number.isFinite(Number(qty)) &&
+      Number(qty) > 0
+    ) {
+      const unitDerived = round2(prevAmt / prevQty);
+      const amount = amountFromUnitQty(unitDerived, Number(qty));
+      update(key, {
+        qty,
+        unitPriceEx: String(unitDerived),
+        amountEx: amount > 0 ? String(amount) : "",
+      });
+      return;
+    }
     update(key, { qty });
+  }
+
+  function changeUnitPrice(key: string, unitPriceEx: string) {
+    const line = lines.find((l) => l.key === key);
+    if (!line) return;
+    const qty = Number(line.qty);
+    const unit = Number(unitPriceEx);
+    const amount = amountFromUnitQty(unit, qty);
+    update(key, {
+      unitPriceEx,
+      amountEx: amount > 0 ? String(amount) : unitPriceEx === "" ? "" : line.amountEx,
+      productId: undefined,
+    });
+  }
+
+  function changeAmountEx(key: string, amountEx: string) {
+    const line = lines.find((l) => l.key === key);
+    if (!line) return;
+    const qty = Number(line.qty);
+    const amount = Number(amountEx);
+    let unitPriceEx = line.unitPriceEx;
+    if (Number.isFinite(amount) && amount > 0 && Number.isFinite(qty) && qty > 0) {
+      unitPriceEx = String(round2(amount / qty));
+    } else if (amountEx === "") {
+      // Keep unit so qty can still drive a future total
+    }
+    update(key, {
+      amountEx,
+      unitPriceEx,
+      productId: undefined,
+    });
   }
 
   function addLine() {
@@ -509,6 +662,8 @@ export function LineItemsEditor({
 
   const gstLabel = taxScope === "expense" ? "GST on Expenses" : "GST on Income";
   const freeLabel = taxScope === "expense" ? "GST Free Expenses" : "GST Free Income";
+  const catalogueEmpty = catalogueReady && products.length === 0;
+  const addTaxHint = taxScope === "expense" ? "GST on Expenses or GST Free Expenses" : "GST on Income or GST Free";
 
   return (
     <div className="space-y-3">
@@ -516,14 +671,18 @@ export function LineItemsEditor({
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Line items</p>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href="/demo/products"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Opens in a new tab — keeps this form open"
+            href={catalogueEmpty ? addProductHref : "/demo/products"}
+            target={catalogueEmpty ? undefined : "_blank"}
+            rel={catalogueEmpty ? undefined : "noopener noreferrer"}
+            title={
+              catalogueEmpty
+                ? "Add one product, then return to this form and pick it"
+                : "Opens in a new tab — keeps this form open"
+            }
             className="btn-secondary !px-2.5 !py-1 text-xs"
           >
             <Package size={12} />
-            Products
+            {catalogueEmpty ? "Add a product" : "Products"}
           </Link>
           <button type="button" className="btn-secondary !px-2.5 !py-1 text-xs" onClick={addLine}>
             <Plus size={12} />
@@ -532,30 +691,14 @@ export function LineItemsEditor({
         </div>
       </div>
 
-      {catalogueReady && products.length === 0 && (
+      {catalogueEmpty && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-cyan-400/30 bg-cyan-500/10 px-3 py-2.5 text-xs text-cyan-50">
           <span>
-            Catalogue empty —{" "}
-            <Link
-              href="/demo/products"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Opens in a new tab — keeps this form open"
-              className="font-semibold text-cyan-100 underline decoration-cyan-300/50 underline-offset-2 hover:text-white"
-            >
-              Add products
-            </Link>{" "}
-            enables the product picker. For sample GST/GST-free lines, use Create mixed-tax sample on this form; custom descriptions also work.
+            Catalogue is empty, so there is nothing to pick yet. Add one product — name, price (ex tax), and {addTaxHint} — then return here and select it. Quantity fills the line amount. GST is added only on taxable lines.
           </span>
-          <Link
-            href="/demo/products"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Opens in a new tab — keeps this form open"
-            className="btn-secondary !px-2.5 !py-1 text-xs shrink-0"
-          >
+          <Link href={addProductHref} className="btn-primary !px-2.5 !py-1 text-xs shrink-0">
             <Package size={12} />
-            Add products
+            Add a product
           </Link>
         </div>
       )}
@@ -564,6 +707,7 @@ export function LineItemsEditor({
         {lines.map((line, idx) => {
           const locked = fromProduct(line);
           const showProductPicker = products.length > 0;
+          const showAddProduct = catalogueEmpty;
           const productField = showProductPicker ? (
               <div className="min-w-0">
                 <label className="label" htmlFor={`${idPrefix}-prod-${idx}`}>
@@ -589,6 +733,7 @@ export function LineItemsEditor({
                     value={
                       line.productId && findProduct(products, line.productId) ? line.productId : ""
                     }
+                    onKeyDown={onLineFieldKeyDown}
                     onChange={(e) => applyProduct(line.key, e.target.value)}
                   >
                     <option value="">Custom line…</option>
@@ -601,6 +746,21 @@ export function LineItemsEditor({
                 )}
               </div>
           ) : null;
+          const addProductField = (
+              <div className="min-w-0">
+                <label className="label" htmlFor={`${idPrefix}-add-${idx}`}>
+                  Product{lines.length > 1 ? ` ${idx + 1}` : ""}
+                </label>
+                <Link
+                  id={`${idPrefix}-add-${idx}`}
+                  href={addProductHref}
+                  className="flex min-h-[2.5rem] w-full items-center justify-between gap-2 rounded-lg border border-dashed border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-left text-sm text-cyan-50 transition hover:border-cyan-300/60 hover:bg-cyan-500/15"
+                >
+                  <span className="truncate">Add a product, then pick it here</span>
+                  <Plus size={14} className="shrink-0 text-cyan-200" />
+                </Link>
+              </div>
+          );
           const descriptionField = (
               <div className="min-w-0">
                 <label className="label" htmlFor={`${idPrefix}-desc-${idx}`}>
@@ -613,6 +773,7 @@ export function LineItemsEditor({
                   onChange={(e) =>
                     update(line.key, { description: e.target.value, productId: undefined })
                   }
+                  onKeyDown={onLineFieldKeyDown}
                   placeholder={taxScope === "expense" ? "Supplier line…" : "Description…"}
                   readOnly={locked}
                   title={locked ? "Tied to product — switch to Custom to edit" : undefined}
@@ -632,6 +793,31 @@ export function LineItemsEditor({
                   step="0.01"
                   value={line.qty}
                   onChange={(e) => changeQty(line.key, e.target.value)}
+                  onKeyDown={onLineFieldKeyDown}
+                />
+              </div>
+          );
+          const unitField = (
+              <div>
+                <label className="label" htmlFor={`${idPrefix}-unit-${idx}`}>
+                  Unit (ex tax)
+                </label>
+                <input
+                  id={`${idPrefix}-unit-${idx}`}
+                  className="input"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={line.unitPriceEx}
+                  onChange={(e) => changeUnitPrice(line.key, e.target.value)}
+                  onKeyDown={onLineFieldKeyDown}
+                  placeholder=""
+                  readOnly={locked}
+                  title={
+                    locked
+                      ? "From product — switch to Custom to override"
+                      : "Qty × unit fills the line amount"
+                  }
                 />
               </div>
           );
@@ -647,12 +833,11 @@ export function LineItemsEditor({
                   min="0.01"
                   step="0.01"
                   value={line.amountEx}
-                  onChange={(e) =>
-                    update(line.key, { amountEx: e.target.value, productId: undefined })
-                  }
+                  onChange={(e) => changeAmountEx(line.key, e.target.value)}
+                  onKeyDown={onLineFieldKeyDown}
                   placeholder=""
                   readOnly={locked}
-                  title={locked ? "Auto from product × qty — switch to Custom to override" : undefined}
+                  title={locked ? "Auto from product × qty — switch to Custom to override" : "Edits unit = amount ÷ qty"}
                 />
               </div>
           );
@@ -673,6 +858,7 @@ export function LineItemsEditor({
                   }
                   value={line.taxRate}
                   disabled={locked}
+                  onKeyDown={onLineFieldKeyDown}
                   onChange={(e) =>
                     update(line.key, {
                       taxRate: e.target.value === "GST-free" ? "GST-free" : "GST",
@@ -701,24 +887,26 @@ export function LineItemsEditor({
           return (
             <div
               key={line.key}
+              data-line-card=""
               className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3"
             >
               {/* Product picker + description on their own row so mid-width chrome does not crush placeholders */}
-              {showProductPicker ? (
+              {showProductPicker || showAddProduct ? (
                 <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
-                  {productField}
+                  {showProductPicker ? productField : addProductField}
                   {descriptionField}
                 </div>
               ) : null}
               <div
                 className={
-                  showProductPicker
-                    ? "grid gap-2 sm:grid-cols-[4.5rem_7.5rem_minmax(11rem,1fr)_auto]"
-                    : "grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_4.5rem_7.5rem_minmax(11rem,1fr)_auto]"
+                  showProductPicker || showAddProduct
+                    ? "grid gap-2 sm:grid-cols-[4.5rem_7rem_7.5rem_minmax(10rem,1fr)_auto]"
+                    : "grid gap-2 sm:grid-cols-[minmax(0,1.3fr)_4.5rem_7rem_7.5rem_minmax(10rem,1fr)_auto]"
                 }
               >
-                {showProductPicker ? null : descriptionField}
+                {showProductPicker || showAddProduct ? null : descriptionField}
                 {qtyField}
+                {unitField}
                 {amountField}
                 {taxField}
                 {removeBtn}
@@ -745,7 +933,7 @@ export function LineItemsEditor({
 
       {subtotal <= 0 && (
         <p className="ml-auto max-w-xs text-[11px] text-slate-500">
-          Totals stay $0 until you enter amounts (placeholders are examples only).
+          Totals stay $0 until you enter a unit price or line amount (qty × unit auto-totals).
         </p>
       )}
     </div>

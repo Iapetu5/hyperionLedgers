@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Copy, ExternalLink, FileText, Package, Pencil, Plus, Trash2, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
@@ -14,10 +14,12 @@ import {
   lineItemsToDrafts,
   mixedTaxStarterDrafts,
   tryBeginMixedOneClick,
+  useComposeQuery,
   type LineDraft,
 } from "@/components/demo/LineItemsEditor";
+import { shouldBlockImplicitEnter } from "@/lib/form-enter";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatAUD, formatDateAU } from "@/lib/format";
+import { formatAUD, formatDateAU, todayISO, plusDaysISO } from "@/lib/format";
 import { invoices as sampleInvoices } from "@/lib/sample-data";
 import { docTaxTreatmentSummary, publicInvoiceUrl, setPublicDocStatus } from "@/lib/public-docs";
 import { invoiceStatus, useDocStatusTick } from "@/lib/use-doc-statuses";
@@ -27,9 +29,7 @@ import {
   effectiveInvoiceStatus,
   loadUserInvoices,
   updateUserInvoice,
-  type UserInvoice,
-  todayISO,
-  plusDaysISO,
+  type UserInvoice
 } from "@/lib/user-docs";
 
 export default function InvoicesPage() {
@@ -44,6 +44,8 @@ export default function InvoicesPage() {
   const [formOk, setFormOk] = useState<string | null>(null);
   /** After create — inline View / Copy so first session reaches the pay link without hunting the table */
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
+  /** List-first: keep the create form collapsed until New / Edit / mixed-tax / post-create. */
+  const [composerOpen, setComposerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [issueDate, setIssueDate] = useState(() => todayISO());
   const [dueDate, setDueDate] = useState(() => plusDaysISO(14));
@@ -63,14 +65,19 @@ export default function InvoicesPage() {
   }, [reloadUser]);
 
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const sampleRows = useMemo(
     () =>
       sampleInvoices.map((inv) => ({
         ...inv,
-        status: invoiceStatus(inv.id, inv.status) as typeof inv.status,
+        status: (mounted
+          ? invoiceStatus(inv.id, inv.status)
+          : inv.status) as typeof inv.status,
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tick],
+    [tick, mounted],
   );
 
   async function copyLink(id: string) {
@@ -101,6 +108,27 @@ export default function InvoicesPage() {
     setFormError(null);
   }
 
+  function openComposer(opts?: { reset?: boolean }) {
+    if (opts?.reset !== false) {
+      resetForm();
+      setLastCreatedId(null);
+      setFormOk(null);
+    }
+    setComposerOpen(true);
+    window.setTimeout(() => {
+      document.getElementById("inv-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      (document.getElementById("inv-contact") as HTMLInputElement | null)?.focus();
+    }, 40);
+  }
+
+  function closeComposer() {
+    resetForm();
+    setLastCreatedId(null);
+    setFormOk(null);
+    setFormError(null);
+    setComposerOpen(false);
+  }
+
   /** One-click: Acme + GST/GST-free lines → pay-link strip (no second Create click). */
   function createMixedTaxSample() {
     if (!tryBeginMixedOneClick()) return;
@@ -118,6 +146,7 @@ export default function InvoicesPage() {
     setPublicDocStatus("invoice", res.id, res.status);
     resetForm();
     setLastCreatedId(res.id);
+    setComposerOpen(true);
     setFormOk(`Created ${res.id} with mixed GST + GST-free lines — open the pay link below.`);
     reloadUser();
     window.setTimeout(() => {
@@ -126,6 +155,7 @@ export default function InvoicesPage() {
   }
 
   function prefillMixedTaxDraft() {
+    setComposerOpen(true);
     setLines(mixedTaxStarterDrafts("income"));
     setContact((c) => c.trim() || "Acme Pty Ltd");
     setLastCreatedId(null);
@@ -184,6 +214,8 @@ export default function InvoicesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + same-path mixed links only
   }, []);
 
+  useComposeQuery(openComposer);
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -204,6 +236,7 @@ export default function InvoicesPage() {
       setPublicDocStatus("invoice", res.id, res.status);
       resetForm();
       setLastCreatedId(res.id);
+      setComposerOpen(true);
       setFormOk(`Updated ${res.id}.`);
       reloadUser();
       return;
@@ -212,7 +245,7 @@ export default function InvoicesPage() {
     if ("error" in res) {
       const nudge =
         /amount|line/i.test(res.error) && !editingId
-          ? " Tip: use Create mixed-tax sample above for a one-click GST + GST-free invoice."
+          ? " Tip: use Create sample above for a ready-made invoice with GST and GST-free lines."
           : "";
       setFormError(`${res.error}${nudge}`);
       return;
@@ -230,6 +263,7 @@ export default function InvoicesPage() {
     const createdId = "error" in updated ? res.id : updated.id;
     resetForm();
     setLastCreatedId(createdId);
+    setComposerOpen(true);
     setFormOk(`Created ${createdId}.`);
     reloadUser();
   }
@@ -249,6 +283,7 @@ export default function InvoicesPage() {
         : [
             emptyLineDraft({
               description: inv.reference,
+              unitPriceEx: String(Math.round((inv.amount - inv.gst) * 100) / 100),
               amountEx: String(Math.round((inv.amount - inv.gst) * 100) / 100),
               taxRate: inv.gst > 0 ? "GST" : "GST-free",
             }),
@@ -256,6 +291,7 @@ export default function InvoicesPage() {
     );
     setFormError(null);
     setLastCreatedId(null);
+    setComposerOpen(true);
     setFormOk(`Editing ${inv.id} — update contact, lines, dates, or status. Delete removes it so you can recreate.`);
     if (typeof document !== "undefined") {
       document.getElementById("inv-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -270,8 +306,21 @@ export default function InvoicesPage() {
     setFormOk(`Removed ${id}. Create a new invoice above if you need a fresh draft.`);
   }
 
+  function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {
+    const el = e.target instanceof HTMLElement ? e.target : null;
+    if (
+      shouldBlockImplicitEnter({
+        key: e.key,
+        tagName: el?.tagName,
+        composing: e.nativeEvent.isComposing,
+      })
+    ) {
+      e.preventDefault();
+    }
+  }
+
   const createForm = (
-    <form id="inv-form" className="card scroll-mt-4 space-y-4 p-5" onSubmit={onSubmit}>
+    <form onKeyDown={blockImplicitEnter} id="inv-form" className="card scroll-mt-4 space-y-4 p-5" onSubmit={onSubmit}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-semibold text-white">
           {editingId ? `Edit ${editingId}` : "Create invoice"}
@@ -279,7 +328,7 @@ export default function InvoicesPage() {
         <span className="text-xs text-slate-400">
           {editingId
             ? "Same id & pay link · edit dates & status · browser only"
-            : "Tax-exclusive lines · GST on Income / GST Free Income · set dates & status · browser only"}
+            : "Line amounts before GST · choose GST or GST-free on each line · dates & status · saved in this browser"}
         </span>
       </div>
       <div>
@@ -370,16 +419,14 @@ export default function InvoicesPage() {
               onClick={createMixedTaxSample}
             >
               <Plus size={12} />
-              Create mixed-tax sample
+              Create sample
             </button>
             <button type="button" className="btn-secondary !px-2.5 !py-1 text-xs" onClick={prefillMixedTaxDraft}>
               Prefill draft
             </button>
             <Link
-              href="/demo/products"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Opens in a new tab — keeps this form open"
+              href="/demo/products?from=invoice#product-form"
+              title="Add one product (name, price, tax), then return and pick it"
               className="btn-secondary !px-2.5 !py-1 text-xs"
             >
               <Package size={12} />
@@ -391,7 +438,7 @@ export default function InvoicesPage() {
           </div>
           {!lastCreatedId && (
             <p className="rounded-lg border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100/90">
-              Tip: <strong className="text-white">Create mixed-tax sample</strong> is enough for a{" "}
+              Tip: <strong className="text-white">Create sample</strong> is enough for a{" "}
               <strong className="text-white">GST on Income</strong> +{" "}
               <strong className="text-white">GST Free Income</strong> demo — then{" "}
               <strong className="text-white">View pay link</strong> for the nebula tax-invoice header.
@@ -413,7 +460,7 @@ export default function InvoicesPage() {
             </>
           )}
         </button>
-        {editingId && (
+        {editingId ? (
           <button
             type="button"
             className="btn-secondary"
@@ -426,6 +473,11 @@ export default function InvoicesPage() {
             <X size={16} />
             Cancel edit
           </button>
+        ) : (
+          <button type="button" className="btn-secondary" onClick={closeComposer}>
+            <X size={16} />
+            Hide form
+          </button>
         )}
       </div>
       <p className="text-xs text-slate-400">
@@ -433,6 +485,34 @@ export default function InvoicesPage() {
       </p>
     </form>
   );
+
+  const showComposer = Boolean(editingId) || composerOpen || Boolean(lastCreatedId);
+
+  function pageHeader(subtitle: ReactNode) {
+    return (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Invoices</h1>
+          <p className="text-sm text-white/70">{subtitle}</p>
+          <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
+            <input
+              type="checkbox"
+              className="rounded border-white/20 bg-black/30"
+              checked={showTaxTreatment}
+              onChange={(e) => setShowTaxTreatment(e.target.checked)}
+            />
+            Show tax treatment summary
+          </label>
+        </div>
+        {!showComposer && (
+          <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
+            <Plus size={16} />
+            New invoice
+          </button>
+        )}
+      </div>
+    );
+  }
 
   function userActions(inv: UserInvoice) {
     return (
@@ -486,119 +566,132 @@ export default function InvoicesPage() {
         return st === "Awaiting payment" || st === "Overdue";
       })
       .reduce((sum, inv) => sum + inv.amount, 0);
+
+    const listOrEmpty =
+      userRows.length === 0 && !showComposer ? (
+        <EmptyState
+          icon={FileText}
+          title="No invoices yet"
+          description="Create your first invoice, or start from a ready-made example with a customer pay link."
+          showExploreSample
+          actions={[
+            {
+              label: "Create sample invoice",
+              primary: true,
+              onClick: () => createMixedTaxSample(),
+            },
+            {
+              label: "New invoice",
+              onClick: () => openComposer(),
+            },
+            { label: "Back to overview", href: "/demo" },
+          ]}
+          hint="Harbour & Co sample invoices stay in the guest demo — they are not copied into your organisation."
+        />
+      ) : userRows.length === 0 ? null : (
+        <div className="card overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="table-head">
+              <tr>
+                <th className="px-4 py-3">Invoice</th>
+                <th className="px-4 py-3">Contact</th>
+                <th className="px-4 py-3">Due</th>
+                <th className="px-4 py-3">Amount</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="min-w-[14rem] px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {userRows.map((inv) => (
+                <tr key={inv.id} className="table-row">
+                  <td className="px-4 py-3 font-medium">
+                    {inv.id}
+                    <div className="text-xs text-slate-400">{inv.reference}</div>
+                  </td>
+                  <td className="px-4 py-3">{inv.contact}</td>
+                  <td className="px-4 py-3">{formatDateAU(inv.dueDate)}</td>
+                  <td className="px-4 py-3">
+                    {formatAUD(inv.amount)}
+                    {showTaxTreatment && (
+                      <div className="text-xs text-slate-400">
+                        {docTaxTreatmentSummary(inv.lineItems, inv.gst)}
+                        {inv.gst > 0 ? ` · GST ${formatAUD(inv.gst)}` : ""}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge
+                      status={effectiveInvoiceStatus({
+                        status: invoiceStatus(inv.id, inv.status) as UserInvoice["status"],
+                        dueDate: inv.dueDate,
+                      })}
+                    />
+                  </td>
+                  <td className="px-4 py-3">{userActions(inv)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+
     return (
       <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Invoices</h1>
-          <p className="text-sm text-white/70">
-            {userRows.length === 0 ? (
-              <>
-                Blank ledger — create a basic invoice here (browser only), or explore Harbour &amp; Co for the full sample list. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
-              </>
-            ) : (
-              <>
-                Outstanding: <strong className="text-cyan-200">{formatAUD(receivableTotal)}</strong>
-                {" · "}
-                {overdueUserInvs.length} overdue
-                {" · "}
-                browser-local only
-              </>
-            )}
-          </p>
-          <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
-            <input
-              type="checkbox"
-              className="rounded border-white/20 bg-black/30"
-              checked={showTaxTreatment}
-              onChange={(e) => setShowTaxTreatment(e.target.checked)}
-            />
-            Show tax treatment summary
-          </label>
-        </div>
-
-        {createForm}
-
-        {userRows.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="No invoices yet"
-            description="Create your first invoice above, or open the Harbour & Co sample as a guest to browse a full list."
-            showExploreSample
-            actions={[
-              { label: "Back to overview", href: "/demo" },
-              { label: "Account settings", href: "/demo/account" },
-            ]}
-            hint="Sample invoices live in the guest demo — they are not copied into your blank org."
-          />
-        ) : (
-          <div className="card overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="table-head">
-                <tr>
-                  <th className="px-4 py-3">Invoice</th>
-                  <th className="px-4 py-3">Contact</th>
-                  <th className="px-4 py-3">Due</th>
-                  <th className="px-4 py-3">Amount</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="min-w-[14rem] px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {userRows.map((inv) => (
-                  <tr key={inv.id} className="table-row">
-                    <td className="px-4 py-3 font-medium">
-                      {inv.id}
-                      <div className="text-xs text-slate-400">{inv.reference}</div>
-                    </td>
-                    <td className="px-4 py-3">{inv.contact}</td>
-                    <td className="px-4 py-3">{formatDateAU(inv.dueDate)}</td>
-                    <td className="px-4 py-3">
-                      {formatAUD(inv.amount)}
-                      {showTaxTreatment && (
-                        <div className="text-xs text-slate-400">
-                          {docTaxTreatmentSummary(inv.lineItems, inv.gst)}
-                          {inv.gst > 0 ? ` · GST ${formatAUD(inv.gst)}` : ""}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge
-                        status={effectiveInvoiceStatus({
-                          status: invoiceStatus(inv.id, inv.status) as UserInvoice["status"],
-                          dueDate: inv.dueDate,
-                        })}
-                      />
-                    </td>
-                    <td className="px-4 py-3">{userActions(inv)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {pageHeader(
+          userRows.length === 0 ? (
+            <>
+              Create a basic invoice (saved in this browser), or explore Harbour &amp; Co for the full sample list. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
+            </>
+          ) : (
+            <>
+              Outstanding: <strong className="text-cyan-200">{formatAUD(receivableTotal)}</strong>
+              {" · "}
+              {overdueUserInvs.length} overdue
+              {" · "}
+              browser-local only
+            </>
+          ),
         )}
+
+        {/* List first when browsing; composer expands on New / Edit / mixed-tax */}
+        {!showComposer && listOrEmpty}
+        {showComposer && createForm}
+        {showComposer && listOrEmpty}
       </div>
     );
   }
 
+  const sampleOverdue = sampleRows.filter(
+    (inv) =>
+      effectiveInvoiceStatus({
+        status: inv.status as UserInvoice["status"],
+        dueDate: inv.dueDate,
+      }) === "Overdue",
+  );
+  const sampleReceivable = sampleRows
+    .filter((inv) => {
+      const st = effectiveInvoiceStatus({
+        status: inv.status as UserInvoice["status"],
+        dueDate: inv.dueDate,
+      });
+      return st === "Awaiting payment" || st === "Overdue";
+    })
+    .reduce((sum, inv) => sum + inv.amount, 0);
+
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Invoices</h1>
-        <p className="text-sm text-white/70">
-          Harbour &amp; Co sample list below — or create a simple invoice (browser only) with the same pay link and nebula print header. Payments are simulated. Your created rows auto-show Overdue when past due (Draft stays Draft).
-        </p>
-        <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
-          <input
-            type="checkbox"
-            className="rounded border-white/20 bg-black/30"
-            checked={showTaxTreatment}
-            onChange={(e) => setShowTaxTreatment(e.target.checked)}
-          />
-          Show tax treatment summary
-        </label>
-      </div>
+      {pageHeader(
+        <>
+          Outstanding: <strong className="text-cyan-200">{formatAUD(sampleReceivable)}</strong>
+          {" · "}
+          {sampleOverdue.length} overdue
+          {" · "}
+          sample + your browser-local creates below
+        </>,
+      )}
 
-      {createForm}
+      {showComposer && createForm}
+
 
       {userRows.length > 0 && (
         <div className="card overflow-x-auto">

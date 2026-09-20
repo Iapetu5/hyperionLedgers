@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, LayoutDashboard, FileText, FileSignature, Receipt, Settings, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
+import { FirstRunWelcome } from "@/components/demo/FirstRunWelcome";
 import { NextActionBanner } from "@/components/demo/NextActionBanner";
 import { openAssistant } from "@/components/demo/AiAssistant";
 import { BasDueDates } from "@/components/bas/BasDueDates";
@@ -12,6 +13,7 @@ import { formatAUD } from "@/lib/format";
 import { bills, cashForecast, invoices, kpis, quotes, tasks } from "@/lib/sample-data";
 import { invoiceStatus, quoteStatus, useDocStatusTick } from "@/lib/use-doc-statuses";
 import {
+  blankNextInsight,
   effectiveBillStatus,
   effectiveInvoiceStatus,
   effectiveQuoteStatus,
@@ -27,19 +29,26 @@ import {
 export default function DemoOverviewPage() {
   const { usesSampleData, user } = useAuth();
   const tick = useDocStatusTick();
+  /** Gate localStorage status overrides until after mount (SSR HTML matches first paint). */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const live = useMemo(() => {
     const invRows = invoices.map((inv) => ({
       ...inv,
       status: effectiveInvoiceStatus({
-        status: invoiceStatus(inv.id, inv.status) as UserInvoice["status"],
+        status: (mounted
+          ? invoiceStatus(inv.id, inv.status)
+          : inv.status) as UserInvoice["status"],
         dueDate: inv.dueDate,
       }),
     }));
     const quoteRows = quotes.map((q) => ({
       ...q,
       status: effectiveQuoteStatus({
-        status: quoteStatus(q.id, q.status) as UserQuote["status"],
+        status: (mounted
+          ? quoteStatus(q.id, q.status)
+          : q.status) as UserQuote["status"],
         expiryDate: q.expiryDate,
       }),
     }));
@@ -50,14 +59,16 @@ export default function DemoOverviewPage() {
     const overdueInvoices = invRows.filter((i) => i.status === "Overdue").length;
     const billRows = bills.map((b) => ({
       ...b,
-      status: effectiveSampleBillStatus(b.id, b.status, b.dueDate),
+      status: mounted
+        ? effectiveSampleBillStatus(b.id, b.status, b.dueDate)
+        : effectiveBillStatus({ status: b.status as UserBill["status"], dueDate: b.dueDate }),
     }));
     const unpaidBills = billRows.filter((b) => b.status !== "Paid");
     const overdueBills = unpaidBills.filter((b) => b.status === "Overdue").length;
     const payables = unpaidBills.reduce((sum, b) => sum + b.amount, 0);
     return { receivables, payables, quotesAwaiting, overdueInvoices, overdueBills, invRows, quoteRows };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tick]);
+  }, [tick, mounted]);
 
   // Blank-ledger user docs (browser-local) — wire overview KPIs once anything exists.
   const [blankDocs, setBlankDocs] = useState<{
@@ -88,11 +99,17 @@ export default function DemoOverviewPage() {
   const blankLive = useMemo(() => {
     const invRows = blankDocs.invoices.map((inv) => ({
       ...inv,
-      status: effectiveInvoiceStatus({ status: inv.status, dueDate: inv.dueDate }),
+      status: effectiveInvoiceStatus({
+        status: (mounted ? invoiceStatus(inv.id, inv.status) : inv.status) as UserInvoice["status"],
+        dueDate: inv.dueDate,
+      }),
     }));
     const quoteRows = blankDocs.quotes.map((q) => ({
       ...q,
-      status: effectiveQuoteStatus({ status: q.status, expiryDate: q.expiryDate }),
+      status: effectiveQuoteStatus({
+        status: (mounted ? quoteStatus(q.id, q.status) : q.status) as UserQuote["status"],
+        expiryDate: q.expiryDate,
+      }),
     }));
     const billRows = blankDocs.bills.map((b) => ({
       ...b,
@@ -111,18 +128,14 @@ export default function DemoOverviewPage() {
       blankDocs.invoices.length + blankDocs.quotes.length + blankDocs.bills.length > 0;
     const overdueBillsTotal = overdueBills.reduce((sum, b) => sum + b.amount, 0);
     const chase = overdueInvoices[0];
-    let nextInsight = "Ledger is underway — keep creating invoices, quotes, and bills as you go.";
-    if (overdueBills.length > 0 && chase) {
-      nextInsight = `Clear overdue bills (${formatAUD(overdueBillsTotal)}) and chase ${chase.contact} on ${chase.id}.`;
-    } else if (overdueBills.length > 0) {
-      nextInsight = `Clear overdue bills (${formatAUD(overdueBillsTotal)}) — ${overdueBills.length} supplier${overdueBills.length === 1 ? "" : "s"} past due.`;
-    } else if (chase) {
-      nextInsight = `Chase ${chase.contact} on overdue ${chase.id} (${formatAUD(chase.amount)}).`;
-    } else if (quotesAwaiting.length > 0) {
-      nextInsight = `${quotesAwaiting.length} quote${quotesAwaiting.length === 1 ? "" : "s"} awaiting reply — follow up or open the customer link.`;
-    } else if (receivables > 0) {
-      nextInsight = `Receivables sit at ${formatAUD(receivables)} — share pay links or mark paid when money lands.`;
-    }
+    const nextInsight = blankNextInsight({
+      overdueBillAmounts: overdueBills.map((b) => b.amount),
+      overdueInvoice: chase,
+      quotesAwaiting: quotesAwaiting.length,
+      quotesExpired: quotesExpired.length,
+      receivables,
+      hasAnyDocs: hasDocs,
+    });
     return {
       hasDocs,
       receivables,
@@ -138,13 +151,13 @@ export default function DemoOverviewPage() {
       quoteCount: blankDocs.quotes.length,
       billCount: blankDocs.bills.length,
     };
-  }, [blankDocs]);
+  }, [blankDocs, mounted]);
 
   if (!usesSampleData) {
     const quickLinks = [
-      { href: "/demo/invoices?mixed=1", label: "Invoices", icon: FileText, blurb: "Mixed GST + GST Free + pay link" },
-      { href: "/demo/quotes?mixed=1", label: "Quotes", icon: FileSignature, blurb: "Mixed GST + GST Free + customer link" },
-      { href: "/demo/bills?mixed=1", label: "Bills", icon: Receipt, blurb: "Mixed expense GST + approve / mark paid" },
+      { href: "/demo/invoices?mixed=1", label: "Invoices", icon: FileText, blurb: "Create with sample lines + pay link" },
+      { href: "/demo/quotes?mixed=1", label: "Quotes", icon: FileSignature, blurb: "Create with sample lines + customer link" },
+      { href: "/demo/bills?mixed=1", label: "Bills", icon: Receipt, blurb: "Create with sample lines + approve / mark paid" },
       { href: "/demo/account", label: "Account", icon: Settings, blurb: "GST, FY, ABN" },
     ];
 
@@ -154,21 +167,22 @@ export default function DemoOverviewPage() {
           <div>
             <h1 className="text-2xl font-bold text-white">Overview</h1>
             <p className="text-sm text-white/70">
-              {user?.businessName ?? "Your organisation"} — blank starting ledger
+              {user?.businessName ?? "Your organisation"} — ready for your first document
             </p>
           </div>
+          <FirstRunWelcome orgName={user?.businessName} forceShow />
           <EmptyState
             icon={LayoutDashboard}
-            title="Nothing here yet — that's OK"
-            description={`Your org (${user?.businessName ?? "your business"}) starts empty. Create a first invoice, or open the Harbour & Co sample as a guest to see a full demo.`}
+            title="Nothing on the overview yet"
+            description={`Cash, receivables, and next-action tips appear after your first invoice, quote, or bill for ${user?.businessName ?? "your business"}. Use the shortcuts below, or open Harbour & Co as a guest for a full sample tour.`}
             showExploreSample
             actions={[
-              { label: "Create invoice", href: "/demo/invoices?mixed=1" },
+              { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
               { label: "Create quote", href: "/demo/quotes?mixed=1" },
               { label: "Create bill", href: "/demo/bills?mixed=1" },
               { label: "Account settings", href: "/demo/account" },
             ]}
-            hint="Explore sample opens the guest demo (Harbour & Co). You can log back into your org anytime."
+            hint="Explore sample opens the Harbour & Co guest demo — you can log back into your organisation anytime."
           />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {quickLinks.map((item) => (
@@ -191,9 +205,11 @@ export default function DemoOverviewPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Overview</h1>
           <p className="text-sm text-white/70">
-            {user?.businessName ?? "Your organisation"} — your browser-local ledger
+            {user?.businessName ?? "Your organisation"} — your organisation
           </p>
         </div>
+
+        <FirstRunWelcome orgName={user?.businessName} />
 
         <div className="card border-brand-400/30 bg-gradient-to-br from-brand-500/15 via-white/[0.06] to-fuchsia-500/15 p-5 shadow-glow">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Next action</p>
@@ -211,11 +227,38 @@ export default function DemoOverviewPage() {
                 {blankLive.overdueBills > 0 ? null : <ArrowRight size={16} />}
               </Link>
             ) : null}
-            {blankLive.overdueBills === 0 && blankLive.overdueInvoices === 0 ? (
-              <Link href="/demo/invoices?mixed=1" className="btn-primary">
-                Create invoice
+            {blankLive.overdueBills === 0 &&
+            blankLive.overdueInvoices === 0 &&
+            blankLive.quotesAwaiting > 0 ? (
+              <Link href="/demo/quotes" className="btn-primary">
+                Review quotes awaiting
                 <ArrowRight size={16} />
               </Link>
+            ) : null}
+            {blankLive.overdueBills === 0 &&
+            blankLive.overdueInvoices === 0 &&
+            blankLive.quotesAwaiting === 0 &&
+            blankLive.quotesExpired > 0 ? (
+              <Link href="/demo/quotes" className="btn-primary">
+                Review expired quotes
+                <ArrowRight size={16} />
+              </Link>
+            ) : null}
+            {blankLive.overdueBills === 0 &&
+            blankLive.overdueInvoices === 0 &&
+            blankLive.quotesAwaiting === 0 &&
+            blankLive.quotesExpired === 0 ? (
+              blankLive.invCount > 0 ? (
+                <Link href="/demo/invoices" className="btn-primary">
+                  Review invoices
+                  <ArrowRight size={16} />
+                </Link>
+              ) : (
+                <Link href="/demo/invoices?mixed=1" className="btn-primary">
+                  Create invoice
+                  <ArrowRight size={16} />
+                </Link>
+              )
             ) : null}
             <button
               type="button"
@@ -276,13 +319,13 @@ export default function DemoOverviewPage() {
             </ul>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href="/demo/invoices?mixed=1" className="btn-secondary !px-3 !py-1.5 text-xs">
-                Mixed-tax invoice
+                Sample invoice
               </Link>
               <Link href="/demo/quotes?mixed=1" className="btn-secondary !px-3 !py-1.5 text-xs">
-                Mixed-tax quote
+                Sample quote
               </Link>
               <Link href="/demo/bills?mixed=1" className="btn-secondary !px-3 !py-1.5 text-xs">
-                Mixed-tax bill
+                Sample bill
               </Link>
             </div>
           </div>
@@ -307,35 +350,40 @@ export default function DemoOverviewPage() {
 
   const displayTasks = tasks.flatMap((t) => {
     if (t.id === "t2") {
+      if (live.quotesAwaiting <= 0) return [];
       return [{ ...t, text: `${live.quotesAwaiting} quote${live.quotesAwaiting === 1 ? "" : "s"} awaiting reply` }];
     }
     if (t.id === "t3") {
       // Live overdue invoice + bill counts from effective status (not static tasks copy)
-      return [
-        {
+      const rows = [];
+      if (live.overdueInvoices > 0) {
+        rows.push({
           id: "t-od-inv",
           text: `${live.overdueInvoices} overdue invoice${live.overdueInvoices === 1 ? "" : "s"}`,
           href: "/demo/invoices",
-          urgent: live.overdueInvoices > 0,
-        },
-        {
+          urgent: true,
+        });
+      }
+      if (live.overdueBills > 0) {
+        rows.push({
           ...t,
           text: `${live.overdueBills} overdue bill${live.overdueBills === 1 ? "" : "s"}`,
-          urgent: live.overdueBills > 0,
-        },
-      ];
+          urgent: true,
+        });
+      }
+      return rows;
     }
     return [t];
   });
 
   return (
     <div className="space-y-6">
+      <NextActionBanner />
+
       <div>
         <h1 className="text-2xl font-bold text-white">Overview</h1>
         <p className="text-sm text-white/70">Harbour &amp; Co Studio — sample dashboard</p>
       </div>
-
-      <NextActionBanner />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[

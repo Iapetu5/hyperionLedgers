@@ -130,7 +130,10 @@ export function CustomerDocPage({
         <div className="doc-header">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-sm text-white/70">{doc.businessName}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">
+                HyperionLedgers
+              </p>
+              <p className="mt-1 text-sm text-white/70">{doc.businessName}</p>
               <p className="text-xs text-white/50">
                 {doc.businessAbn ? <>ABN {doc.businessAbn}</> : "ABN not set"}
               </p>
@@ -183,6 +186,7 @@ export function CustomerDocPage({
               <tr>
                 <th className="py-2">Description</th>
                 <th className="py-2">Qty</th>
+                <th className="py-2 text-right">Unit (ex tax)</th>
                 <th className="py-2">Tax</th>
                 <th className="py-2 text-right">Amount (ex tax)</th>
               </tr>
@@ -192,6 +196,7 @@ export function CustomerDocPage({
                 <tr key={i} className="text-slate-800">
                   <td className="py-2">{li.description}</td>
                   <td className="py-2">{li.qty}</td>
+                  <td className="py-2 text-right">{formatAUD(li.unitPrice)}</td>
                   <td className="py-2 text-xs text-slate-600">{docLineTaxLabel(li.taxRate)}</td>
                   <td className="py-2 text-right">{formatAUD(li.amount)}</td>
                 </tr>
@@ -241,21 +246,27 @@ export function CustomerDocPage({
           )}
 
           <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4 no-print">
-            {kind === "invoice" && doc.status === "Overdue" && !paidLike && (
-              <p className="basis-full text-sm text-rose-700/90">
-                This invoice is overdue — you can still pay in the demo.
-              </p>
-            )}
             {kind === "invoice" && !paidLike && !isDraft && (
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() =>
-                  act("Paid", "Payment recorded in this demo browser only — no money moved.")
-                }
-              >
-                Pay now (demo)
-              </button>
+              <div className="basis-full mb-1 flex flex-wrap items-end justify-between gap-2 rounded-lg border border-cyan-200/80 bg-gradient-to-r from-cyan-50 to-indigo-50 px-3 py-2.5">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    {doc.status === "Overdue" ? "Amount overdue" : "Amount due"}
+                  </p>
+                  <p className="text-xl font-bold text-slate-900">{formatAUD(doc.amount)}</p>
+                  {doc.status === "Overdue" && (
+                    <p className="text-xs text-rose-700/90">Overdue — you can still pay in the demo.</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() =>
+                    act("Paid", "Payment recorded in this demo browser only — no money moved.")
+                  }
+                >
+                  Pay now (demo)
+                </button>
+              </div>
             )}
             {kind === "invoice" && isDraft && (
               <p className="text-sm text-slate-600">

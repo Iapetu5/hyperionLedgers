@@ -2,26 +2,39 @@
 
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { formatAUD } from "@/lib/format";
-import { bills, invoices, kpis } from "@/lib/sample-data";
+import { rollupBlankReports, rollupSampleReports, EMPTY_REPORT_ROLLUP, type BlankReportRollup } from "@/lib/blank-reports";
+import { loadUserBills, loadUserInvoices } from "@/lib/user-docs";
 
 export default function ProfitLossReportPage() {
   const { usesSampleData } = useAuth();
+  const [rollup, setRollup] = useState<BlankReportRollup>(EMPTY_REPORT_ROLLUP);
 
-  const incomeExGst = usesSampleData
-    ? Math.round(invoices.reduce((s, i) => s + (i.amount - i.gst), 0) * 100) / 100
-    : 0;
-  const incomeGst = usesSampleData
-    ? Math.round(invoices.reduce((s, i) => s + i.gst, 0) * 100) / 100
-    : 0;
-  const expenseExGst = usesSampleData
-    ? Math.round(bills.reduce((s, b) => s + (b.amount - b.gst), 0) * 100) / 100
-    : 0;
-  const expenseGst = usesSampleData
-    ? Math.round(bills.reduce((s, b) => s + b.gst, 0) * 100) / 100
-    : 0;
+  useEffect(() => {
+    if (usesSampleData) {
+      setRollup(EMPTY_REPORT_ROLLUP);
+      return;
+    }
+    const reload = () => setRollup(rollupBlankReports(loadUserInvoices(), loadUserBills()));
+    reload();
+    window.addEventListener("hl-user-docs-updated", reload);
+    window.addEventListener("hl-doc-status", reload);
+    return () => {
+      window.removeEventListener("hl-user-docs-updated", reload);
+      window.removeEventListener("hl-doc-status", reload);
+    };
+  }, [usesSampleData]);
+
+  const sampleRollup = usesSampleData ? rollupSampleReports() : null;
+  const incomeExGst = usesSampleData ? sampleRollup!.incomeExGst : rollup.incomeExGst;
+  const incomeGst = usesSampleData ? sampleRollup!.incomeGst : rollup.incomeGst;
+  const expenseExGst = usesSampleData ? sampleRollup!.expenseExGst : rollup.expenseExGst;
+  const expenseGst = usesSampleData ? sampleRollup!.expenseGst : rollup.expenseGst;
+  const netProfit = usesSampleData ? sampleRollup!.netProfit : rollup.netProfit;
+  const showBlank = !usesSampleData && rollup.hasActivity;
 
   return (
     <div className="space-y-6">
@@ -69,33 +82,78 @@ export default function ProfitLossReportPage() {
               </div>
               <div className="flex justify-between gap-4 px-4 py-3">
                 <dt className="font-medium text-white">Net profit (YTD preview)</dt>
-                <dd className="text-lg font-bold text-white">{formatAUD(kpis.netProfitYtd)}</dd>
+                <dd className="text-lg font-bold text-white">{formatAUD(netProfit)}</dd>
               </div>
             </dl>
           </div>
 
           <p className="text-xs leading-relaxed text-slate-500">
-            Net profit above is the sample KPI used elsewhere in the demo; line totals are a simplified
-            roll-up of listed invoices and bills (not a full general ledger). GST Free lines are
-            included in ex-tax income/expense but do not appear in the GST rows.{" "}
+            Net profit matches the ex-tax income minus expenses roll-up of listed invoices and bills
+            (not a full general ledger). GST Free lines are included in ex-tax income/expense but do
+            not appear in the GST rows.{" "}
             <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
               Open GST &amp; BAS
             </Link>{" "}
             for quarterly draft boxes.
           </p>
         </>
+      ) : showBlank ? (
+        <>
+          <div className="card border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
+            Your organisation · year-to-date across all invoices and bills · preview only
+          </div>
+
+          <div className="card overflow-hidden">
+            <div className="border-b border-white/10 px-4 py-3 font-semibold text-white">
+              Year to date (your docs)
+            </div>
+            <dl className="divide-y divide-white/10 text-sm">
+              <div className="flex justify-between gap-4 px-4 py-3">
+                <dt className="text-slate-300">Income (ex tax, from your invoices)</dt>
+                <dd className="font-semibold text-white">{formatAUD(incomeExGst)}</dd>
+              </div>
+              <div className="flex justify-between gap-4 px-4 py-3">
+                <dt className="text-slate-400">of which GST on Income (collected)</dt>
+                <dd className="text-slate-300">{formatAUD(incomeGst)}</dd>
+              </div>
+              <div className="flex justify-between gap-4 px-4 py-3">
+                <dt className="text-slate-300">Expenses (ex tax, from your bills)</dt>
+                <dd className="font-semibold text-white">{formatAUD(expenseExGst)}</dd>
+              </div>
+              <div className="flex justify-between gap-4 px-4 py-3">
+                <dt className="text-slate-400">of which GST on Expenses (credits)</dt>
+                <dd className="text-slate-300">{formatAUD(expenseGst)}</dd>
+              </div>
+              <div className="flex justify-between gap-4 px-4 py-3">
+                <dt className="font-medium text-white">Net profit (YTD preview)</dt>
+                <dd className="text-lg font-bold text-white">{formatAUD(netProfit)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <p className="text-xs leading-relaxed text-slate-500">
+            Simplified roll-up of your listed invoices and bills (not a full general ledger). GST Free
+            lines are included in ex-tax totals but not in the GST rows. These GST rows are
+            year-to-date across all documents; GST &amp; BAS draft boxes count only the derived
+            quarter, so the two can differ.{" "}
+            <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
+              Open GST &amp; BAS
+            </Link>{" "}
+            for the quarter-scoped simulated draft (not lodged with the ATO).
+          </p>
+        </>
       ) : (
         <EmptyState
           icon={TrendingUp}
           title="No profit & loss figures yet"
-          description="Once you have invoices and bills, this report will summarise income and expenses for your records. Blank start keeps it empty on purpose. Nothing here is filed with the ATO."
+          description="Create an invoice or bill, or explore Harbour & Co as a guest for a sample preview."
           showExploreSample
           actions={[
-            { label: "Create mixed-tax invoice", href: "/demo/invoices?mixed=1" },
-            { label: "Create mixed-tax bill", href: "/demo/bills?mixed=1" },
+            { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
+            { label: "Create bill", href: "/demo/bills?mixed=1" },
             { label: "All reports", href: "/demo/reports" },
           ]}
-          hint="Explore Harbour & Co for a sample P&L preview."
+          hint="P&L updates from your invoices and bills. Nothing here is filed with the ATO."
         />
       )}
     </div>

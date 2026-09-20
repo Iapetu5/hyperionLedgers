@@ -69,12 +69,19 @@ export default function AccountPage() {
         <div className="card border-brand-400/25 bg-brand-500/10 p-5">
           <p className="text-sm font-semibold text-white">Blank ledger</p>
           <p className="mt-1 text-sm text-slate-300">
-            Your org starts empty — create invoices and bills under those menus, or open Banking for your own
-            cheque account (opening balance + starter CSV). Harbour &amp; Co sample (logs you out — log back in
-            anytime) still has the fuller pre-loaded reconciliation story.
+            Sample Harbour figures stay out of this organisation. Create an invoice, quote, or bill next — each can start from a ready-made example. Harbour &amp; Co is a separate guest tour and logs you out; log back in anytime.
           </p>
-          <div className="mt-3">
-            <ExploreSampleButton label="Open Harbour & Co sample as guest" />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/demo/invoices?mixed=1" className="btn-primary">
+              Create invoice
+            </Link>
+            <Link href="/demo/quotes?mixed=1" className="btn-secondary">
+              Create quote
+            </Link>
+            <Link href="/demo/bills?mixed=1" className="btn-secondary">
+              Create bill
+            </Link>
+            <ExploreSampleButton primary={false} label="Open Harbour & Co sample as guest" />
           </div>
         </div>
       )}

@@ -38,6 +38,8 @@ const IMPORT_KEY = "hl_demo_bank_txns_v1";
 const BLANK_IMPORT_KEY = "hl_demo_blank_bank_txns_v1";
 const BLANK_OPENING_KEY = "hl_demo_blank_opening_v1";
 const CAT_KEY = "hl_demo_bank_cats_v1";
+/** Blank-org category overrides stay separate from Harbour sample overrides. */
+const BLANK_CAT_KEY = "hl_demo_blank_bank_cats_v1";
 
 type CatOverride = {
   accountCode: string;
@@ -68,10 +70,14 @@ function loadImports(mode: BankLedgerMode = "sample"): BankTransaction[] {
   }
 }
 
-function loadCatMap(): Record<string, CatOverride> {
+function catKeyFor(mode: BankLedgerMode) {
+  return mode === "blank" ? BLANK_CAT_KEY : CAT_KEY;
+}
+
+function loadCatMap(mode: BankLedgerMode = "sample"): Record<string, CatOverride> {
   if (!isBrowser()) return {};
   try {
-    const raw = localStorage.getItem(CAT_KEY);
+    const raw = localStorage.getItem(catKeyFor(mode));
     if (!raw) return {};
     const parsed = JSON.parse(raw) as Record<string, CatOverride>;
     return parsed && typeof parsed === "object" ? parsed : {};
@@ -80,8 +86,8 @@ function loadCatMap(): Record<string, CatOverride> {
   }
 }
 
-function applyCats(txns: BankTransaction[]): BankTransaction[] {
-  const cats = loadCatMap();
+function applyCats(txns: BankTransaction[], mode: BankLedgerMode): BankTransaction[] {
+  const cats = loadCatMap(mode);
   return txns.map((t) => {
     const c = cats[t.id];
     if (!c) return t;
@@ -101,7 +107,7 @@ export function loadBankTransactions(mode: BankLedgerMode = "sample"): BankTrans
     mode === "blank"
       ? [...loadImports("blank")]
       : [...sampleBankTransactions, ...loadImports("sample")];
-  return applyCats(base);
+  return applyCats(base, mode);
 }
 
 function persistImported(all: BankTransaction[], mode: BankLedgerMode = "sample") {
@@ -167,10 +173,11 @@ export function applyCategoryToTransaction(
   const target = findTxnAcrossModes(txnId);
   if (!target) return null;
   if (!isBrowser()) return null;
+  const mode: BankLedgerMode = target.accountId === BLANK_CHEQUE_ACCOUNT_ID ? "blank" : "sample";
 
   const categorisedAt = new Date().toISOString();
   const matched = opts.markMatched !== false;
-  const cats = loadCatMap();
+  const cats = loadCatMap(mode);
   cats[txnId] = {
     accountCode: suggestion.accountCode,
     accountName: suggestion.accountName,
@@ -178,7 +185,7 @@ export function applyCategoryToTransaction(
     matched,
     categorisedAt,
   };
-  localStorage.setItem(CAT_KEY, JSON.stringify(cats));
+  localStorage.setItem(catKeyFor(mode), JSON.stringify(cats));
 
   const updated: BankTransaction = {
     ...target,
@@ -208,11 +215,12 @@ export function categorisedForAccount(txns: BankTransaction[], accountId = CHEQU
 export function clearCategoryFromTransaction(txnId: string): BankTransaction | null {
   const target = findTxnAcrossModes(txnId);
   if (!target || !isBrowser()) return null;
+  const mode: BankLedgerMode = target.accountId === BLANK_CHEQUE_ACCOUNT_ID ? "blank" : "sample";
 
-  const cats = loadCatMap();
+  const cats = loadCatMap(mode);
   if (!(txnId in cats) && !target.matched && !target.accountCode) return target;
   delete cats[txnId];
-  localStorage.setItem(CAT_KEY, JSON.stringify(cats));
+  localStorage.setItem(catKeyFor(mode), JSON.stringify(cats));
 
   const updated: BankTransaction = {
     ...target,
@@ -229,11 +237,11 @@ export function clearCategoryFromTransaction(txnId: string): BankTransaction | n
   return updated;
 }
 
-/** Clear every Apply / Ask AI categorisation override in this browser. */
-export function resetAllCategorisations(): number {
+/** Clear Apply / Ask AI categorisation overrides for one ledger mode. */
+export function resetAllCategorisations(mode: BankLedgerMode = "sample"): number {
   if (!isBrowser()) return 0;
-  const before = Object.keys(loadCatMap()).length;
-  localStorage.removeItem(CAT_KEY);
+  const before = Object.keys(loadCatMap(mode)).length;
+  localStorage.removeItem(catKeyFor(mode));
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("hl-bank-updated", { detail: { resetCats: before } }));
   }
@@ -248,9 +256,9 @@ export function clearImportedTransactions(mode: BankLedgerMode = "sample"): numb
   const imported = loadImports(mode);
   const n = imported.length;
   if (!n) return 0;
-  const cats = loadCatMap();
+  const cats = loadCatMap(mode);
   for (const t of imported) delete cats[t.id];
-  localStorage.setItem(CAT_KEY, JSON.stringify(cats));
+  localStorage.setItem(catKeyFor(mode), JSON.stringify(cats));
   localStorage.removeItem(importKeyFor(mode));
   if (typeof window !== "undefined") {
     window.dispatchEvent(
@@ -323,13 +331,31 @@ export function inferOpeningFromParsedRows(
   return Math.round((Number(first.balance) - first.amount) * 100) / 100;
 }
 
-/** Cash total for blank cheque = opening + sum of imported movements. */
-export function blankChequeBalance(txns: BankTransaction[], opening?: number): number {
-  const open = opening ?? getBlankOpeningBalance();
-  const movements = txns.reduce((s, t) => s + t.amount, 0);
-  return Math.round((open + movements) * 100) / 100;
+/**
+ * Applied / categorised blank-cheque line. Same predicate as "Recently categorised":
+ * category overlay stored in hl_demo_blank_bank_cats_v1 (matched + account code).
+ * Unmatched imports do not move cash. Unmatch / reset drops the overlay so the line drops out.
+ */
+function isCategorisedBlankMovement(t: BankTransaction): boolean {
+  return t.accountId === BLANK_CHEQUE_ACCOUNT_ID && t.matched === true && Boolean(t.accountCode);
 }
 
+/** Sum of categorised blank-cheque movements only (signed amounts). Unmatched lines are excluded. */
 export function blankChequeMovements(txns: BankTransaction[]): number {
-  return Math.round(txns.reduce((s, t) => s + t.amount, 0) * 100) / 100;
+  const movements = txns.reduce((s, t) => {
+    if (!isCategorisedBlankMovement(t)) return s;
+    const amt = Number(t.amount);
+    return Number.isFinite(amt) ? s + amt : s;
+  }, 0);
+  return Math.round(movements * 100) / 100;
+}
+
+/**
+ * Blank cheque cash = saved opening + categorised movements.
+ * Opening of $0 (key present) and unset (key absent) both contribute 0 here;
+ * the card distinguishes them via hasBlankOpeningBalance. Not stored as a second cash figure.
+ */
+export function blankChequeBalance(txns: BankTransaction[], opening?: number): number {
+  const open = opening ?? getBlankOpeningBalance();
+  return Math.round((open + blankChequeMovements(txns)) * 100) / 100;
 }

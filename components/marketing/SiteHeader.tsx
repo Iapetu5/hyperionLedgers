@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
+import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 
 const LINKS = [
   { href: "/product", label: "Product" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/try", label: "How to try" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
@@ -28,7 +30,11 @@ export function SiteHeader({
               <Link
                 key={l.href}
                 href={l.href}
-                className={active ? "font-semibold text-white" : "hover:text-white"}
+                className={
+                    active
+                      ? "font-semibold text-white underline decoration-brand-400 decoration-2 underline-offset-8"
+                      : "hover:text-white"
+                  }
               >
                 {l.label}
               </Link>
@@ -37,13 +43,23 @@ export function SiteHeader({
         </nav>
         <div className="flex items-center gap-2">
           {variant === "marketing" ? (
-            <Link href="/login" className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline">
-              Log in
-            </Link>
-          ) : null}
-          <Link href="/demo" className="btn-primary !px-3">
-            Try the demo
-          </Link>
+            <>
+              <Link href="/login" className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline">
+                Log in
+              </Link>
+              <Link href="/signup" className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline">
+                Sign up
+              </Link>
+              <StartTrialButton className="btn-primary !px-3" showArrow={false} />
+            </>
+          ) : (
+            <>
+              <Link href="/signup" className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline">
+                Sign up
+              </Link>
+              <StartTrialButton className="btn-primary !px-3" showArrow={false} />
+            </>
+          )}
         </div>
       </div>
       <nav className="flex gap-3 overflow-x-auto border-t border-white/10 px-4 py-2 text-xs text-white/70 md:hidden">
@@ -52,6 +68,9 @@ export function SiteHeader({
             {l.label}
           </Link>
         ))}
+        <Link href="/signup" className="whitespace-nowrap font-semibold text-white hover:text-white">
+          Sign up
+        </Link>
       </nav>
     </header>
   );

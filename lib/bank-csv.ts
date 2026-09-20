@@ -282,17 +282,17 @@ export function parseBankCsv(text: string): ParseBankCsvResult {
 }
 
 /** Inline copy of public/sample-bank-statement.csv — used if fetch fails. */
-export const SAMPLE_CSV_TEXT = "date,description,amount,balance\n12/09/2026,OfficeNest Supplies EFT,-412.50,42437.82\n13/09/2026,Client receipt \u2014 Bluegum Dental,2200.00,44637.82\n14/09/2026,Paper & Pixel Print Co,-1265.00,43372.82\n15/09/2026,ATO BAS instalment,($4500.00),38872.82\n16/09/2026,Harbourfront Events deposit,1100.00,39972.82\n17/09/2026,Metro Link Couriers,-88.00,39884.82\n18/09/2026,INTENTIONAL BAD ROW \u2014 missing amount (demo skip),,\n";
+export const SAMPLE_CSV_TEXT = "date,description,amount,balance\n12/09/2026,OfficeNest Supplies EFT,-412.50,42437.82\n13/09/2026,Client receipt \u2014 Bluegum Dental,2200.00,44637.82\n14/09/2026,Paper & Pixel Print Co,-1265.00,43372.82\n15/09/2026,ATO BAS instalment,($4500.00),38872.82\n16/09/2026,Harbourfront Events deposit,1100.00,39972.82\n17/09/2026,Metro Link Couriers,-88.00,39884.82\n";
 export const SAMPLE_CSV_PATH = "/sample-bank-statement.csv";
 
 /** Light starter CSV for blank orgs — no Harbour sample names. */
-export const BLANK_SAMPLE_CSV_TEXT = "date,description,amount,balance\n10/09/2026,Office supplies EFT,-89.50,4910.50\n12/09/2026,Client receipt \u2014 Acme Pty Ltd,1320.00,6230.50\n14/09/2026,Internet & phone,-119.00,6111.50\n15/09/2026,Software subscription,-49.00,6062.50\n18/09/2026,INTENTIONAL BAD ROW \u2014 missing amount (demo skip),,\n";
+export const BLANK_SAMPLE_CSV_TEXT = "date,description,amount,balance\n10/09/2026,Office supplies EFT,-89.50,4910.50\n12/09/2026,Client receipt \u2014 Acme Pty Ltd,1320.00,6230.50\n14/09/2026,Internet & phone,-119.00,6111.50\n15/09/2026,Software subscription,-49.00,6062.50\n";
 export const BLANK_SAMPLE_CSV_PATH = "/blank-bank-statement.csv";
 
 /** Debit/Credit column layout (common AU bank exports). Served from /public/sample-bank-statement-debit-credit.csv */
-export const SAMPLE_DEBIT_CREDIT_CSV_TEXT = "Date,Narrative,Debit,Credit,Balance\n12/09/2026,OfficeNest Supplies EFT,412.50,,42437.82\n13/09/2026,Client receipt \u2014 Bluegum Dental,,2200.00,44637.82\n14/09/2026,Paper & Pixel Print Co,1265.00,,43372.82\n15/09/2026,ATO BAS instalment,4500.00,,38872.82\n16/09/2026,Harbourfront Events deposit,,1100.00,39972.82\n17/09/2026,Metro Link Couriers,88.00,,39884.82\n18/09/2026,INTENTIONAL BAD ROW \u2014 missing amount (demo skip),,,\n";
+export const SAMPLE_DEBIT_CREDIT_CSV_TEXT = "Date,Narrative,Debit,Credit,Balance\n12/09/2026,OfficeNest Supplies EFT,412.50,,42437.82\n13/09/2026,Client receipt \u2014 Bluegum Dental,,2200.00,44637.82\n14/09/2026,Paper & Pixel Print Co,1265.00,,43372.82\n15/09/2026,ATO BAS instalment,4500.00,,38872.82\n16/09/2026,Harbourfront Events deposit,,1100.00,39972.82\n17/09/2026,Metro Link Couriers,88.00,,39884.82\n";
 export const SAMPLE_DEBIT_CREDIT_CSV_PATH = "/sample-bank-statement-debit-credit.csv";
 
 /** Blank-org debit/credit starter — generic names only. */
-export const BLANK_DEBIT_CREDIT_CSV_TEXT = "Date,Narrative,Debit,Credit,Balance\n10/09/2026,Office supplies EFT,89.50,,4910.50\n12/09/2026,Client receipt \u2014 Acme Pty Ltd,,1320.00,6230.50\n14/09/2026,Internet & phone,119.00,,6111.50\n15/09/2026,Software subscription,49.00,,6062.50\n18/09/2026,INTENTIONAL BAD ROW \u2014 missing amount (demo skip),,,\n";
+export const BLANK_DEBIT_CREDIT_CSV_TEXT = "Date,Narrative,Debit,Credit,Balance\n10/09/2026,Office supplies EFT,89.50,,4910.50\n12/09/2026,Client receipt \u2014 Acme Pty Ltd,,1320.00,6230.50\n14/09/2026,Internet & phone,119.00,,6111.50\n15/09/2026,Software subscription,49.00,,6062.50\n";
 export const BLANK_DEBIT_CREDIT_CSV_PATH = "/blank-bank-statement-debit-credit.csv";

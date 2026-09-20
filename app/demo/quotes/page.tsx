@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Copy, ExternalLink, FileSignature, Package, Pencil, Plus, Trash2, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
@@ -14,10 +14,12 @@ import {
   lineItemsToDrafts,
   mixedTaxStarterDrafts,
   tryBeginMixedOneClick,
+  useComposeQuery,
   type LineDraft,
 } from "@/components/demo/LineItemsEditor";
+import { shouldBlockImplicitEnter } from "@/lib/form-enter";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatAUD, formatDateAU } from "@/lib/format";
+import { formatAUD, formatDateAU, todayISO, plusDaysISO } from "@/lib/format";
 import { quotes as sampleQuotes } from "@/lib/sample-data";
 import { docTaxTreatmentSummary, publicQuoteUrl, setPublicDocStatus } from "@/lib/public-docs";
 import { quoteStatus, useDocStatusTick } from "@/lib/use-doc-statuses";
@@ -27,9 +29,7 @@ import {
   effectiveQuoteStatus,
   loadUserQuotes,
   updateUserQuote,
-  type UserQuote,
-  todayISO,
-  plusDaysISO,
+  type UserQuote
 } from "@/lib/user-docs";
 
 export default function QuotesPage() {
@@ -44,6 +44,8 @@ export default function QuotesPage() {
   const [formOk, setFormOk] = useState<string | null>(null);
   /** After create — inline View / Copy so first session reaches the customer link without hunting the table */
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
+  /** List-first: create form collapsed until New / Edit / mixed-tax / post-create. */
+  const [composerOpen, setComposerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [issueDate, setIssueDate] = useState(() => todayISO());
   const [expiryDate, setExpiryDate] = useState(() => plusDaysISO(14));
@@ -63,14 +65,19 @@ export default function QuotesPage() {
   }, [reloadUser]);
 
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const sampleRows = useMemo(
     () =>
       sampleQuotes.map((q) => ({
         ...q,
-        status: quoteStatus(q.id, q.status) as typeof q.status,
+        status: (mounted
+          ? quoteStatus(q.id, q.status)
+          : q.status) as typeof q.status,
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tick],
+    [tick, mounted],
   );
 
   async function copyLink(id: string) {
@@ -102,6 +109,28 @@ export default function QuotesPage() {
   }
 
   /** One-click: Acme + GST/GST-free lines → customer-link strip (no second Create click). */
+  function openComposer(opts?: { reset?: boolean }) {
+    if (opts?.reset !== false) {
+      resetForm();
+      setLastCreatedId(null);
+      setFormOk(null);
+    }
+    setComposerOpen(true);
+    window.setTimeout(() => {
+      document.getElementById("qu-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      (document.getElementById("qu-contact") as HTMLInputElement | null)?.focus();
+    }, 40);
+  }
+
+  function closeComposer() {
+    resetForm();
+    setLastCreatedId(null);
+    setFormOk(null);
+    setFormError(null);
+    setComposerOpen(false);
+  }
+
+
   function createMixedTaxSample() {
     if (!tryBeginMixedOneClick()) return;
     const draftLines = mixedTaxStarterDrafts("income");
@@ -184,6 +213,8 @@ export default function QuotesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + same-path mixed links only
   }, []);
 
+  useComposeQuery(openComposer);
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -211,7 +242,7 @@ export default function QuotesPage() {
     if ("error" in res) {
       const nudge =
         /amount|line/i.test(res.error) && !editingId
-          ? " Tip: use Create mixed-tax sample above for a one-click GST + GST-free quote."
+          ? " Tip: use Create sample above for a ready-made quote with GST and GST-free lines."
           : "";
       setFormError(`${res.error}${nudge}`);
       return;
@@ -246,6 +277,7 @@ export default function QuotesPage() {
         : [
             emptyLineDraft({
               description: q.reference,
+              unitPriceEx: String(Math.round((q.amount - q.gst) * 100) / 100),
               amountEx: String(Math.round((q.amount - q.gst) * 100) / 100),
               taxRate: q.gst > 0 ? "GST" : "GST-free",
             }),
@@ -253,6 +285,7 @@ export default function QuotesPage() {
     );
     setFormError(null);
     setLastCreatedId(null);
+    setComposerOpen(true);
     setFormOk(`Editing ${q.id} — update contact, lines, dates, or status.`);
     if (typeof document !== "undefined") {
       document.getElementById("qu-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -267,8 +300,21 @@ export default function QuotesPage() {
     setFormOk(`Removed ${id}. Create a new quote above if you need a fresh draft.`);
   }
 
+  function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {
+    const el = e.target instanceof HTMLElement ? e.target : null;
+    if (
+      shouldBlockImplicitEnter({
+        key: e.key,
+        tagName: el?.tagName,
+        composing: e.nativeEvent.isComposing,
+      })
+    ) {
+      e.preventDefault();
+    }
+  }
+
   const createForm = (
-    <form id="qu-form" className="card scroll-mt-4 space-y-4 p-5" onSubmit={onSubmit}>
+    <form onKeyDown={blockImplicitEnter} id="qu-form" className="card scroll-mt-4 space-y-4 p-5" onSubmit={onSubmit}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-semibold text-white">
           {editingId ? `Edit ${editingId}` : "Create quote"}
@@ -276,7 +322,7 @@ export default function QuotesPage() {
         <span className="text-xs text-slate-400">
           {editingId
             ? "Same id & customer link · edit dates & status · browser only"
-            : "Tax-exclusive lines · GST on Income / GST Free Income · set issue, expiry & status · browser only"}
+            : "Line amounts before GST · choose GST or GST-free on each line · issue, expiry & status · saved in this browser"}
         </span>
       </div>
       <div>
@@ -368,16 +414,14 @@ export default function QuotesPage() {
               onClick={createMixedTaxSample}
             >
               <Plus size={12} />
-              Create mixed-tax sample
+              Create sample
             </button>
             <button type="button" className="btn-secondary !px-2.5 !py-1 text-xs" onClick={prefillMixedTaxDraft}>
               Prefill draft
             </button>
             <Link
-              href="/demo/products"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Opens in a new tab — keeps this form open"
+              href="/demo/products?from=quote#product-form"
+              title="Add one product (name, price, tax), then return and pick it"
               className="btn-secondary !px-2.5 !py-1 text-xs"
             >
               <Package size={12} />
@@ -389,7 +433,7 @@ export default function QuotesPage() {
           </div>
           {!lastCreatedId && (
             <p className="rounded-lg border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100/90">
-              Tip: <strong className="text-white">Create mixed-tax sample</strong> is enough for a{" "}
+              Tip: <strong className="text-white">Create sample</strong> is enough for a{" "}
               <strong className="text-white">GST on Income</strong> +{" "}
               <strong className="text-white">GST Free Income</strong> demo — then{" "}
               <strong className="text-white">View quote link</strong> for the nebula quote header.
@@ -411,7 +455,7 @@ export default function QuotesPage() {
             </>
           )}
         </button>
-        {editingId && (
+        {editingId ? (
           <button
             type="button"
             className="btn-secondary"
@@ -424,6 +468,11 @@ export default function QuotesPage() {
             <X size={16} />
             Cancel edit
           </button>
+        ) : (
+          <button type="button" className="btn-secondary" onClick={closeComposer}>
+            <X size={16} />
+            Hide form
+          </button>
         )}
       </div>
       <p className="text-xs text-slate-400">
@@ -431,6 +480,34 @@ export default function QuotesPage() {
       </p>
     </form>
   );
+
+  const showComposer = Boolean(editingId) || composerOpen || Boolean(lastCreatedId);
+
+  function pageHeader(subtitle: ReactNode) {
+    return (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Quotes</h1>
+          <p className="text-sm text-white/70">{subtitle}</p>
+          <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
+            <input
+              type="checkbox"
+              className="rounded border-white/20 bg-black/30"
+              checked={showTaxTreatment}
+              onChange={(e) => setShowTaxTreatment(e.target.checked)}
+            />
+            Show tax treatment summary
+          </label>
+        </div>
+        {!showComposer && (
+          <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
+            <Plus size={16} />
+            New quote
+          </button>
+        )}
+      </div>
+    );
+  }
 
   function userActions(q: UserQuote) {
     return (
@@ -482,121 +559,132 @@ export default function QuotesPage() {
       (q) => effectiveQuoteStatus({ status: q.status, expiryDate: q.expiryDate }) === "Expired",
     );
     const openQuoteTotal = [...awaitingQuotes, ...expiredQuotes].reduce((sum, q) => sum + q.amount, 0);
+
+    const listOrEmpty =
+      userRows.length === 0 && !showComposer ? (
+        <EmptyState
+          icon={FileSignature}
+          title="No quotes yet"
+          description="Create your first quote, or start from a ready-made example with a customer link."
+          showExploreSample
+          actions={[
+            {
+              label: "Create sample quote",
+              primary: true,
+              onClick: () => createMixedTaxSample(),
+            },
+            {
+              label: "New quote",
+              onClick: () => openComposer(),
+            },
+            { label: "Back to overview", href: "/demo" },
+          ]}
+          hint="Harbour & Co sample quotes stay in the guest demo — they are not copied into your organisation."
+        />
+      ) : userRows.length === 0 ? null : (
+        <div className="card overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="table-head">
+              <tr>
+                <th className="px-4 py-3">Quote</th>
+                <th className="px-4 py-3">Contact</th>
+                <th className="px-4 py-3">Expiry</th>
+                <th className="px-4 py-3">Amount</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="min-w-[14rem] px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {userRows.map((q) => (
+                <tr key={q.id} className="table-row">
+                  <td className="px-4 py-3 font-medium">
+                    {q.id}
+                    <div className="text-xs text-slate-400">{q.reference}</div>
+                  </td>
+                  <td className="px-4 py-3">{q.contact}</td>
+                  <td className="px-4 py-3">{formatDateAU(q.expiryDate)}</td>
+                  <td className="px-4 py-3">
+                    {formatAUD(q.amount)}
+                    {showTaxTreatment && (
+                      <div className="text-xs text-slate-400">
+                        {docTaxTreatmentSummary(q.lineItems, q.gst)}
+                        {q.gst > 0 ? ` · GST ${formatAUD(q.gst)}` : ""}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge
+                      status={effectiveQuoteStatus({
+                        status: quoteStatus(q.id, q.status) as UserQuote["status"],
+                        expiryDate: q.expiryDate,
+                      })}
+                    />
+                  </td>
+                  <td className="px-4 py-3">{userActions(q)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+
     return (
       <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Quotes</h1>
-          <p className="text-sm text-white/70">
-            {userRows.length === 0 ? (
-              <>
-                Blank ledger — create a basic quote here (browser only), or explore Harbour &amp; Co for the full sample list. Sent quotes past their expiry date show Expired automatically.
-              </>
-            ) : (
-              <>
-                Open quotes: <strong className="text-cyan-200">{formatAUD(openQuoteTotal)}</strong>
-                {" · "}
-                {awaitingQuotes.length} awaiting
-                {" · "}
-                {expiredQuotes.length} expired
-                {" · "}
-                browser-local only
-              </>
-            )}
-          </p>
-          <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
-            <input
-              type="checkbox"
-              className="rounded border-white/20 bg-black/30"
-              checked={showTaxTreatment}
-              onChange={(e) => setShowTaxTreatment(e.target.checked)}
-            />
-            Show tax treatment summary
-          </label>
-        </div>
-
-        {createForm}
-
-        {userRows.length === 0 ? (
-          <EmptyState
-            icon={FileSignature}
-            title="No quotes yet"
-            description="Create your first quote above, or open the Harbour & Co sample as a guest to see accept and decline examples."
-            showExploreSample
-            actions={[
-              { label: "Back to overview", href: "/demo" },
-              { label: "Account settings", href: "/demo/account" },
-            ]}
-            hint="Sample quotes live in the guest demo — they are not copied into your blank org."
-          />
-        ) : (
-          <div className="card overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="table-head">
-                <tr>
-                  <th className="px-4 py-3">Quote</th>
-                  <th className="px-4 py-3">Contact</th>
-                  <th className="px-4 py-3">Expiry</th>
-                  <th className="px-4 py-3">Amount</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="min-w-[14rem] px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {userRows.map((q) => (
-                  <tr key={q.id} className="table-row">
-                    <td className="px-4 py-3 font-medium">
-                      {q.id}
-                      <div className="text-xs text-slate-400">{q.reference}</div>
-                    </td>
-                    <td className="px-4 py-3">{q.contact}</td>
-                    <td className="px-4 py-3">{formatDateAU(q.expiryDate)}</td>
-                    <td className="px-4 py-3">
-                      {formatAUD(q.amount)}
-                      {showTaxTreatment && (
-                        <div className="text-xs text-slate-400">
-                          {docTaxTreatmentSummary(q.lineItems, q.gst)}
-                          {q.gst > 0 ? ` · GST ${formatAUD(q.gst)}` : ""}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge
-                        status={effectiveQuoteStatus({
-                          status: quoteStatus(q.id, q.status) as UserQuote["status"],
-                          expiryDate: q.expiryDate,
-                        })}
-                      />
-                    </td>
-                    <td className="px-4 py-3">{userActions(q)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {pageHeader(
+          userRows.length === 0 ? (
+            <>
+              Create a basic quote (saved in this browser), or explore Harbour &amp; Co for the full sample list. Sent quotes past expiry show Expired automatically.
+            </>
+          ) : (
+            <>
+              Open quotes: <strong className="text-cyan-200">{formatAUD(openQuoteTotal)}</strong>
+              {" · "}
+              {awaitingQuotes.length} awaiting
+              {" · "}
+              {expiredQuotes.length} expired
+              {" · "}
+              browser-local only
+            </>
+          ),
         )}
+        {!showComposer && listOrEmpty}
+        {showComposer && createForm}
+        {showComposer && listOrEmpty}
       </div>
     );
   }
 
+  const sampleAwaiting = sampleRows.filter(
+    (q) =>
+      effectiveQuoteStatus({
+        status: q.status as UserQuote["status"],
+        expiryDate: q.expiryDate,
+      }) === "Sent",
+  );
+  const sampleExpired = sampleRows.filter(
+    (q) =>
+      effectiveQuoteStatus({
+        status: q.status as UserQuote["status"],
+        expiryDate: q.expiryDate,
+      }) === "Expired",
+  );
+  const sampleOpenTotal = sampleAwaiting.reduce((sum, q) => sum + q.amount, 0);
+
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Quotes</h1>
-        <p className="text-sm text-white/70">
-          Harbour &amp; Co sample list below — or create a simple quote (browser only) with the same customer link and nebula print header. Accept/decline is simulated. Sent quotes past expiry show Expired automatically (Draft stays Draft).
-        </p>
-        <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
-          <input
-            type="checkbox"
-            className="rounded border-white/20 bg-black/30"
-            checked={showTaxTreatment}
-            onChange={(e) => setShowTaxTreatment(e.target.checked)}
-          />
-          Show tax treatment summary
-        </label>
-      </div>
+      {pageHeader(
+        <>
+          Awaiting: <strong className="text-cyan-200">{formatAUD(sampleOpenTotal)}</strong>
+          {" · "}
+          {sampleAwaiting.length} open
+          {" · "}
+          {sampleExpired.length} expired
+          {" · "}
+          sample + your browser-local creates below
+        </>,
+      )}
 
-      {createForm}
+      {showComposer && createForm}
 
       {userRows.length > 0 && (
         <div className="card overflow-x-auto">

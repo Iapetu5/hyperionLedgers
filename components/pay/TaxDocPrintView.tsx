@@ -16,7 +16,10 @@ export function TaxDocPrintView({ doc }: { doc: Doc }) {
     <div className="tax-doc-sheet bg-transparent text-slate-900">
       <div className="doc-header -mx-6 -mt-6 flex flex-wrap items-start justify-between gap-4 print:mx-0 print:mt-0">
         <div>
-          <p className="text-base font-semibold">{doc.businessName}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">
+            HyperionLedgers
+          </p>
+          <p className="mt-1 text-base font-semibold">{doc.businessName}</p>
           <p className="text-sm text-white/70">
             {doc.businessAbn ? <>ABN {doc.businessAbn}</> : "ABN not set"}
           </p>
@@ -67,6 +70,7 @@ export function TaxDocPrintView({ doc }: { doc: Doc }) {
           <tr>
             <th className="py-2 pr-2">Description</th>
             <th className="py-2 pr-2">Qty</th>
+            <th className="py-2 pr-2 text-right">Unit (ex tax)</th>
             <th className="py-2 pr-2">Tax</th>
             <th className="py-2 text-right">Amount (ex tax)</th>
           </tr>
@@ -76,6 +80,7 @@ export function TaxDocPrintView({ doc }: { doc: Doc }) {
             <tr key={i} className="border-b border-slate-100">
               <td className="py-2 pr-2">{li.description}</td>
               <td className="py-2 pr-2">{li.qty}</td>
+              <td className="py-2 pr-2 text-right">{formatAUD(li.unitPrice)}</td>
               <td className="py-2 pr-2 text-xs text-slate-600">{docLineTaxLabel(li.taxRate)}</td>
               <td className="py-2 text-right">{formatAUD(li.amount)}</td>
             </tr>

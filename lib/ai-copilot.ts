@@ -26,11 +26,15 @@ import {
   tasks,
 } from "@/lib/sample-data";
 import {
+  blankNextInsight,
+  effectiveBillStatus,
   effectiveInvoiceStatus,
   effectiveQuoteStatus,
   effectiveSampleBillStatus,
+  loadUserBills,
   loadUserInvoices,
   loadUserQuotes,
+  type UserInvoice,
   type UserQuote,
 } from "@/lib/user-docs";
 
@@ -144,18 +148,55 @@ function overdueInvoicesTotal() {
   return overdueInvoices().reduce((sum, i) => sum + i.amount, 0);
 }
 
+const INV_STORED: UserInvoice["status"][] = ["Draft", "Awaiting payment", "Paid", "Overdue"];
+const QUOTE_STORED: UserQuote["status"][] = ["Draft", "Sent", "Accepted", "Declined"];
+
+/** Same resolver the invoice list uses: public pay-page override, then Sydney due-date rule. */
+function userInvoiceDisplay(inv: UserInvoice): UserInvoice["status"] {
+  const raw = getInvoiceStatus(inv.id, inv.status);
+  const stored = (INV_STORED.includes(raw as UserInvoice["status"]) ? raw : inv.status) as UserInvoice["status"];
+  return effectiveInvoiceStatus({ status: stored, dueDate: inv.dueDate });
+}
+
+function userQuoteDisplay(q: UserQuote) {
+  const raw = getQuoteStatus(q.id, q.status);
+  const stored = (QUOTE_STORED.includes(raw as UserQuote["status"]) ? raw : q.status) as UserQuote["status"];
+  return effectiveQuoteStatus({ status: stored, expiryDate: q.expiryDate });
+}
+
 /** Blank-ledger user invoices past due (display status), unpaid — demo-local only. */
 function overdueUserInvoices() {
-  return loadUserInvoices().filter(
-    (i) => effectiveInvoiceStatus(i) === "Overdue",
+  return loadUserInvoices().filter((i) => userInvoiceDisplay(i) === "Overdue");
+}
+
+function awaitingPaymentUserInvoices() {
+  return loadUserInvoices().filter((i) => userInvoiceDisplay(i) === "Awaiting payment");
+}
+
+function userReceivablesTotal() {
+  return loadUserInvoices()
+    .filter((i) => {
+      const st = userInvoiceDisplay(i);
+      return st === "Awaiting payment" || st === "Overdue";
+    })
+    .reduce((sum, i) => sum + i.amount, 0);
+}
+
+/** Blank-ledger user bills past due (display status), unpaid — demo-local only. */
+function overdueUserBills() {
+  return loadUserBills().filter(
+    (b) => effectiveBillStatus(b) === "Overdue",
   );
+}
+
+/** Blank-ledger user quotes still Sent (not expired/accepted/declined). */
+function awaitingUserQuotes() {
+  return loadUserQuotes().filter((q) => userQuoteDisplay(q) === "Sent");
 }
 
 /** Blank-ledger user quotes past expiry (display status) — demo-local only. */
 function expiredUserQuotes() {
-  return loadUserQuotes().filter(
-    (q) => effectiveQuoteStatus(q) === "Expired",
-  );
+  return loadUserQuotes().filter((q) => userQuoteDisplay(q) === "Expired");
 }
 
 function pickUnmatched(blankLedger = false): BankTransaction[] {
@@ -189,19 +230,49 @@ function detectIntent(question: string): AiIntent {
 
 function replyNext(): AiReply {
   const overdueInv = overdueInvoices();
+  const odBills = overdueBills();
+  const odBillsTotal = overdueBillsTotal();
   const maple = overdueInv.find((i) => i.id === "INV-1038") ?? overdueInv[0];
   const unmatched = pickUnmatched();
   const nextBas = getNextBasDue();
+  const quotesAwaiting = quotes.filter((q) => {
+    const stored = getQuoteStatus(q.id, q.status) as UserQuote["status"];
+    return effectiveQuoteStatus({ status: stored, expiryDate: q.expiryDate }) === "Sent";
+  }).length;
+  const quotesExpired = quotes.filter((q) => {
+    const stored = getQuoteStatus(q.id, q.status) as UserQuote["status"];
+    return effectiveQuoteStatus({ status: stored, expiryDate: q.expiryDate }) === "Expired";
+  }).length;
 
   const citations: AiCitation[] = [
-    { label: "Overdue bills", value: formatAUD(overdueBillsTotal()), source: "overdueBills · effectiveSampleBillStatus" },
     { label: "Cash on hand", value: formatAUD(kpis.cashOnHand), source: "kpis.cashOnHand" },
   ];
+  if (odBills.length) {
+    citations.push({
+      label: "Overdue bills",
+      value: formatAUD(odBillsTotal),
+      source: "overdueBills · effectiveSampleBillStatus",
+    });
+  }
   if (maple) {
     citations.push({
       label: `${maple.id} · ${maple.contact}`,
       value: `${formatAUD(maple.amount)} overdue (due ${formatDateAU(maple.dueDate)})`,
       source: "invoices sample",
+    });
+  }
+  if (quotesAwaiting) {
+    citations.push({
+      label: "Quotes awaiting",
+      value: String(quotesAwaiting),
+      source: "quotes · effectiveQuoteStatus",
+    });
+  }
+  if (quotesExpired) {
+    citations.push({
+      label: "Expired quotes",
+      value: String(quotesExpired),
+      source: "quotes · effectiveQuoteStatus",
     });
   }
   if (unmatched.length) {
@@ -211,20 +282,44 @@ function replyNext(): AiReply {
     citations.push({ label: "Next BAS due", value: formatDateAU(nextBas.dueDate), source: nextBas.quarterLabel });
   }
 
+  const priorityBits: string[] = [];
+  if (odBills.length) {
+    priorityBits.push(
+      `clear overdue bills totalling ${formatAUD(odBillsTotal)} (${odBills.length} supplier${odBills.length === 1 ? "" : "s"})`,
+    );
+  }
+  if (maple) {
+    priorityBits.push(`chase ${maple.contact} on ${maple.id} (${formatAUD(maple.amount)} overdue)`);
+  }
+  const priority =
+    priorityBits.length > 0
+      ? `Priority: ${priorityBits.join(", and ")}.`
+      : quotesAwaiting > 0
+        ? `Overdue payables and receivables look clear — ${quotesAwaiting} quote${quotesAwaiting === 1 ? "" : "s"} still awaiting a reply.`
+        : quotesExpired > 0
+          ? `Overdue payables and receivables look clear — ${quotesExpired} expired quote${quotesExpired === 1 ? "" : "s"} could be refreshed or archived.`
+          : "Overdue payables and receivables look clear for now.";
+
   const prose = [
     `Cash looks healthy (${formatAUD(kpis.cashOnHand)} on hand).`,
-    `Priority: clear overdue bills totalling ${formatAUD(overdueBillsTotal())} (${overdueBills().length} suppliers),`,
-    maple ? `and chase ${maple.contact} on ${maple.id} (${formatAUD(maple.amount)} overdue).` : "and review overdue receivables.",
+    priority,
     unmatched.length ? `There are also ${unmatched.length} unmatched bank lines ready to categorise.` : "",
     nextBas ? `Next BAS lodgement window is ${formatDateAU(nextBas.dueDate)} for ${nextBas.quarterLabel} (demo draft only).` : "",
   ].filter(Boolean).join(" ");
 
-  const actions: AiAction[] = [
-    { id: "bills", label: "Review overdue bills", kind: "link", href: "/demo/bills" },
-  ];
+  const actions: AiAction[] = [];
+  if (odBills.length) {
+    actions.push({ id: "bills", label: "Review overdue bills", kind: "link", href: "/demo/bills" });
+  }
   if (maple) {
     actions.push({ id: "chase-pay", label: `Open ${maple.id} payment page`, kind: "link", href: `/pay/invoice/${maple.id}` });
     actions.push({ id: "chase-list", label: "Invoices list", kind: "link", href: "/demo/invoices" });
+  }
+  if (!odBills.length && !maple && quotesAwaiting > 0) {
+    actions.push({ id: "quotes", label: "Review quotes awaiting", kind: "link", href: "/demo/quotes" });
+  }
+  if (!odBills.length && !maple && quotesAwaiting === 0 && quotesExpired > 0) {
+    actions.push({ id: "quotes-ex", label: "Review expired quotes", kind: "link", href: "/demo/quotes" });
   }
   if (unmatched.length) {
     actions.push({ id: "cat", label: "Categorise bank lines", kind: "prompt", prompt: "Categorise unmatched bank lines" });
@@ -232,13 +327,20 @@ function replyNext(): AiReply {
   if (nextBas) {
     actions.push({ id: "bas", label: "Open GST & BAS", kind: "link", href: "/demo/tax/gst-bas" });
   }
+  if (actions.length === 0) {
+    actions.push({ id: "inv", label: "Invoices list", kind: "link", href: "/demo/invoices" });
+  }
 
   return {
     intent: "next",
     prose,
     citations,
     actions,
-    chips: ["When is BAS due?", "Categorise unmatched bank lines", "Chase Maple & Pine"],
+    chips: [
+      "When is BAS due?",
+      "Categorise unmatched bank lines",
+      maple ? `Chase ${maple.contact}` : "What should I do next?",
+    ],
     disclaimer: AI_DISCLAIMER,
   };
 }
@@ -355,25 +457,55 @@ function replyCategorise(question: string, blankLedger = false): AiReply {
 function replyChase(): AiReply {
   const maple = invoices.find((i) => i.id === "INV-1038")!;
   const mapleStatus = effectiveInvoiceStatus({
-    status: getInvoiceStatus(maple.id, maple.status) as
-      | "Draft"
-      | "Awaiting payment"
-      | "Paid"
-      | "Overdue",
+    status: getInvoiceStatus(maple.id, maple.status) as UserInvoice["status"],
     dueDate: maple.dueDate,
   });
+  const overdue = overdueInvoices();
   const odTotal = overdueInvoicesTotal();
-  const odCount = overdueInvoices().length;
+  const top = overdue.find((i) => i.id === "INV-1038") ?? overdue[0];
+
+  if (top) {
+    return {
+      intent: "chase_overdue",
+      prose: `${top.contact} owes ${formatAUD(top.amount)} on ${top.id} (due ${formatDateAU(top.dueDate)}, status Overdue) for “${top.reference}”. Harbour sample overdue invoices total ${formatAUD(odTotal)} across ${overdue.length} customer${overdue.length === 1 ? "" : "s"}. Share the customer payment link or follow up from the invoices list. Demo only — no live email send.`,
+      citations: [
+        { label: top.id, value: `${formatAUD(top.amount)} · ${top.contact}`, source: `due ${formatDateAU(top.dueDate)} · Overdue` },
+        { label: "Overdue invoices", value: formatAUD(odTotal), source: "overdueInvoices · effectiveInvoiceStatus" },
+      ],
+      actions: [
+        { id: "pay", label: `Open /pay/invoice/${top.id}`, kind: "link", href: `/pay/invoice/${top.id}` },
+        { id: "inv", label: "Invoices list", kind: "link", href: "/demo/invoices" },
+      ],
+      chips: ["What should I do next?", "When is BAS due?"],
+      disclaimer: AI_DISCLAIMER,
+    };
+  }
+
+  const mapleNote =
+    mapleStatus === "Paid"
+      ? `${maple.contact} on ${maple.id} is already Paid (due ${formatDateAU(maple.dueDate)}) — nothing left to chase.`
+      : mapleStatus === "Awaiting payment"
+        ? `${maple.id} (${maple.contact}) is Awaiting payment, due ${formatDateAU(maple.dueDate)} — not overdue yet.`
+        : mapleStatus === "Draft"
+          ? `${maple.id} is still a Draft — not open for a chase.`
+          : `${maple.id} status is ${mapleStatus}.`;
+  const odBills = overdueBills();
+  const billNote = odBills.length
+    ? ` Overdue bills still total ${formatAUD(overdueBillsTotal())} across ${odBills.length} supplier${odBills.length === 1 ? "" : "s"}.`
+    : "";
+
   return {
     intent: "chase_overdue",
-    prose: `${maple.contact} owes ${formatAUD(maple.amount)} on ${maple.id} (due ${formatDateAU(maple.dueDate)}, status ${mapleStatus}) for “${maple.reference}”. Harbour sample overdue invoices total ${formatAUD(odTotal)} across ${odCount} customer${odCount === 1 ? "" : "s"}. Share the customer payment link or follow up from the invoices list. Demo only — no live email send.`,
+    prose: `No Harbour invoices are overdue right now. ${mapleNote}${billNote} Demo only — no live email send.`,
     citations: [
-      { label: maple.id, value: `${formatAUD(maple.amount)} · ${maple.contact}`, source: `due ${formatDateAU(maple.dueDate)} · ${mapleStatus}` },
-      { label: "Overdue invoices", value: formatAUD(odTotal), source: "overdueInvoices · effectiveInvoiceStatus" },
+      { label: maple.id, value: `${formatAUD(maple.amount)} · ${mapleStatus}`, source: `due ${formatDateAU(maple.dueDate)} · effectiveInvoiceStatus` },
+      { label: "Overdue invoices", value: formatAUD(0), source: "overdueInvoices · effectiveInvoiceStatus" },
     ],
     actions: [
-      { id: "pay", label: `Open /pay/invoice/${maple.id}`, kind: "link", href: `/pay/invoice/${maple.id}` },
       { id: "inv", label: "Invoices list", kind: "link", href: "/demo/invoices" },
+      ...(odBills.length
+        ? [{ id: "bills", label: "Review overdue bills", kind: "link" as const, href: "/demo/bills" }]
+        : []),
     ],
     chips: ["What should I do next?", "When is BAS due?"],
     disclaimer: AI_DISCLAIMER,
@@ -424,9 +556,11 @@ function replyInvoices(): AiReply {
     })),
     actions: [
       { id: "list", label: "Invoices", kind: "link", href: "/demo/invoices" },
-      { id: "chase", label: "Chase INV-1038", kind: "link", href: "/pay/invoice/INV-1038" },
+      ...(maple
+        ? [{ id: "chase", label: `Chase ${maple.id}`, kind: "link" as const, href: `/pay/invoice/${maple.id}` }]
+        : []),
     ],
-    chips: ["Chase Maple & Pine", "What should I do next?"],
+    chips: maple ? [`Chase ${maple.contact}`, "What should I do next?"] : ["What should I do next?", "When is BAS due?"],
     disclaimer: AI_DISCLAIMER,
   };
 }
@@ -574,35 +708,121 @@ function replyUnknown(): AiReply {
 
 function replyBlankNext(orgName?: string): AiReply {
   const who = orgName || "your organisation";
-  const od = overdueUserInvoices();
+  const odInv = overdueUserInvoices();
+  const odBills = overdueUserBills();
+  const odBillsTotal = odBills.reduce((sum, b) => sum + b.amount, 0);
+  const chase = odInv[0];
+  const awaiting = awaitingUserQuotes();
   const ex = expiredUserQuotes();
+  const awaitingPay = awaitingPaymentUserInvoices();
+  const receivables = userReceivablesTotal();
+  const hasAnyDocs =
+    loadUserInvoices().length + loadUserQuotes().length + loadUserBills().length > 0;
   const statusNote =
     " Past-due unpaid invoices show Overdue and Sent quotes past expiry show Expired automatically (Draft stays Draft).";
-  const liveNote =
-    od.length || ex.length
-      ? ` Right now: ${od.length} overdue invoice${od.length === 1 ? "" : "s"}, ${ex.length} expired quote${ex.length === 1 ? "" : "s"} in this browser.`
-      : "";
+
+  const priority = blankNextInsight({
+    overdueBillAmounts: odBills.map((b) => b.amount),
+    overdueInvoice: chase,
+    quotesAwaiting: awaiting.length,
+    quotesExpired: ex.length,
+    receivables,
+    hasAnyDocs,
+  });
+
+  const prose = [
+    `${who} is on a blank starting ledger (no Harbour sample KPIs).`,
+    priority,
+    statusNote.trim(),
+  ].join(" ");
+
+  const citations: AiCitation[] = [
+    { label: "Ledger mode", value: "Blank", source: "onboarding choice" },
+    { label: "Org", value: who, source: "session" },
+  ];
+  if (odBills.length) {
+    citations.push({
+      label: "Your overdue bills",
+      value: formatAUD(odBillsTotal),
+      source: "user bills · effectiveBillStatus",
+    });
+  }
+  if (chase) {
+    citations.push({
+      label: `${chase.id} · ${chase.contact}`,
+      value: `${formatAUD(chase.amount)} overdue (due ${formatDateAU(chase.dueDate)})`,
+      source: "user invoices · effectiveInvoiceStatus",
+    });
+  }
+  if (receivables > 0) {
+    citations.push({
+      label: "Receivables",
+      value: formatAUD(receivables),
+      source: "user invoices · effectiveInvoiceStatus",
+    });
+  }
+  if (awaitingPay.length) {
+    const first = awaitingPay[0];
+    citations.push({
+      label: `${first.id} · ${first.contact}`,
+      value: `${formatAUD(first.amount)} awaiting payment`,
+      source: "user invoices · effectiveInvoiceStatus",
+    });
+  }
+  if (awaiting.length) {
+    citations.push({
+      label: "Quotes awaiting",
+      value: String(awaiting.length),
+      source: "user quotes · effectiveQuoteStatus",
+    });
+  }
+  if (ex.length) {
+    citations.push({
+      label: "Expired quotes",
+      value: String(ex.length),
+      source: "user quotes · effectiveQuoteStatus",
+    });
+  }
+
+  const actions: AiAction[] = [];
+  if (odBills.length) {
+    actions.push({ id: "bills", label: "Review overdue bills", kind: "link", href: "/demo/bills" });
+  }
+  if (chase) {
+    actions.push({ id: "chase-pay", label: `Open ${chase.id} payment page`, kind: "link", href: `/pay/invoice/${chase.id}` });
+    actions.push({ id: "chase-list", label: "Invoices list", kind: "link", href: "/demo/invoices" });
+  }
+  if (!odBills.length && !chase && awaiting.length > 0) {
+    actions.push({ id: "quotes", label: "Review quotes awaiting", kind: "link", href: "/demo/quotes" });
+  }
+  if (!odBills.length && !chase && awaiting.length === 0 && ex.length > 0) {
+    actions.push({ id: "quotes-ex", label: "Review expired quotes", kind: "link", href: "/demo/quotes" });
+  }
+  if (actions.length === 0) {
+    if (loadUserInvoices().length > 0) {
+      actions.push({ id: "inv", label: "Review invoices", kind: "link", href: "/demo/invoices" });
+      const open = awaitingPay[0] ?? odInv[0];
+      if (open) {
+        actions.push({
+          id: "pay",
+          label: `Pay link · ${open.id}`,
+          kind: "link",
+          href: `/pay/invoice/${encodeURIComponent(open.id)}`,
+        });
+      }
+    } else {
+      actions.push({ id: "inv", label: "Create mixed-tax invoice", kind: "link", href: "/demo/invoices?mixed=1" });
+      actions.push({ id: "qu", label: "Create mixed-tax quote", kind: "link", href: "/demo/quotes?mixed=1" });
+      actions.push({ id: "bill", label: "Create mixed-tax bill", kind: "link", href: "/demo/bills?mixed=1" });
+    }
+    actions.push({ id: "sample", label: "Overview", kind: "link", href: "/demo" });
+  }
+
   return {
     intent: "next",
-    prose: `${who} is on a blank starting ledger — no Harbour sample cash or overdue invoices. Sensible next steps: create an invoice or quote (pay/print links work in this browser), open Banking for your own cheque account (set an opening balance, Try starter CSV, or upload a statement), try a mixed-tax bill (?mixed=1) then Approve / Mark paid / Print in back office (bills have no public pay URL), or explore Harbour & Co as a guest for the fuller sample story (Unmatch/Reset, BAS figures).${statusNote}${liveNote} Ask AI still works; sample KPIs only apply in the guest demo.`,
-    citations: [
-      { label: "Ledger mode", value: "Blank", source: "onboarding choice" },
-      { label: "Org", value: who, source: "session" },
-      { label: "Blank banking", value: "Own cheque + starter CSV", source: "/demo/banking" },
-      ...(od.length
-        ? [{ label: "Your overdue invoices", value: String(od.length), source: "user invoices · effectiveInvoiceStatus" }]
-        : []),
-      ...(ex.length
-        ? [{ label: "Your expired quotes", value: String(ex.length), source: "user quotes · effectiveQuoteStatus" }]
-        : []),
-    ],
-    actions: [
-      { id: "inv", label: "Create mixed-tax invoice", kind: "link", href: "/demo/invoices?mixed=1" },
-      { id: "qu", label: "Create mixed-tax quote", kind: "link", href: "/demo/quotes?mixed=1" },
-      { id: "bill", label: "Create mixed-tax bill", kind: "link", href: "/demo/bills?mixed=1" },
-      { id: "bank", label: "Blank banking", kind: "link", href: "/demo/banking" },
-      { id: "sample", label: "Overview / explore sample", kind: "link", href: "/demo" },
-    ],
+    prose,
+    citations,
+    actions,
     chips: BLANK_SUGGESTED_CHIPS,
     disclaimer: AI_DISCLAIMER,
   };

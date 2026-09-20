@@ -3,9 +3,12 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
 export const metadata: Metadata = {
-  title: "HyperionLedgers — Australian bookkeeping demo",
+  title: "HyperionLedgers — Australian bookkeeping",
   description:
-    "HyperionLedgers demo: invoicing, quotes, GST/BAS and cash insights for Australian small business. Sample data only.",
+    "Australian bookkeeping: invoices, GST/BAS and cash in plain English. $69 a month after a 14-day free trial. No ATO lodgement.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://www.hyperioninvoices.com.au"
+  ),
   icons: {
     icon: "/black-hole-logo.svg",
   },

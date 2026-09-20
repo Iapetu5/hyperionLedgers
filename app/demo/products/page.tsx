@@ -11,11 +11,15 @@ import {
   SAMPLE_PRODUCTS,
   createUserProduct,
   deleteUserProduct,
+  catalogueReturnComposeHref,
+  catalogueReturnMeta,
   filterProducts,
   loadProductsForMode,
   loadUserProducts,
+  parseCatalogueReturn,
   updateUserProduct,
   xeroTaxLabel,
+  type CatalogueReturnKind,
   type Product,
   type ProductTax,
 } from "@/lib/products";
@@ -39,11 +43,17 @@ export default function ProductsPage() {
   const [ok, setOk] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [taxFilter, setTaxFilter] = useState<"all" | ProductTax>("all");
+  const [returnKind, setReturnKind] = useState<CatalogueReturnKind | null>(null);
+  const [savedName, setSavedName] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     setRows(loadProductsForMode(usesSampleData));
     setCatalogueReady(true);
   }, [usesSampleData]);
+
+  useEffect(() => {
+    setReturnKind(parseCatalogueReturn(new URLSearchParams(window.location.search).get("from")));
+  }, []);
 
   useEffect(() => {
     reload();
@@ -78,6 +88,7 @@ export default function ProductsPage() {
         return;
       }
       resetForm();
+      setSavedName(res.name);
       setOk(`Updated ${res.name}.`);
       reload();
       return;
@@ -88,7 +99,8 @@ export default function ProductsPage() {
       return;
     }
     resetForm();
-    setOk(`Added ${res.name} — pick it on an invoice, quote, or bill line (qty × price fills the amount).`);
+    setSavedName(res.name);
+    setOk(`Added ${res.name}.`);
     reload();
   }
 
@@ -121,16 +133,28 @@ export default function ProductsPage() {
 
   const userOnly = useMemo(() => loadUserProducts(), [rows]);
   const blankEmpty = !usesSampleData && catalogueReady && rows.length === 0;
+  const backKind: CatalogueReturnKind = returnKind ?? "invoice";
+  const backMeta = catalogueReturnMeta(backKind);
+  const taxScope = returnKind === "bill" ? "expense" : "income";
 
   useEffect(() => {
-    if (!blankEmpty) return;
+    if (!returnKind) return;
+    const t = window.setTimeout(() => {
+      document.getElementById("product-form")?.scrollIntoView({ behavior: "auto", block: "start" });
+      (document.getElementById("prd-name") as HTMLInputElement | null)?.focus();
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [returnKind]);
+
+  useEffect(() => {
+    if (!blankEmpty || returnKind) return;
     const el = document.getElementById("prd-name") as HTMLInputElement | null;
     // Soft focus for first-product path — don't steal focus mid-edit
     if (el && !name && !editingId) {
       const t = window.setTimeout(() => el.focus(), 120);
       return () => window.clearTimeout(t);
     }
-  }, [blankEmpty, name, editingId]);
+  }, [blankEmpty, name, editingId, returnKind]);
 
   const filtered = useMemo(
     () => filterProducts(rows, query, { tax: taxFilter }),
@@ -163,11 +187,8 @@ export default function ProductsPage() {
           <div className="flex items-start gap-2 rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100/90">
             <Sparkles size={14} className="mt-0.5 shrink-0 text-cyan-200" />
             <span>
-              Name + unit price (ex tax) is enough. After you save, open{" "}
-              <Link href="/demo/invoices" className="font-semibold text-white underline-offset-2 hover:underline">
-                Invoices
-              </Link>{" "}
-              and pick the product from the line dropdown — quantity multiplies the price automatically.
+              Name, price (ex tax), and {taxScope === "expense" ? "GST on Expenses or GST Free Expenses" : "GST on Income or GST Free"} is enough.
+              After you save, return to the {backMeta.noun} and pick it — quantity fills the amount, and GST is added only on taxable lines.
             </span>
           </div>
         )}
@@ -211,7 +232,7 @@ export default function ProductsPage() {
               placeholder="550.00"
             />
             <p className="mt-1 text-[11px] text-slate-400">
-              Enter the tax-exclusive amount. Line GST is applied separately (GST on Income / GST Free Income).
+              Enter the tax-exclusive amount. GST is added only on taxable lines (GST on Income / GST Free).
             </p>
           </div>
           <div>
@@ -224,8 +245,8 @@ export default function ProductsPage() {
               value={tax}
               onChange={(e) => setTax(e.target.value as ProductTax)}
             >
-              <option value="GST">GST on Income (10%)</option>
-              <option value="GST-free">GST Free Income</option>
+              <option value="GST">{taxScope === "expense" ? "GST on Expenses (10%)" : "GST on Income (10%)"}</option>
+              <option value="GST-free">{taxScope === "expense" ? "GST Free Expenses" : "GST Free"}</option>
             </select>
           </div>
           <div>
@@ -270,13 +291,27 @@ export default function ProductsPage() {
               Cancel
             </button>
           )}
-          <Link href="/demo/invoices" className="btn-secondary">
+          <Link href={catalogueReturnComposeHref("invoice")} className="btn-secondary">
             Create invoice
           </Link>
-          <Link href="/demo/quotes" className="btn-secondary">
+          <Link href={catalogueReturnComposeHref("quote")} className="btn-secondary">
             Create quote
           </Link>
+          <Link href={catalogueReturnComposeHref("bill")} className="btn-secondary">
+            Create bill
+          </Link>
         </div>
+        {savedName && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-50">
+            <p className="min-w-[12rem] flex-1">
+              <span className="font-semibold text-white">{savedName}</span> is ready. Return to the {backMeta.noun} and
+              pick it — quantity fills the amount, and GST is added only on taxable lines.
+            </p>
+            <Link href={catalogueReturnComposeHref(backKind)} className="btn-primary shrink-0">
+              {backMeta.returnLabel}
+            </Link>
+          </div>
+        )}
       </form>
 
       {!catalogueReady ? (
@@ -286,20 +321,19 @@ export default function ProductsPage() {
           <EmptyState
             icon={Package}
             title="Catalogue is empty"
-            description="Use the form above for your first product. Once saved, it appears in invoice, quote, and bill line pickers — no Harbour sample catalogue is mixed into this blank org."
+            description="Add one product above — name, price (ex tax), and GST on Income or GST Free. Then return to the invoice and pick it. Quantity fills the amount, and GST is added only on taxable lines. Harbour sample products stay out of this blank org."
             actions={[
               {
-                label: "Focus add form",
+                label: "Add a product",
                 primary: true,
                 onClick: () => {
                   document.getElementById("product-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   (document.getElementById("prd-name") as HTMLInputElement | null)?.focus();
                 },
               },
-              { label: "Create invoice", href: "/demo/invoices" },
               { label: "Back to overview", href: "/demo" },
             ]}
-            hint="Tip: keep unit prices tax-exclusive — line tax (GST on Income / GST Free Income) is chosen on the document."
+            hint="Tip: unit prices are tax-exclusive. GST on Income adds 10% on that line only; GST Free lines stay at $0 GST."
           />
           <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-slate-400">
             <span>Want sample figures instead?</span>

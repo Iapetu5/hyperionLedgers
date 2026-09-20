@@ -53,7 +53,7 @@ export const recentInvoicePayments = [
 
 export const kpis = {
   cashOnHand: 129350.32,
-  netProfitYtd: 27779,
+  netProfitYtd: 9236.82,
   receivables: 10670,
   payables: 2742.5,
   healthScore: 78,
@@ -309,13 +309,15 @@ export const bills = [
 export const gstBas = {
   period: "1 Jul 2026 – 30 Sep 2026 (Q1)",
   status: "Draft preview — prepared, not lodged with the ATO",
-  g1: 97000, g2: 0, g3: 0, g10: 22800, g11: 41200,
-  gstOnSales: 8818.18, gstOnPurchases: 5827.27, netGst: 2990.91,
+  /** Illustrative G-boxes for demo story only — UI GST boxes roll up from listed invoices/bills. */
+  g1: 13800, g2: 0, g3: 0, g10: 4563.18, g11: 0,
+  /** Aligned with listed Harbour invoices/bills GST (GST Free lines excluded from GST). */
+  gstOnSales: 1270, gstOnPurchases: 294.82, netGst: 975.18,
   paygWithheld: 12600, paygInstalment: 4500,
 };
 
 export const basPeriods = [
-  { id: "q1-26", label: "1 Jul 2026 – 30 Sep 2026 (Q1)", status: "Draft preview — not lodged", gstCollected: 8818.18, gstPaid: 5827.27, netGst: 2990.91, due: "2026-10-28" },
+  { id: "q1-26", label: "1 Jul 2026 – 30 Sep 2026 (Q1)", status: "Draft preview — not lodged", gstCollected: 1270, gstPaid: 294.82, netGst: 975.18, due: "2026-10-28" },
   { id: "q4-25", label: "1 Apr 2026 – 30 Jun 2026 (Q4)", status: "Demo period — not lodged", gstCollected: 7420, gstPaid: 5100, netGst: 2320, due: "2026-07-28" },
   { id: "q3-25", label: "1 Jan 2026 – 31 Mar 2026 (Q3)", status: "Demo period — not lodged", gstCollected: 6980, gstPaid: 4820, netGst: 2160, due: "2026-04-28" },
 ];

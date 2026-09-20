@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Banknote, Check, Package, Pencil, Plus, Receipt, Trash2, Undo2, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -13,11 +13,13 @@ import {
   lineItemsToDrafts,
   mixedTaxStarterDrafts,
   tryBeginMixedOneClick,
+  useComposeQuery,
   type LineDraft,
 } from "@/components/demo/LineItemsEditor";
+import { shouldBlockImplicitEnter } from "@/lib/form-enter";
 import { PrintBillButton } from "@/components/pay/PrintBillButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatAUD, formatDateAU } from "@/lib/format";
+import { formatAUD, formatDateAU, todayISO, plusDaysISO } from "@/lib/format";
 import { docLineTaxLabel, docTaxTreatmentSummary } from "@/lib/public-docs";
 import { bills } from "@/lib/sample-data";
 import {
@@ -30,9 +32,7 @@ import {
   setSampleBillStatus,
   setUserBillStatus,
   updateUserBill,
-  type UserBill,
-  todayISO,
-  plusDaysISO,
+  type UserBill
 } from "@/lib/user-docs";
 
 export default function BillsPage() {
@@ -44,6 +44,8 @@ export default function BillsPage() {
   const [formOk, setFormOk] = useState<string | null>(null);
   /** After create — Approve / Mark paid strip so first session does not hunt the table */
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
+  /** List-first: create form collapsed until New / Edit / mixed-tax / post-create. */
+  const [composerOpen, setComposerOpen] = useState(false);
   const [sampleTick, setSampleTick] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [billDate, setBillDate] = useState(() => todayISO());
@@ -66,6 +68,18 @@ export default function BillsPage() {
     };
   }, [reloadUser]);
 
+  /** Gate localStorage sample-bill overrides until after mount (SSR HTML matches first paint). */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  function sampleBillStored(id: string, fallback: string) {
+    return mounted ? getSampleBillStatus(id, fallback) : fallback;
+  }
+
+  function sampleBillDisplay(id: string, fallback: string, dueDate: string) {
+    if (mounted) return effectiveSampleBillStatus(id, fallback, dueDate);
+    return effectiveBillStatus({ status: fallback as UserBill["status"], dueDate });
+  }
 
   function defaultBillDate() {
     return todayISO();
@@ -84,6 +98,27 @@ export default function BillsPage() {
     setFormError(null);
   }
 
+  function openComposer(opts?: { reset?: boolean }) {
+    if (opts?.reset !== false) {
+      resetForm();
+      setLastCreatedId(null);
+      setFormOk(null);
+    }
+    setComposerOpen(true);
+    window.setTimeout(() => {
+      document.getElementById("bill-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      (document.getElementById("bill-supplier") as HTMLInputElement | null)?.focus();
+    }, 40);
+  }
+
+  function closeComposer() {
+    resetForm();
+    setLastCreatedId(null);
+    setFormOk(null);
+    setFormError(null);
+    setComposerOpen(false);
+  }
+
   /** One-click: OfficeNest + GST/GST-free expense lines → Approve / Mark paid strip. */
   function createMixedTaxSample() {
     if (!tryBeginMixedOneClick()) return;
@@ -100,6 +135,7 @@ export default function BillsPage() {
     }
     resetForm();
     setLastCreatedId(res.id);
+    setComposerOpen(true);
     setFormOk(`Created ${res.id} with mixed GST on Expenses + GST Free Expenses — Approve / Mark paid below.`);
     reloadUser();
     window.setTimeout(() => {
@@ -108,6 +144,7 @@ export default function BillsPage() {
   }
 
   function prefillMixedTaxDraft() {
+    setComposerOpen(true);
     setLines(mixedTaxStarterDrafts("expense"));
     setSupplier((s) => s.trim() || "OfficeNest Supplies Pty Ltd");
     setLastCreatedId(null);
@@ -166,6 +203,8 @@ export default function BillsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + same-path mixed links only
   }, []);
 
+  useComposeQuery(openComposer);
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -184,6 +223,7 @@ export default function BillsPage() {
       }
       resetForm();
       setLastCreatedId(res.id);
+      setComposerOpen(true);
       setFormOk(`Updated ${res.id}.`);
       reloadUser();
       return;
@@ -195,7 +235,7 @@ export default function BillsPage() {
     if ("error" in res) {
       const nudge =
         /amount|line/i.test(res.error) && !editingId
-          ? " Tip: use Create mixed-tax sample above for a one-click GST on Expenses + GST Free Expenses bill."
+          ? " Tip: use Create sample above for a ready-made bill with GST and GST-free lines."
           : "";
       setFormError(`${res.error}${nudge}`);
       return;
@@ -210,6 +250,7 @@ export default function BillsPage() {
     const createdId = "error" in updated ? res.id : updated.id;
     resetForm();
     setLastCreatedId(createdId);
+    setComposerOpen(true);
     setFormOk(`Created ${createdId}.`);
     reloadUser();
   }
@@ -226,6 +267,7 @@ export default function BillsPage() {
         : [
             emptyLineDraft({
               description: b.category,
+              unitPriceEx: String(Math.round((b.amount - b.gst) * 100) / 100),
               amountEx: String(Math.round((b.amount - b.gst) * 100) / 100),
               taxRate: b.gst > 0 ? "GST" : "GST-free",
             }),
@@ -233,6 +275,7 @@ export default function BillsPage() {
     );
     setFormError(null);
     setLastCreatedId(null);
+    setComposerOpen(true);
     setFormOk(`Editing ${b.id} — update supplier, lines, dates, or status. Delete still removes it.`);
     if (typeof document !== "undefined") {
       document.getElementById("bill-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -272,8 +315,21 @@ export default function BillsPage() {
     }
   }
 
+  function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {
+    const el = e.target instanceof HTMLElement ? e.target : null;
+    if (
+      shouldBlockImplicitEnter({
+        key: e.key,
+        tagName: el?.tagName,
+        composing: e.nativeEvent.isComposing,
+      })
+    ) {
+      e.preventDefault();
+    }
+  }
+
   const createForm = (
-    <form id="bill-form" className="card scroll-mt-4 space-y-4 p-5" onSubmit={onSubmit}>
+    <form onKeyDown={blockImplicitEnter} id="bill-form" className="card scroll-mt-4 space-y-4 p-5" onSubmit={onSubmit}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-semibold text-white">
           {editingId ? `Edit ${editingId}` : "Create bill"}
@@ -281,7 +337,7 @@ export default function BillsPage() {
         <span className="text-xs text-slate-400">
           {editingId
             ? "Same id · edit lines, dates & status · browser only"
-            : "Tax-exclusive lines · GST on Expenses / GST Free Expenses · due in 14 days"}
+            : "Line amounts before GST · choose GST or GST-free on each line · due in 14 days"}
         </span>
       </div>
       <div>
@@ -420,16 +476,14 @@ export default function BillsPage() {
               onClick={createMixedTaxSample}
             >
               <Plus size={12} />
-              Create mixed-tax sample
+              Create sample
             </button>
             <button type="button" className="btn-secondary !px-2.5 !py-1 text-xs" onClick={prefillMixedTaxDraft}>
               Prefill draft
             </button>
             <Link
-              href="/demo/products"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Opens in a new tab — keeps this form open"
+              href="/demo/products?from=bill#product-form"
+              title="Add one product (name, price, tax), then return and pick it"
               className="btn-secondary !px-2.5 !py-1 text-xs"
             >
               <Package size={12} />
@@ -441,7 +495,7 @@ export default function BillsPage() {
           </div>
           {!lastCreatedId && (
             <p className="rounded-lg border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100/90">
-              Tip: <strong className="text-white">Create mixed-tax sample</strong> is enough for a{" "}
+              Tip: <strong className="text-white">Create sample</strong> is enough for a{" "}
               <strong className="text-white">GST on Expenses</strong> +{" "}
               <strong className="text-white">GST Free Expenses</strong> demo — then{" "}
               <strong className="text-white">Approve</strong> / <strong className="text-white">Mark paid</strong> /{" "}
@@ -464,7 +518,7 @@ export default function BillsPage() {
             </>
           )}
         </button>
-        {editingId && (
+        {editingId ? (
           <button
             type="button"
             className="btn-secondary"
@@ -477,11 +531,36 @@ export default function BillsPage() {
             <X size={16} />
             Cancel edit
           </button>
+        ) : (
+          <button type="button" className="btn-secondary" onClick={closeComposer}>
+            <X size={16} />
+            Hide form
+          </button>
         )}
       </div>
       <p className="text-xs text-slate-400">Prefer a fresh number? Delete the row below and create again.</p>
     </form>
   );
+  const showComposer = Boolean(editingId) || composerOpen || Boolean(lastCreatedId);
+
+  function pageHeader(subtitle: ReactNode) {
+    return (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Bills</h1>
+          <p className="text-sm text-white/70">{subtitle}</p>
+        </div>
+        {!showComposer && (
+          <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
+            <Plus size={16} />
+            New bill
+          </button>
+        )}
+      </div>
+    );
+  }
+
+
 
   function userActions(b: UserBill) {
     const paid = effectiveBillStatus(b) === "Paid";
@@ -618,58 +697,66 @@ export default function BillsPage() {
     const openUserTotal = userRows
       .filter((b) => effectiveBillStatus({ status: b.status, dueDate: b.dueDate }) !== "Paid")
       .reduce((sum, b) => sum + b.amount, 0);
+
+    const listOrEmpty =
+      userRows.length === 0 && !showComposer ? (
+        <EmptyState
+          icon={Receipt}
+          title="No bills yet"
+          description="Create a supplier bill, or start from a ready-made example you can approve or mark paid."
+          showExploreSample
+          actions={[
+            {
+              label: "Create sample bill",
+              primary: true,
+              onClick: () => createMixedTaxSample(),
+            },
+            {
+              label: "New bill",
+              onClick: () => openComposer(),
+            },
+            { label: "Back to overview", href: "/demo" },
+          ]}
+          hint="Harbour & Co sample bills stay in the guest demo — they are not copied into your organisation."
+        />
+      ) : userRows.length === 0 ? null : (
+        userTable()
+      );
+
     return (
       <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Bills</h1>
-          <p className="text-sm text-white/70">
-            {userRows.length === 0 ? (
-              <>
-                Blank ledger — add a supplier bill, Edit lines later, Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically. Or explore Harbour &amp; Co for sample payables.
-              </>
-            ) : (
-              <>
-                Overdue total: <strong className="text-rose-200">{formatAUD(overdueUserTotal)}</strong>
-                {" · "}
-                Open payables: {formatAUD(openUserTotal)}
-                {" · "}
-                {overdueUserBills.length} overdue
-                {" · "}
-                browser-local only
-              </>
-            )}
-          </p>
-        </div>
-
-        {createForm}
-
-        {userRows.length === 0 ? (
-          <EmptyState
-            icon={Receipt}
-            title="No bills yet"
-            description="Create a supplier bill above, or open the Harbour & Co sample as a guest to see overdue payables."
-            showExploreSample
-            actions={[
-              { label: "Back to overview", href: "/demo" },
-              { label: "GST & BAS calendar", href: "/demo/tax/gst-bas" },
-            ]}
-            hint="Sample bills live in the guest demo — they are not copied into your blank org."
-          />
-        ) : (
-          userTable()
+        {pageHeader(
+          userRows.length === 0 ? (
+            <>
+              Add a supplier bill, edit lines later, Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically. Or explore Harbour &amp; Co for sample payables.
+            </>
+          ) : (
+            <>
+              Overdue total: <strong className="text-rose-200">{formatAUD(overdueUserTotal)}</strong>
+              {" · "}
+              Open payables: {formatAUD(openUserTotal)}
+              {" · "}
+              {overdueUserBills.length} overdue
+              {" · "}
+              browser-local only
+            </>
+          ),
         )}
+        {!showComposer && listOrEmpty}
+        {showComposer && createForm}
+        {showComposer && listOrEmpty}
       </div>
     );
   }
 
   const overdueBills = bills.filter(
-    (b) => effectiveSampleBillStatus(b.id, b.status, b.dueDate) === "Overdue",
+    (b) => sampleBillDisplay(b.id, b.status, b.dueDate) === "Overdue",
   );
   const overdueCount = overdueBills.length;
   const overdueTotal = overdueBills.reduce((sum, b) => sum + b.amount, 0);
   const dueSoonTotal = bills
     .filter((b) => {
-      const st = effectiveSampleBillStatus(b.id, b.status, b.dueDate);
+      const st = sampleBillDisplay(b.id, b.status, b.dueDate);
       return st === "Awaiting approval" || st === "Approved";
     })
     .reduce((sum, b) => sum + b.amount, 0);
@@ -677,18 +764,20 @@ export default function BillsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Bills</h1>
-        <p className="text-sm text-white/70">
-          Overdue total: <strong className="text-rose-200">{formatAUD(overdueTotal)}</strong>
+      {pageHeader(
+        <>
+          Overdue: <strong className="text-rose-200">{formatAUD(overdueTotal)}</strong>
+          {" · "}
+          {overdueCount} overdue
           {" · "}
           Due soon: {formatAUD(dueSoonTotal)}
           {" · "}
-          {overdueCount} overdue
-        </p>
-      </div>
+          sample + your browser-local creates below
+        </>,
+      )}
 
-      {createForm}
+      {showComposer && createForm}
+
 
       {userRows.length > 0 && (
         <div className="space-y-2">
@@ -704,7 +793,7 @@ export default function BillsPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Harbour &amp; Co sample</h2>
           <p className="text-xs text-slate-400">
-            Tax-exclusive lines with Xero GST on Expenses / GST Free Expenses. Approve awaiting rows, then Mark paid in back office (browser only). Print is an internal summary only — no public vendor pay link. Past-due unpaid rows show Overdue.
+            Line amounts before GST; choose GST or GST-free per line. Approve awaiting rows, then mark paid (saved in this browser). Print is an internal summary only — no public supplier pay link. Past-due unpaid rows show Overdue.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">
@@ -721,7 +810,7 @@ export default function BillsPage() {
           </thead>
           <tbody className="divide-y divide-white/10">
             {bills.map((b) => {
-              const st = effectiveSampleBillStatus(b.id, b.status, b.dueDate);
+              const st = sampleBillDisplay(b.id, b.status, b.dueDate);
               const lineList = "lineItems" in b ? b.lineItems : undefined;
               const taxSummary = docTaxTreatmentSummary(lineList, b.gst, "expense");
               return (
@@ -755,7 +844,7 @@ export default function BillsPage() {
                   <td className="px-4 py-3 align-top">
                     <DocRowActions keep={3}>
                       {st === "Paid" && <PrintBillButton id={b.id} compact primary />}
-                      {(getSampleBillStatus(b.id, b.status) === "Awaiting approval" ||
+                      {(sampleBillStored(b.id, b.status) === "Awaiting approval" ||
                         st === "Awaiting approval") &&
                         st !== "Paid" && (
                         <button
@@ -768,12 +857,12 @@ export default function BillsPage() {
                           Approve
                         </button>
                       )}
-                      {(getSampleBillStatus(b.id, b.status) === "Approved" ||
-                        getSampleBillStatus(b.id, b.status) === "Overdue" ||
+                      {(sampleBillStored(b.id, b.status) === "Approved" ||
+                        sampleBillStored(b.id, b.status) === "Overdue" ||
                         st === "Approved" ||
                         st === "Overdue") &&
                         st !== "Paid" &&
-                        getSampleBillStatus(b.id, b.status) !== "Awaiting approval" && (
+                        sampleBillStored(b.id, b.status) !== "Awaiting approval" && (
                         <button
                           type="button"
                           className="btn-secondary !px-2 !py-1 text-xs"

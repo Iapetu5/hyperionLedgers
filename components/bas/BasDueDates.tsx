@@ -2,13 +2,21 @@
 
 import Link from "next/link";
 import { CalendarClock } from "lucide-react";
-import { daysUntil, formatBasRelative, getBasDueDates, getNextBasDue } from "@/lib/bas-dates";
+import {
+  BAS_DUE_APPROX_NOTE,
+  daysUntil,
+  formatBasRelative,
+  getBasDueDates,
+  getNextBasDue,
+  isWeekendISO,
+} from "@/lib/bas-dates";
 import { formatDateAU } from "@/lib/format";
 
 export function BasDueDates({ compact = false }: { compact?: boolean }) {
   const items = getBasDueDates();
   const next = getNextBasDue();
   const nextDueIn = next ? daysUntil(next.dueDate) : null;
+  const nextIsWeekend = next ? isWeekendISO(next.dueDate) : false;
 
   if (compact) {
     return (
@@ -21,6 +29,11 @@ export function BasDueDates({ compact = false }: { compact?: boolean }) {
                 <p className="mt-1 text-lg font-bold text-white">{formatDateAU(next.dueDate)}</p>
                 <p className="text-sm text-slate-300">{next.quarterLabel}</p>
                 <p className="mt-1 text-xs font-medium text-cyan-300/90">{formatBasRelative(next)}</p>
+                {nextIsWeekend && (
+                  <p className="mt-1 text-[11px] text-amber-200/80">
+                    Falls on a weekend — ATO may allow the next business day (confirm on ato.gov.au).
+                  </p>
+                )}
               </>
             ) : (
               <p className="mt-1 text-sm text-slate-400">No upcoming due date on the demo calendar</p>
@@ -52,8 +65,15 @@ export function BasDueDates({ compact = false }: { compact?: boolean }) {
                 <p className="mt-0.5 text-sm text-slate-300">{next.quarterLabel}</p>
                 <p className="mt-2 text-sm font-medium text-white/90">{formatBasRelative(next)}</p>
                 <p className="mt-1 text-xs text-slate-400">
-                  Period end {formatDateAU(next.periodEnd)} · approximate quarterly due (28th after quarter end)
+                  Period end {formatDateAU(next.periodEnd)} · approximate quarterly due (28th after quarter
+                  end)
                 </p>
+                {nextIsWeekend && (
+                  <p className="mt-1 text-xs text-amber-200/90">
+                    This demo due date falls on a weekend — the ATO may allow the next business day
+                    (confirm on ato.gov.au). Not looked up for your ABN here.
+                  </p>
+                )}
               </div>
             </div>
             <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-right">
@@ -83,37 +103,46 @@ export function BasDueDates({ compact = false }: { compact?: boolean }) {
           </p>
         </div>
         <ul className="divide-y divide-white/10">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className={`flex items-center justify-between gap-3 px-4 py-3 text-sm ${
-                item.isNext ? "bg-brand-500/10" : ""
-              }`}
-            >
-              <div>
-                <p className="font-medium text-white">{item.quarterLabel}</p>
-                <p className="text-xs text-slate-400">Period end {formatDateAU(item.periodEnd)}</p>
-                {item.isNext && (
-                  <p className="mt-0.5 text-xs text-cyan-300/90">{formatBasRelative(item)}</p>
-                )}
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-slate-200">{formatDateAU(item.dueDate)}</p>
-                {item.isNext && (
-                  <span className="inline-block rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">
-                    Next due
-                  </span>
-                )}
-                {!item.isNext && item.isPast && (
-                  <span className="text-xs text-slate-500">Past (demo)</span>
-                )}
-                {!item.isNext && !item.isPast && (
-                  <span className="text-xs text-slate-500">Upcoming</span>
-                )}
-              </div>
-            </li>
-          ))}
+          {items.map((item) => {
+            const weekend = isWeekendISO(item.dueDate);
+            return (
+              <li
+                key={item.id}
+                className={`flex items-center justify-between gap-3 px-4 py-3 text-sm ${
+                  item.isNext ? "bg-brand-500/10" : ""
+                }`}
+              >
+                <div>
+                  <p className="font-medium text-white">{item.quarterLabel}</p>
+                  <p className="text-xs text-slate-400">Period end {formatDateAU(item.periodEnd)}</p>
+                  {item.isNext && (
+                    <p className="mt-0.5 text-xs text-cyan-300/90">{formatBasRelative(item)}</p>
+                  )}
+                  {weekend && (
+                    <p className="mt-0.5 text-[11px] text-amber-200/70">Weekend — may shift to next business day</p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-slate-200">{formatDateAU(item.dueDate)}</p>
+                  {item.isNext && (
+                    <span className="inline-block rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">
+                      Next due
+                    </span>
+                  )}
+                  {!item.isNext && item.isPast && (
+                    <span className="text-xs text-slate-500">Past (demo)</span>
+                  )}
+                  {!item.isNext && !item.isPast && (
+                    <span className="text-xs text-slate-500">Upcoming</span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
+        <p className="border-t border-white/10 px-4 py-3 text-[11px] leading-relaxed text-slate-500">
+          {BAS_DUE_APPROX_NOTE}
+        </p>
       </div>
     </div>
   );

@@ -25,6 +25,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { DEMO_ORG } from "@/lib/sample-data";
 import { AiAssistant } from "@/components/demo/AiAssistant";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
+import { loadUserBills, loadUserInvoices, loadUserQuotes } from "@/lib/user-docs";
 
 const NAV = [
   { href: "/demo", label: "Overview", icon: LayoutDashboard },
@@ -46,6 +47,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiSeed, setAiSeed] = useState<string | undefined>();
   const [aiSeedKey, setAiSeedKey] = useState(0);
+  const [hasUserDocs, setHasUserDocs] = useState(false);
 
   // Soft gate: only signed-in users with incomplete onboarding leave the demo.
   // Guests keep browsing Harbour & Co.
@@ -66,6 +68,27 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
     window.addEventListener("hl-open-assistant", handler);
     return () => window.removeEventListener("hl-open-assistant", handler);
   }, []);
+
+  useEffect(() => {
+    if (usesSampleData) {
+      setHasUserDocs(false);
+      return;
+    }
+    const reload = () => {
+      const n =
+        loadUserInvoices().length +
+        loadUserQuotes().length +
+        loadUserBills().length;
+      setHasUserDocs(n > 0);
+    };
+    reload();
+    window.addEventListener("hl-user-docs-updated", reload);
+    window.addEventListener("hl-doc-status", reload);
+    return () => {
+      window.removeEventListener("hl-user-docs-updated", reload);
+      window.removeEventListener("hl-doc-status", reload);
+    };
+  }, [usesSampleData]);
 
   const orgName = user?.businessName || DEMO_ORG.name;
   const demoBanner = usesSampleData;
@@ -114,12 +137,10 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               </>
             ) : (
               <>
-                <Link href="/login" className="btn-secondary !px-3">
-                  <LogIn size={16} />
+                <Link href="/login" className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline">
                   Log in
                 </Link>
                 <Link href="/signup" className="btn-primary !px-3">
-                  <UserPlus size={16} />
                   Sign up
                 </Link>
               </>
@@ -132,16 +153,16 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
         <div data-demo-banner className="demo-banner no-print">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm sm:px-6">
             <p className="text-white/85">
-              <strong className="text-white">Demo organisation</strong>
+              <strong className="text-white">Sample data</strong>
               <span className="text-white/50"> — </span>
-              viewing {orgName} sample data. No live bank feeds, payments, or ATO lodgement.
+              {orgName} is a walkthrough organisation, not your books. No live bank feeds, payments, or ATO lodgement.
             </p>
             {!user && (
               <Link
                 href="/signup"
                 className="font-semibold text-brand-300 underline-offset-2 hover:text-brand-200 hover:underline"
               >
-                Create your own org
+                Start free trial
               </Link>
             )}
           </div>
@@ -149,12 +170,16 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
       )}
 
       {!demoBanner && user && (
-        <div data-demo-banner className="demo-banner no-print border-amber-400/25 bg-gradient-to-r from-amber-500/10 via-fuchsia-500/10 to-transparent">
+        <div data-demo-banner className="demo-banner no-print">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm sm:px-6">
             <p className="text-white/85">
-              <strong className="text-white">Blank ledger</strong>
+              <strong className="text-white">
+                {hasUserDocs ? "Your ledger" : "Blank ledger"}
+              </strong>
               <span className="text-white/50"> — </span>
-              {orgName} has no sample activity yet. Browse Harbour &amp; Co as a guest anytime.
+              {hasUserDocs
+                ? "Invoices, quotes, and bills you create stay in this browser. No live bank feeds, payments, or ATO lodgement."
+                : `${orgName} has no documents yet. Browse Harbour & Co as a guest anytime.`}
             </p>
             <ExploreSampleButton
               primary={false}

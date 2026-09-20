@@ -1,5 +1,8 @@
 /** Browser-local invoices/quotes/bills for blank-ledger demos (not Harbour & Co sample). */
 
+import { formatAUD, todayISO as sydneyTodayISO, plusDaysISO as sydneyPlusDaysISO } from "@/lib/format";
+
+
 /** Clear label when a guest (or no org) creates a pay link — never Harbour suburb. */
 export const GUEST_DEMO_BUSINESS_NAME = "Demo guest business";
 
@@ -99,22 +102,13 @@ function clearPublicDocStatusLocal(kind: "invoice" | "quote", id: string) {
   }
 }
 
-/** Local calendar YYYY-MM-DD (not UTC) so AU/Sydney due-date Overdue matches the demo clock. */
+/** Sydney calendar YYYY-MM-DD — overdue/expiry match AU demo clock (not host UTC). */
 export function todayISO() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return sydneyTodayISO();
 }
 
 export function plusDaysISO(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return sydneyPlusDaysISO(days);
 }
 
 function round2(n: number) {
@@ -602,6 +596,47 @@ export function effectiveQuoteStatus(
   return q.status;
 }
 
+/**
+ * Blank-ledger next-step sentence shared by overview and Ask AI
+ * so “what next” cannot disagree with the live overdue / receivables row.
+ */
+export function blankNextInsight(input: {
+  overdueBillAmounts: number[];
+  overdueInvoice?: { contact: string; id: string; amount: number };
+  quotesAwaiting: number;
+  quotesExpired: number;
+  receivables: number;
+  hasAnyDocs: boolean;
+}): string {
+  const billCount = input.overdueBillAmounts.length;
+  const odBillsTotal = input.overdueBillAmounts.reduce((sum, n) => sum + n, 0);
+  const chase = input.overdueInvoice;
+  if (billCount > 0 && chase) {
+    return `Clear overdue bills (${formatAUD(odBillsTotal)}) and chase ${chase.contact} on ${chase.id}.`;
+  }
+  if (billCount > 0) {
+    return `Clear overdue bills (${formatAUD(odBillsTotal)}) — ${billCount} supplier${billCount === 1 ? "" : "s"} past due.`;
+  }
+  if (chase) {
+    return `Chase ${chase.contact} on overdue ${chase.id} (${formatAUD(chase.amount)}).`;
+  }
+  if (input.quotesAwaiting > 0) {
+    const n = input.quotesAwaiting;
+    return `${n} quote${n === 1 ? "" : "s"} awaiting reply — follow up or open the customer link.`;
+  }
+  if (input.quotesExpired > 0) {
+    const n = input.quotesExpired;
+    return `${n} expired quote${n === 1 ? "" : "s"} — refresh or archive from Quotes.`;
+  }
+  if (input.receivables > 0) {
+    return `Receivables sit at ${formatAUD(input.receivables)} — share pay links or mark paid when money lands.`;
+  }
+  if (!input.hasAnyDocs) {
+    return "No documents yet — create an invoice, quote, or bill to get the ledger moving.";
+  }
+  return "You're underway — keep creating invoices, quotes, and bills as you go.";
+}
+
 export function updateUserBill(
   id: string,
   input: {
@@ -723,4 +758,17 @@ export function deleteUserBill(id: string): boolean {
   if (next.length === existing.length) return false;
   saveList(BILL_KEY, next, "hl-user-docs-updated");
   return true;
+}
+
+/** Drop browser-local invoices, quotes, and bills so a new blank org starts empty. */
+export function clearUserOrganisationDocs(): void {
+  if (!isBrowser()) return;
+  try {
+    localStorage.removeItem(INV_KEY);
+    localStorage.removeItem(QUOTE_KEY);
+    localStorage.removeItem(BILL_KEY);
+    window.dispatchEvent(new CustomEvent("hl-user-docs-updated"));
+  } catch {
+    /* ignore */
+  }
 }

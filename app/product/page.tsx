@@ -14,14 +14,14 @@ import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
 const FEATURES = [
-  { icon: FileText, title: "Sales & quotes", body: "Quotes, invoices, recurring templates and customer pay links (demo)." },
+  { icon: FileText, title: "Sales & quotes", body: "Quotes, invoices, recurring templates and customer pay links." },
   { icon: Wallet, title: "Purchases", body: "Bills, expense claims, purchase orders and contacts." },
   { icon: Landmark, title: "Banking", body: "Accounts, CSV statement import and reconciliation list — no live bank API." },
   { icon: Boxes, title: "Products & inventory", body: "Catalogue, stock on hand and low-stock signals for the sample org." },
   { icon: Briefcase, title: "Projects", body: "Job profitability and time against sample studio work." },
-  { icon: Users, title: "Payroll", body: "Demo pay runs and employee list — not connected to Single Touch Payroll." },
+  { icon: Users, title: "Payroll", body: "Pay runs and employee list — not connected to Single Touch Payroll." },
   { icon: Calculator, title: "GST & BAS", body: "Australian quarterly calendar and a simulated BAS draft." },
-  { icon: Sparkles, title: "Plain-English assistant", body: "Ask what to do next — pre-written demo replies, not live AI." },
+  { icon: Sparkles, title: "Plain-English assistant", body: "Ask what to do next and get a clear answer." },
 ];
 
 export default function ProductPage() {
@@ -37,20 +37,29 @@ export default function ProductPage() {
           Quotes, invoices, bills, inventory, banking, projects, payroll, BAS, cash flow and reporting —
           with an assistant that translates the sample numbers into plain English.
         </p>
+        <p className="mt-3 max-w-2xl text-lg text-white/80">
+          Open Harbour &amp; Co and click through the sample books before you sign up.
+        </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/demo" className="btn-primary !px-6 !py-3">
-            Open Harbour &amp; Co
+          <Link href="/signup" className="btn-primary !px-6 !py-3">
+            Start free trial
             <ArrowRight size={16} />
           </Link>
-          <Link href="/try" className="btn-secondary !border-white/30 !bg-white/10 !text-white hover:!bg-white/20">
-            How to try
+          <Link href="/pricing" className="btn-secondary !px-6 !py-3">
+            Pricing — $69 a month
+          </Link>
+          <Link
+            href="/demo"
+            className="text-sm font-medium text-white/70 underline-offset-4 transition hover:text-white hover:underline"
+          >
+            Optional sample data
           </Link>
         </div>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map(({ icon: Icon, title, body }) => (
             <div key={title} className="card p-5">
-              <Icon className="text-brand-600" size={22} />
+              <Icon className="text-brand-300" size={22} />
               <h2 className="mt-3 font-semibold text-white">{title}</h2>
               <p className="mt-1 text-sm text-slate-300">{body}</p>
             </div>

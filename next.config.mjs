@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async redirects() {
-    return [
-      { source: "/pricing", destination: "/demo", permanent: false },
-    ];
-  },
+  // Keep production `next build` output in `.next` and isolate the running
+  // `next dev` cache so builds cannot wipe live demo chunks mid-session.
+  distDir: process.env.HL_DIST_DIR || ".next",
 };
 export default nextConfig;

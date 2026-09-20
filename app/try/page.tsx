@@ -1,29 +1,29 @@
 import Link from "next/link";
-import { LayoutDashboard, SlidersHorizontal, UserPlus, Zap, ArrowRight } from "lucide-react";
+import { UserPlus, SlidersHorizontal, LayoutDashboard, Zap, ArrowRight } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
 const STEPS = [
   {
-    icon: LayoutDashboard,
-    title: "Open Harbour & Co",
-    body: "Jump straight into the sample organisation — quotes, invoices, bills, banking, BAS prep, reports, and the assistant. No sign-up required.",
-    href: "/demo",
-    cta: "Try the demo",
-  },
-  {
     icon: UserPlus,
-    title: "Optional browser account",
-    body: "If you want your own org name, create a demo account. It stays in this browser only — nothing is sent to a real backend.",
+    title: "Start the trial",
+    body: "Name, email, and business name. The 14-day trial starts as soon as the account is created.",
     href: "/signup",
-    cta: "Create a local account",
+    cta: "Start free trial",
   },
   {
     icon: SlidersHorizontal,
-    title: "Optional setup",
-    body: "A short onboarding covers GST registration, financial year end, optional ABN, and whether to start with sample ledger data or a blank slate.",
-    href: "/onboarding",
-    cta: "Open setup",
+    title: "Set up the organisation",
+    body: "GST, financial year, optional ABN, and whether to start empty or look at sample figures. This follows signup.",
+    href: "/signup",
+    cta: "Continue to setup",
+  },
+  {
+    icon: LayoutDashboard,
+    title: "Create the first invoice",
+    body: "A blank organisation opens on Overview with Create invoice as the next step. About two minutes from signup.",
+    href: "/signup",
+    cta: "Start free trial",
   },
 ];
 
@@ -34,11 +34,12 @@ export default function TryPage() {
       <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs font-semibold text-fuchsia-200">
           <Zap size={12} />
-          No sign-up required · browser-only demo accounts
+          14 days free · $69 a month after
         </div>
-        <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">How to try the demo</h1>
+        <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">Start the trial</h1>
         <p className="mt-3 max-w-2xl text-lg text-white/75">
-          Start with the Harbour &amp; Co sample organisation. Sign-up is optional and only stores an account in this browser.
+          One plan at $69 a month covers the books. Sign up, set up the organisation, then create the first invoice.
+          Or look at Harbour &amp; Co first, with no account.
         </p>
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
@@ -56,7 +57,7 @@ export default function TryPage() {
                   </div>
                 </div>
                 <p className="mt-4 flex-1 text-sm text-slate-300">{s.body}</p>
-                <Link href={s.href} className={i === 0 ? "btn-primary mt-5" : "btn-secondary mt-5"}>
+                <Link href={s.href} className="btn-primary mt-5">
                   {s.cta}
                   <ArrowRight size={16} />
                 </Link>
@@ -66,14 +67,22 @@ export default function TryPage() {
         </div>
 
         <div className="mt-10 card border-brand-400/30 bg-gradient-to-br from-brand-500/15 to-fuchsia-500/15 p-6">
-          <p className="font-semibold text-white">Harbour &amp; Co is open now</p>
+          <p className="font-semibold text-white">Want to look first?</p>
           <p className="mt-1 text-sm text-slate-300">
-            Guests can browse the full sample organisation with no account. Demo only — no commercial, no ATO lodgement.
+            Open Harbour &amp; Co with no sign-up. The trial is still $69 a month after 14 days, when you are ready.
           </p>
-          <Link href="/demo" className="btn-primary mt-4 inline-flex">
-            Try the demo
-            <ArrowRight size={16} />
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/signup" className="btn-primary inline-flex">
+              Start free trial
+              <ArrowRight size={16} />
+            </Link>
+            <Link href="/pricing" className="btn-secondary inline-flex">
+              See the $69 plan
+            </Link>
+            <Link href="/demo" className="btn-secondary inline-flex">
+              Optional sample data
+            </Link>
+          </div>
         </div>
       </main>
       <MarketingFooter />

@@ -12,7 +12,7 @@ export default function AboutPage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs font-semibold text-fuchsia-200">
               <Eye size={12} />
-              Product demo · not a live accounting service
+              $69 a month · 14-day free trial
             </div>
             <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">About HyperionLedgers</h1>
             <p className="mt-4 text-lg text-white/80">
@@ -24,7 +24,7 @@ export default function AboutPage() {
                 presented in plain English so you always know what to do next.
               </p>
               <p>
-                This site is a <strong className="text-white">product demo</strong> with fictional sample data (Harbour &amp; Co Studio).
+                Harbour &amp; Co Studio is the sample organisation on this site.
                 ATO lodgements and bank feeds are simulated. We use Australian English and AUD throughout.
               </p>
             </div>
@@ -35,8 +35,8 @@ export default function AboutPage() {
             <ul className="mt-4 space-y-3 text-sm text-slate-200">
               {[
                 "Full suite UI for Australian SMB bookkeeping",
-                "Demo auth stored in your browser",
-                "Jump straight into sample data, or sign up to set up your own demo org",
+                "Your session stays in this browser",
+                "Open Harbour & Co now, or start with your own organisation",
                 "Not a tax agent, BAS agent, or financial adviser",
               ].map((item, i) => (
                 <li key={item} className="flex items-start gap-2">
@@ -45,9 +45,12 @@ export default function AboutPage() {
                 </li>
               ))}
             </ul>
-            <Link href="/try" className="btn-primary mt-6 w-full">
-              How to try the demo
+            <Link href="/signup" className="btn-primary mt-6 w-full">
+              Start free trial
               <ArrowRight size={16} />
+            </Link>
+            <Link href="/pricing" className="mt-3 block text-center text-sm font-medium text-white/70 underline-offset-4 hover:text-white hover:underline">
+              See pricing — $69 a month
             </Link>
           </aside>
         </div>

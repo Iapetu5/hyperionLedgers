@@ -90,7 +90,17 @@ function BillSummaryView({
   const exGst = Math.round((bill.amount - bill.gst) * 100) / 100;
   const lines =
     bill.lineItems && bill.lineItems.length > 0
-      ? bill.lineItems
+      ? bill.lineItems.map((li) => {
+          const qty = Number.isFinite(li.qty) && li.qty > 0 ? li.qty : 1;
+          const amount = Number.isFinite(li.amount) ? li.amount : 0;
+          const unit =
+            Number.isFinite(li.unitPrice) && li.unitPrice > 0
+              ? li.unitPrice
+              : amount > 0
+                ? Math.round((amount / qty) * 100) / 100
+                : 0;
+          return { ...li, qty, amount, unitPrice: unit };
+        })
       : [
           {
             description: bill.category || "Supplier bill",
@@ -105,7 +115,10 @@ function BillSummaryView({
     <div className="tax-doc-sheet bg-transparent text-slate-900">
       <div className="doc-header -mx-6 -mt-6 flex flex-wrap items-start justify-between gap-4 print:mx-0 print:mt-0">
         <div>
-          <p className="text-base font-semibold">{biz.businessName}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">
+            HyperionLedgers
+          </p>
+          <p className="mt-1 text-base font-semibold">{biz.businessName}</p>
           <p className="text-sm text-white/70">
             {biz.businessAbn ? <>ABN {biz.businessAbn}</> : "ABN not set"}
           </p>
@@ -147,6 +160,7 @@ function BillSummaryView({
           <tr>
             <th className="py-2 pr-2">Description</th>
             <th className="py-2 pr-2">Qty</th>
+            <th className="py-2 pr-2 text-right">Unit (ex tax)</th>
             <th className="py-2 pr-2">Tax</th>
             <th className="py-2 text-right">Amount (ex tax)</th>
           </tr>
@@ -156,6 +170,7 @@ function BillSummaryView({
             <tr key={i} className="border-b border-slate-100">
               <td className="py-2 pr-2">{li.description}</td>
               <td className="py-2 pr-2">{li.qty}</td>
+              <td className="py-2 pr-2 text-right">{formatAUD(li.unitPrice)}</td>
               <td className="py-2 pr-2 text-xs text-slate-600">
                 {docLineTaxLabel(li.taxRate, "expense")}
               </td>

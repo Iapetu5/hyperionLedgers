@@ -34,9 +34,13 @@ export default function LoginPage() {
       <div className="card p-6">
         <h1 className="text-xl font-bold text-white">Log in</h1>
         <p className="mt-1 text-sm text-slate-300">
-          Demo accounts stay in this browser only. Prefer browsing first?{" "}
+          Prefer to look first?{" "}
+          <Link href="/pricing" className="font-semibold text-brand-300 hover:underline">
+            See pricing
+          </Link>
+          {" "}or{" "}
           <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            Open the sample demo
+            browse sample data
           </Link>
           .
         </p>
@@ -55,7 +59,7 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-slate-300">
-          No account?{" "}
+          New here?{" "}
           <Link href="/signup" className="font-semibold text-brand-300 hover:underline">
             Sign up
           </Link>

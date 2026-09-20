@@ -278,3 +278,41 @@ export function filterProducts(
   if (opts?.limit != null && opts.limit >= 0) out = out.slice(0, opts.limit);
   return out;
 }
+
+
+/** Where a blank-catalogue "add a product" detour should return. */
+export type CatalogueReturnKind = "invoice" | "quote" | "bill";
+
+const CATALOGUE_RETURN: Record<
+  CatalogueReturnKind,
+  { path: string; noun: string; returnLabel: string }
+> = {
+  invoice: { path: "/demo/invoices", noun: "invoice", returnLabel: "Return to invoice" },
+  quote: { path: "/demo/quotes", noun: "quote", returnLabel: "Return to quote" },
+  bill: { path: "/demo/bills", noun: "bill", returnLabel: "Return to bill" },
+};
+
+export function parseCatalogueReturn(value: string | null | undefined): CatalogueReturnKind | null {
+  if (value === "invoice" || value === "quote" || value === "bill") return value;
+  return null;
+}
+
+export function catalogueReturnFromPath(pathname: string): CatalogueReturnKind | null {
+  if (pathname === "/demo/invoices" || pathname.startsWith("/demo/invoices/")) return "invoice";
+  if (pathname === "/demo/quotes" || pathname.startsWith("/demo/quotes/")) return "quote";
+  if (pathname === "/demo/bills" || pathname.startsWith("/demo/bills/")) return "bill";
+  return null;
+}
+
+/** Product form, scrolled to the name/price/tax fields, remembering which document to reopen. */
+export function productsAddHref(kind: CatalogueReturnKind | null): string {
+  return kind ? `/demo/products?from=${kind}#product-form` : "/demo/products#product-form";
+}
+
+export function catalogueReturnComposeHref(kind: CatalogueReturnKind): string {
+  return `${CATALOGUE_RETURN[kind].path}?compose=1`;
+}
+
+export function catalogueReturnMeta(kind: CatalogueReturnKind) {
+  return CATALOGUE_RETURN[kind];
+}
