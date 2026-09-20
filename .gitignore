@@ -1,5 +1,8 @@
 node_modules
 .next
 .next-dev
-.env*
+
+# Secrets — never commit real env files
+.env
+.env.*
 !.env.example
