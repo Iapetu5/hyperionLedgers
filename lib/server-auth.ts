@@ -29,6 +29,8 @@ type OrgRow = {
   ledger_mode: string | null;
   onboarding_complete: boolean;
   created_at: string;
+  has_paid_download?: boolean | null;
+  subscription_status?: string | null;
 };
 
 function sessionSecret(): string | null {
@@ -89,6 +91,8 @@ function toPublic(user: UserRow, org: OrgRow): PublicAccount {
     gstAccountingMethod: (org.gst_accounting_method as GstAccountingMethod | null) ?? undefined,
     financialYearEnd: org.financial_year_end ?? undefined,
     ledgerMode: (org.ledger_mode as LedgerMode | null) ?? undefined,
+    hasPaidDownload: Boolean(org.has_paid_download),
+    subscriptionStatus: org.subscription_status ?? undefined,
   };
 }
 

@@ -61,7 +61,7 @@ export default function SignupPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 1 of 2 · Account</p>
         <h1 className="mt-1 text-xl font-bold text-white">Start your free trial</h1>
         <p className="mt-1 text-sm text-slate-300">
-          14 days of full HyperionLedgers for your organisation — then $69 a month. When Postgres is attached on Vercel, this account is stored on the server and works on phone and desktop. Next: a short setup, then your first invoice, quote, or bill. Prefer to look first?{" "}
+          14 days of full HyperionInvoices for your organisation — then $69 a month. After Stripe Checkout you can download the Windows app. When Postgres is attached on Vercel, this account is stored on the server and works on phone and desktop. Next: a short setup, then your first invoice, quote, or bill. Prefer to look first?{" "}
           <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
             Browse the sample
           </Link>

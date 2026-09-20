@@ -7,18 +7,18 @@ import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 const STEPS = [
   {
     icon: UserPlus,
-    title: "1. Create your account",
-    body: "Name, email, and business name. The 14-day trial starts when the account is created.",
+    title: "1. Buy — start the trial",
+    body: "Create your account and open Stripe Checkout for the $69 a month plan. The first 14 days are free.",
   },
   {
     icon: SlidersHorizontal,
-    title: "2. Set up the organisation",
-    body: "GST, financial year, optional ABN, and whether to start empty or look at sample figures.",
+    title: "2. Pay — confirm on Stripe",
+    body: "Checkout verifies the subscription (test mode until live keys are set). Then you return to Downloads.",
   },
   {
     icon: LayoutDashboard,
-    title: "3. Create the first invoice",
-    body: "Your overview opens with Create invoice as the next step. About two minutes from sign-up.",
+    title: "3. Download the Windows app",
+    body: "Unlock HyperionInvoices-Setup.exe for Windows. Mac is coming soon. Then create your first invoice.",
   },
 ];
 
@@ -33,8 +33,8 @@ export default function TryPage() {
         </div>
         <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">How it works</h1>
         <p className="mt-3 max-w-2xl text-lg text-white/75">
-          One path: start the 14-day free trial, set up your organisation, then create the first invoice.
-          After the trial it is $69 a month.
+          One path: Buy → Pay on Stripe → Download the Windows app. Start the 14-day free trial,
+          then $69 a month. After checkout, Downloads unlocks HyperionInvoices for Windows.
         </p>
         <div className="mt-8">
           <StartTrialButton className="btn-primary" />

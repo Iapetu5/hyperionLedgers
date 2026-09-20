@@ -10,6 +10,7 @@ import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 const LINKS = [
   { href: "/product", label: "Product" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/downloads", label: "Downloads" },
   { href: "/try", label: "How it works" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },

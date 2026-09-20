@@ -1,4 +1,4 @@
-# HyperionLedgers — Complete Product + Technical Specification
+# HyperionInvoices — Complete Product + Technical Specification
 
 Inventory date: 17 September 2026 (Sydney). Based on reading the source under `/workspace/ledgerai`. Do not invent features beyond this document.
 
@@ -6,7 +6,7 @@ Inventory date: 17 September 2026 (Sydney). Based on reading the source under `/
 
 ## 1. Product one-liner and audience
 
-HyperionLedgers is a **client-only browser demo** of Australian small-business bookkeeping (Xero-style competitor concept). Guests browse the fictional **Harbour & Co Studio Pty Ltd** sample organisation; signed-up users can keep a demo org in `localStorage` and choose **sample** or **blank** ledger mode.
+HyperionInvoices is a **client-only browser demo** of Australian small-business bookkeeping (Xero-style competitor concept). Guests browse the fictional **Harbour & Co Studio Pty Ltd** sample organisation; signed-up users can keep a demo org in `localStorage` and choose **sample** or **blank** ledger mode.
 
 **Audience:** Australian SMB operators evaluating a bookkeeping product story (GST/BAS, invoices, quotes, bills, banking CSV, reports, plain-English assistant).
 
@@ -324,7 +324,7 @@ Implementation: **client-side rules + retrieval** in `lib/ai-copilot.ts`. **No e
 
 ## 8. Visual / brand rules
 
-- Name: Hyperion**Ledgers** (Ledgers in brand cyan).
+- Name: Hyperion**Invoices** (Invoices in brand cyan).
 - Logo: `/black-hole-logo.svg` (favicon + BrandLogo).
 - Background: `/nebula-bg.svg` full-bleed under `.nebula-surface` with dark overlay (`#050810` base).
 - Brand Tailwind cyan scale (`brand-400` `#22d3ee`, `brand-500` `#06b6d4`); fuchsia accents; glass `.card` / white `.doc-card` for documents.

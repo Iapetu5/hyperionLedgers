@@ -77,7 +77,7 @@ When **Start empty** is selected, show callout:
 
 ### Footer (real product — replace demo line)
 Replace `Demo setup — preferences stay in this browser only.` with:  
-`Saved to your HyperionLedgers organisation. You can change these later in Account settings.`
+`Saved to your HyperionInvoices organisation. You can change these later in Account settings.`
 
 ---
 

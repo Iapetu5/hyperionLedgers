@@ -1,4 +1,4 @@
-/** Browser-local product catalogue for HyperionLedgers demos (AU / Xero-style tax). */
+/** Browser-local product catalogue for HyperionInvoices demos (AU / Xero-style tax). */
 
 export type ProductTax = "GST" | "GST-free";
 

@@ -262,7 +262,7 @@ export default function GstBasPage() {
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
           Draft GST figures and due dates for your records. Line tax follows Xero-style{" "}
           <span className="text-white/90">GST on Income</span> /{" "}
-          <span className="text-white/90">GST Free</span> (and expense equivalents). HyperionLedgers
+          <span className="text-white/90">GST Free</span> (and expense equivalents). HyperionInvoices
           does not connect to or lodge with the ATO — lodgement here is always simulated.
         </p>
       </div>

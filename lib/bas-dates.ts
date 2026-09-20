@@ -100,7 +100,7 @@ export function getNextBasDue(referenceDate: Date = new Date()): BasDueItem | nu
 /**
  * Demo calendar uses the 28th after quarter end. Real ATO due dates can move to the
  * next business day when the 28th is a weekend or public holiday — confirm on ato.gov.au.
- * HyperionLedgers does not look up official ATO schedules for your ABN.
+ * HyperionInvoices does not look up official ATO schedules for your ABN.
  */
 export const BAS_DUE_APPROX_NOTE =
   "Due dates use the 28th of the month after quarter end as a demo approximation. If that day is a weekend or public holiday, the ATO may allow the next business day — confirm on ato.gov.au for your situation. Demo calendar only; not an official ATO schedule.";

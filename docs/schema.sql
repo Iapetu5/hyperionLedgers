@@ -1,4 +1,4 @@
--- HyperionLedgers persistent accounts (Neon / Postgres)
+-- HyperionInvoices persistent accounts (Neon / Postgres)
 -- Applied automatically on first auth request when DATABASE_URL is set.
 -- Placeholders only — do not put connection strings in this file.
 
@@ -28,6 +28,16 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   token_hash text NOT NULL,
   expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE organisations ADD COLUMN IF NOT EXISTS has_paid_download boolean NOT NULL DEFAULT false;
+ALTER TABLE organisations ADD COLUMN IF NOT EXISTS subscription_status text;
+ALTER TABLE organisations ADD COLUMN IF NOT EXISTS stripe_checkout_session_id text;
+ALTER TABLE organisations ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
+
+CREATE TABLE IF NOT EXISTS stripe_events (
+  id text PRIMARY KEY,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 

@@ -22,6 +22,8 @@ export type DemoAccount = {
   gstAccountingMethod?: GstAccountingMethod;
   financialYearEnd?: string;
   ledgerMode?: LedgerMode;
+  hasPaidDownload?: boolean;
+  subscriptionStatus?: string;
 };
 
 export type DemoSession = {

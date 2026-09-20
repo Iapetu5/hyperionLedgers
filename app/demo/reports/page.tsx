@@ -61,7 +61,7 @@ export default function ReportsPage() {
         <h1 className="text-2xl font-bold text-white">Reports</h1>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
           Management reports for your records. Figures are previews from demo or ledger activity —
-          they are not ATO-lodged returns and HyperionLedgers does not file with the ATO.
+          they are not ATO-lodged returns and HyperionInvoices does not file with the ATO.
         </p>
       </div>
 

@@ -1,4 +1,4 @@
-/** AU display helpers — amounts and calendar dates for the HyperionLedgers demo. */
+/** AU display helpers — amounts and calendar dates for the HyperionInvoices demo. */
 
 /** Product calendar for overdue / expiry / issue defaults (AU bookkeeping story). */
 export const DEMO_CALENDAR_TZ = "Australia/Sydney";

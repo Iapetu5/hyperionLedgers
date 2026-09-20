@@ -1,7 +1,7 @@
 /** Commercial plan — one price, 14-day trial. Do not add "excl. GST" to customer copy. */
 
 export const PLAN = {
-  name: "HyperionLedgers",
+  name: "HyperionInvoices",
   amountAud: 69,
   intervalLabel: "a month",
   trialDays: 14,

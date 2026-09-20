@@ -116,7 +116,7 @@ function BillSummaryView({
       <div className="doc-header -mx-6 -mt-6 flex flex-wrap items-start justify-between gap-4 print:mx-0 print:mt-0">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">
-            HyperionLedgers
+            HyperionInvoices
           </p>
           <p className="mt-1 text-base font-semibold">{biz.businessName}</p>
           <p className="text-sm text-white/70">

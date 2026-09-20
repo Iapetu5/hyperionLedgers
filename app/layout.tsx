@@ -8,7 +8,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "HyperionLedgers — Australian bookkeeping",
+  title: "HyperionInvoices — Australian bookkeeping",
   description:
     "Australian bookkeeping: invoices, GST/BAS and cash in plain English. $69 a month after a 14-day free trial. No ATO lodgement.",
   metadataBase: new URL(

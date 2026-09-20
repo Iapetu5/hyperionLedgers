@@ -1,4 +1,4 @@
-/** Fictional Australian sample data for the HyperionLedgers demo. */
+/** Fictional Australian sample data for the HyperionInvoices demo. */
 
 export const DEMO_ORG = {
   name: "Harbour & Co Studio Pty Ltd",

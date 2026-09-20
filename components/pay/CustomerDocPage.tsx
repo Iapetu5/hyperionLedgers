@@ -131,7 +131,7 @@ export function CustomerDocPage({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">
-                HyperionLedgers
+                HyperionInvoices
               </p>
               <p className="mt-1 text-sm text-white/70">{doc.businessName}</p>
               <p className="text-xs text-white/50">
@@ -317,7 +317,7 @@ export function CustomerDocPage({
       </div>
 
       <p className="mt-4 text-center text-xs text-white/60 no-print">
-        Powered by HyperionLedgers demo ·{" "}
+        Powered by HyperionInvoices demo ·{" "}
         <Link href="/demo" className="underline-offset-2 hover:underline">
           Open product demo
         </Link>

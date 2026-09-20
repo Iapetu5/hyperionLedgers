@@ -1,5 +1,5 @@
 /**
- * HyperionLedgers AI bookkeeping copilot — client-side rules + retrieval.
+ * HyperionInvoices AI bookkeeping copilot — client-side rules + retrieval.
  * Grounded in Harbour & Co sample ledger. No external LLM required.
  */
 
@@ -84,7 +84,7 @@ export type AiReply = {
 };
 
 export const defaultAiGreeting =
-  "G'day — I'm the HyperionLedgers copilot for Harbour & Co. I read this demo ledger (cash, invoices, bills, banking, BAS) and suggest next steps. Ask “what next?”, about BAS due, or to categorise an unmatched bank line.";
+  "G'day — I'm the HyperionInvoices copilot for Harbour & Co. I read this demo ledger (cash, invoices, bills, banking, BAS) and suggest next steps. Ask “what next?”, about BAS due, or to categorise an unmatched bank line.";
 
 export const SUGGESTED_CHIPS = [
   "What should I do next?",
@@ -350,7 +350,7 @@ function replyBas(): AiReply {
   const dueLabel = next ? formatDateAU(next.dueDate) : "—";
   const period = next?.quarterLabel ?? gstBas.period;
   const prose = next
-    ? `Next BAS due date for ${DEMO_ORG.name} is ${dueLabel} (${period}). The Jul–Sep 2026 draft shows net GST of about ${formatAUD(gstBas.netGst)} payable, plus PAYG figures in the sample. This is a simulated draft only — HyperionLedgers does not lodge with the ATO and this is not tax advice.`
+    ? `Next BAS due date for ${DEMO_ORG.name} is ${dueLabel} (${period}). The Jul–Sep 2026 draft shows net GST of about ${formatAUD(gstBas.netGst)} payable, plus PAYG figures in the sample. This is a simulated draft only — HyperionInvoices does not lodge with the ATO and this is not tax advice.`
     : `Sample BAS draft for ${gstBas.period} shows net GST ${formatAUD(gstBas.netGst)}. No upcoming due date was calculated. Demo only — no ATO lodgement.`;
 
   return {

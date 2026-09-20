@@ -56,5 +56,15 @@ export async function ensureSchema() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS sessions_token_hash_idx ON sessions(token_hash)`;
   await sql`CREATE INDEX IF NOT EXISTS organisations_user_id_idx ON organisations(user_id)`;
+  await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS has_paid_download boolean NOT NULL DEFAULT false`;
+  await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS subscription_status text`;
+  await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS stripe_checkout_session_id text`;
+  await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS stripe_subscription_id text`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS stripe_events (
+      id text PRIMARY KEY,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )
+  `;
   schemaReady = true;
 }

@@ -11,6 +11,7 @@ const FEATURES = [
   "Bank transactions you can import",
   "Contacts, products, and a plain-English next step",
   "Full access for 14 days. Then $69 a month.",
+  "Windows app download after checkout. Mac coming soon.",
 ];
 
 export default function PricingPage() {
@@ -26,8 +27,8 @@ export default function PricingPage() {
             One plan. $69 a month.
           </h1>
           <p className="mt-4 text-white/75">
-            Start free for 14 days. Then $69 a month. Cancel anytime. Quotes, invoices, bills,
-            banking tools, and reports — so you can see what to do next.
+            Buy → Pay on Stripe → Download the Windows app. Start free for 14 days. Then $69 a
+            month. Cancel anytime. Quotes, invoices, bills, banking tools, and reports.
           </p>
         </div>
 
@@ -36,7 +37,7 @@ export default function PricingPage() {
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-3 py-0.5 text-xs font-bold text-slate-950 shadow-glow">
               14-day free trial
             </span>
-            <h2 className="text-xl font-bold text-white">HyperionLedgers</h2>
+            <h2 className="text-xl font-bold text-white">HyperionInvoices</h2>
             <p className="mt-1 text-sm text-slate-300">
               One price for the books. Not a starter plan you outgrow.
             </p>
@@ -75,7 +76,7 @@ export default function PricingPage() {
           .
         </p>
         <p className="mt-3 text-center text-xs text-slate-500">
-          Prices in Australian dollars. Cancel anytime. HyperionLedgers does not lodge with the ATO.
+          Prices in Australian dollars. Cancel anytime. HyperionInvoices does not lodge with the ATO.
         </p>
       </main>
       <MarketingFooter />

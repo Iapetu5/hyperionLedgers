@@ -9,11 +9,12 @@ export function MarketingFooter() {
           <BrandLogo />
           <p className="mt-3 text-sm text-white/55">
             Bookkeeping for Australian small business. $69 a month after a 14-day
-            free trial. HyperionLedgers does not lodge with the ATO.
+            free trial. HyperionInvoices does not lodge with the ATO.
           </p>
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
           <Link href="/pricing" className="hover:text-white">Pricing</Link>
+          <Link href="/downloads" className="hover:text-white">Downloads</Link>
           <Link href="/signup" className="hover:text-white">Sign up</Link>
           <Link href="/try" className="hover:text-white">How it works</Link>
           <Link href="/product" className="hover:text-white">Product</Link>

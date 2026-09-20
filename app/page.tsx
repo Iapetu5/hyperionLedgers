@@ -19,8 +19,8 @@ export default function HomePage() {
               See cash, GST and invoices in plain English.
             </h1>
             <p className="mt-4 text-lg text-white/80">
-              HyperionLedgers is bookkeeping for Australian small business. Try it free for 14 days.
-              Then it is $69 a month. Cancel anytime.
+              HyperionInvoices is bookkeeping for Australian small business. Try it free for 14 days.
+              Then it is $69 a month. Cancel anytime. After you pay, download the Windows app.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <StartTrialButton className="btn-primary" />
@@ -38,7 +38,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="mt-3 text-sm text-white/50">
-              HyperionLedgers does not lodge with the ATO.
+              HyperionInvoices does not lodge with the ATO. Mac is coming soon.
             </p>
           </div>
 

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "HL_DIST_DIR=.next-dev next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
+    "build:windows": "mkdir -p private/downloads && cd desktop/launcher && go mod tidy && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=\"-s -w\" -o ../../private/downloads/HyperionInvoices-Setup.exe",
     "start": "next start",
     "lint": "next lint"
   },

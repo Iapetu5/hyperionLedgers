@@ -10,6 +10,7 @@ NEXTAUTH_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_PRICE_ID=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
 ```
 
 ## Required for production marketing
@@ -44,7 +45,10 @@ Create a product in the Stripe Dashboard (test mode) with one recurring price: *
 | `STRIPE_SECRET_KEY` | `sk_test_…` | Vercel secret |
 | `STRIPE_PRICE_ID` | `price_…` | Vercel secret |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_test_…` | Vercel (public) |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_…` | Vercel secret |
+
+Webhook URL: `https://www.hyperioninvoices.com.au/api/stripe/webhook` (event: `checkout.session.completed`).
 
 Do not invent or commit real keys.
 
-HyperionLedgers does not lodge with the ATO. Do not change DNS.
+HyperionInvoices does not lodge with the ATO. Do not change DNS.
