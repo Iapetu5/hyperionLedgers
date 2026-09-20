@@ -87,7 +87,7 @@ export default function ReportsPage() {
           <div className="card p-5">
             <h2 className="font-semibold text-white">Profit &amp; loss (YTD preview)</h2>
             <p className="mt-1 text-xs text-slate-400">
-              Net profit from Harbour &amp; Co listed invoices and bills — illustrative only, not a lodged tax figure.
+              Net profit from demo listed invoices and bills — illustrative only, not a lodged tax figure.
             </p>
             <p className="mt-3 text-3xl font-bold text-white">{formatAUD(rollupSampleReports().netProfit)}</p>
             <p className="mt-1 text-xs text-slate-500">Matches listed invoice/bill roll-up on P&amp;L</p>
@@ -155,7 +155,7 @@ export default function ReportsPage() {
         <EmptyState
           icon={BarChart3}
           title="No report figures yet"
-          description="Create an invoice or bill in your organisation, or open Harbour & Co as a guest to see sample previews."
+          description="Create an invoice or bill in your organisation, or try a demo as a guest to see sample previews."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },

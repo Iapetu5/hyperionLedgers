@@ -107,7 +107,7 @@ export function FirstRunWelcome({
       </div>
       <p className="mt-3 text-xs text-slate-500">
         Prefer a full sample tour first? Use{" "}
-        <span className="text-slate-400">Explore Harbour &amp; Co sample</span> anytime from empty screens.
+        <span className="text-slate-400">Try a demo</span> anytime from empty screens.
       </p>
     </div>
   );

@@ -63,7 +63,7 @@ export default function SignupPage() {
         <p className="mt-1 text-sm text-slate-300">
           14 days of full HyperionInvoices for your organisation — then $69 a month. After Stripe Checkout you can download the Windows app. When Postgres is attached on Vercel, this account is stored on the server and works on phone and desktop. Next: a short setup, then your first invoice, quote, or bill. Prefer to look first?{" "}
           <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            Browse the sample
+            Try a demo
           </Link>
           {" "}— no account needed.
         </p>
@@ -86,7 +86,7 @@ export default function SignupPage() {
           </div>
           <div>
             <label className="label" htmlFor="businessName">Business name</label>
-            <input id="businessName" className="input" required autoComplete="organization" placeholder="Harbour Cafe Pty Ltd" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+            <input id="businessName" className="input" required autoComplete="organization" placeholder="Example Cafe Pty Ltd" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
             {fieldErrors.businessName && <p className="mt-1 text-xs text-rose-300">{fieldErrors.businessName}</p>}
           </div>
           <AbnField value={abn} onChange={setAbn} />

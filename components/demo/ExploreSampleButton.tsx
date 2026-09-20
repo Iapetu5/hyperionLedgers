@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { DEMO_CTA } from "@/lib/brand";
 
-/** Log out (if needed) and open the Harbour & Co guest sample demo. */
+/** Log out (if needed) and open the guest sample at /demo. */
 export function useExploreHarbourSample() {
   const { user, logOut } = useAuth();
   const router = useRouter();
@@ -16,7 +17,7 @@ export function useExploreHarbourSample() {
 
 export function ExploreSampleButton({
   primary = true,
-  label = "Explore Harbour & Co sample",
+  label = DEMO_CTA,
   className = "",
 }: {
   primary?: boolean;

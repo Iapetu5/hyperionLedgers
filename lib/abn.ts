@@ -39,7 +39,7 @@ export function validateAbnField(abn: string, required = false): string | null {
 }
 
 const SIMULATED_ABR: Record<string, Omit<AbrLookupResult, "abn" | "simulated">> = {
-  "51824753556": { legalName: "Harbour & Co Studio Pty Ltd", entityStatus: "Active", gstRegistered: true },
+  "51824753556": { legalName: "Demo Company Pty Ltd", entityStatus: "Active", gstRegistered: true },
   "53004085616": { legalName: "Sample Retail Holdings Pty Ltd", entityStatus: "Active", gstRegistered: true },
   "10000000032": { legalName: "Bluegum Dental Practice Pty Ltd", entityStatus: "Active", gstRegistered: true },
   "10000000064": { legalName: "Northside Café Group Pty Ltd", entityStatus: "Active", gstRegistered: true },

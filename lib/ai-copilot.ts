@@ -84,7 +84,7 @@ export type AiReply = {
 };
 
 export const defaultAiGreeting =
-  "G'day — I'm the HyperionInvoices copilot for Harbour & Co. I read this demo ledger (cash, invoices, bills, banking, BAS) and suggest next steps. Ask “what next?”, about BAS due, or to categorise an unmatched bank line.";
+  "G'day — I'm the HyperionInvoices copilot for this demo. I read the sample ledger (cash, invoices, bills, banking, BAS) and suggest next steps. Ask “what next?”, about BAS due, or to categorise an unmatched bank line.";
 
 export const SUGGESTED_CHIPS = [
   "What should I do next?",
@@ -95,7 +95,7 @@ export const SUGGESTED_CHIPS = [
 ];
 
 export const blankAiGreeting =
-  "G'day — you're on a blank ledger (no Harbour sample figures here). Create an invoice or quote — Create mixed-tax sample (one click), or pick Products on a line — add a mixed-tax bill (Approve / Mark paid), or open Banking for your own cheque account (opening balance + starter CSV). Past-due invoices show Overdue and Sent quotes past expiry show Expired automatically (Draft stays Draft). Explore Harbour & Co as a guest for the full sample story. Ask “what next?” for a short checklist.";
+  "G'day — you're on a blank ledger (no demo sample figures here). Create an invoice or quote — Create mixed-tax sample (one click), or pick Products on a line — add a mixed-tax bill (Approve / Mark paid), or open Banking for your own cheque account (opening balance + starter CSV). Past-due invoices show Overdue and Sent quotes past expiry show Expired automatically (Draft stays Draft). Try a demo as a guest for the full sample story. Ask “what next?” for a short checklist.";
 
 export const BLANK_SUGGESTED_CHIPS = [
   "What should I do next?",
@@ -467,7 +467,7 @@ function replyChase(): AiReply {
   if (top) {
     return {
       intent: "chase_overdue",
-      prose: `${top.contact} owes ${formatAUD(top.amount)} on ${top.id} (due ${formatDateAU(top.dueDate)}, status Overdue) for “${top.reference}”. Harbour sample overdue invoices total ${formatAUD(odTotal)} across ${overdue.length} customer${overdue.length === 1 ? "" : "s"}. Share the customer payment link or follow up from the invoices list. Demo only — no live email send.`,
+      prose: `${top.contact} owes ${formatAUD(top.amount)} on ${top.id} (due ${formatDateAU(top.dueDate)}, status Overdue) for “${top.reference}”. Demo sample overdue invoices total ${formatAUD(odTotal)} across ${overdue.length} customer${overdue.length === 1 ? "" : "s"}. Share the customer payment link or follow up from the invoices list. Demo only — no live email send.`,
       citations: [
         { label: top.id, value: `${formatAUD(top.amount)} · ${top.contact}`, source: `due ${formatDateAU(top.dueDate)} · Overdue` },
         { label: "Overdue invoices", value: formatAUD(odTotal), source: "overdueInvoices · effectiveInvoiceStatus" },
@@ -496,7 +496,7 @@ function replyChase(): AiReply {
 
   return {
     intent: "chase_overdue",
-    prose: `No Harbour invoices are overdue right now. ${mapleNote}${billNote} Demo only — no live email send.`,
+    prose: `No demo invoices are overdue right now. ${mapleNote}${billNote} Demo only — no live email send.`,
     citations: [
       { label: maple.id, value: `${formatAUD(maple.amount)} · ${mapleStatus}`, source: `due ${formatDateAU(maple.dueDate)} · effectiveInvoiceStatus` },
       { label: "Overdue invoices", value: formatAUD(0), source: "overdueInvoices · effectiveInvoiceStatus" },
@@ -571,7 +571,7 @@ function replyBills(): AiReply {
   const dueTotal = dueBillsTotal();
   return {
     intent: "bills",
-    prose: `Overdue bills total ${formatAUD(odTotal)} across ${od.length} suppliers (${od.map((b) => b.supplier.split(" ")[0]).join(", ")}…). Due this cycle: ${formatAUD(dueTotal)}. Tip: Harbour (and your own) bills use Print for an internal summary only — there is no public vendor pay URL like invoices.`,
+    prose: `Overdue bills total ${formatAUD(odTotal)} across ${od.length} suppliers (${od.map((b) => b.supplier.split(" ")[0]).join(", ")}…). Due this cycle: ${formatAUD(dueTotal)}. Tip: Demo (and your own) bills use Print for an internal summary only — there is no public vendor pay URL like invoices.`,
     citations: [
       { label: "Overdue total", value: formatAUD(odTotal), source: "overdueBills · effectiveSampleBillStatus" },
       ...od.map((b) => ({
@@ -731,7 +731,7 @@ function replyBlankNext(orgName?: string): AiReply {
   });
 
   const prose = [
-    `${who} is on a blank starting ledger (no Harbour sample KPIs).`,
+    `${who} is on a blank starting ledger (no demo sample KPIs).`,
     priority,
     statusNote.trim(),
   ].join(" ");
@@ -833,7 +833,7 @@ function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
   if (intent === "invoices") {
     return {
       intent,
-      prose: `On ${who}'s blank ledger, open Invoices and use Create invoice (contact, tax-exclusive lines, GST on Income / GST Free Income). Tip: “Create mixed-tax sample” (or ?mixed=1) one-click creates a GST on Income + GST Free Income invoice — then open the pay link for the nebula tax-invoice header. Past-due unpaid rows show Overdue automatically (Draft stays Draft; same idea as bills). No Harbour sample list is mixed in.`,
+      prose: `On ${who}'s blank ledger, open Invoices and use Create invoice (contact, tax-exclusive lines, GST on Income / GST Free Income). Tip: “Create mixed-tax sample” (or ?mixed=1) one-click creates a GST on Income + GST Free Income invoice — then open the pay link for the nebula tax-invoice header. Past-due unpaid rows show Overdue automatically (Draft stays Draft; same idea as bills). No demo sample list is mixed in.`,
       citations: [{ label: "Ledger mode", value: "Blank", source: "onboarding choice" }],
       actions: [
         { id: "inv-mixed", label: "Create mixed-tax sample", kind: "link", href: "/demo/invoices?mixed=1" },
@@ -873,7 +873,7 @@ function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
   if (intent === "categorise" || intent === "banking" || intent === "cash") {
     return {
       intent,
-      prose: `${who}'s blank ledger has its own cheque account (not Harbour balances). On Banking: set an opening balance so cash total is clear, Try starter CSV for a few generic lines, or upload your own statement — then categorise unmatched lines (Apply / Ask AI / Unmatch). Harbour sample KPIs stay in the guest demo.`,
+      prose: `${who}'s blank ledger has its own cheque account (not demo sample balances). On Banking: set an opening balance so cash total is clear, Try starter CSV for a few generic lines, or upload your own statement — then categorise unmatched lines (Apply / Ask AI / Unmatch). Demo sample KPIs stay in the guest tour.`,
       citations: [
         { label: "Ledger mode", value: "Blank", source: "onboarding choice" },
         { label: "Cheque", value: "blank-chk · browser CSV", source: "/demo/banking" },
@@ -889,7 +889,7 @@ function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
   if (intent === "bills") {
     return {
       intent,
-      prose: `On ${who}'s blank ledger, open Bills to create a supplier bill (multi-line). Tip: “Create mixed-tax sample” or ?mixed=1 one-click creates a GST on Expenses + GST Free Expenses bill — then Approve / Mark paid on the status strip. Print works for an internal summary (same as Harbour sample bills) — there is no public pay URL for bills. Harbour overdue sample totals live in the guest demo.`,
+      prose: `On ${who}'s blank ledger, open Bills to create a supplier bill (multi-line). Tip: “Create mixed-tax sample” or ?mixed=1 one-click creates a GST on Expenses + GST Free Expenses bill — then Approve / Mark paid on the status strip. Print works for an internal summary (same as demo sample bills) — there is no public pay URL for bills. Demo overdue sample totals live in the guest tour.`,
       citations: [
         { label: "Ledger mode", value: "Blank", source: "onboarding choice" },
         { label: "Print", value: "Internal summary only", source: "no /pay route for bills" },
@@ -926,7 +926,7 @@ function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
     }
     return {
       intent,
-      prose: `${who} has no overdue user invoices yet. Create an invoice and set a past due date (or wait until due) to see Overdue automatically — or explore Harbour & Co as a guest to chase sample INV-1038 Maple & Pine.`,
+      prose: `${who} has no overdue user invoices yet. Create an invoice and set a past due date (or wait until due) to see Overdue automatically — or try a demo as a guest to chase sample INV-1038 Maple & Pine.`,
       citations: [{ label: "Ledger mode", value: "Blank", source: "onboarding choice" }],
       actions: [
         { id: "inv", label: "Create mixed-tax invoice", kind: "link", href: "/demo/invoices?mixed=1" },
@@ -942,10 +942,10 @@ function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
       ? "BAS due dates and GST drafts"
       : intent === "profit"
           ? "profit KPIs"
-          : "Harbour sample facts";
+          : "Demo sample facts";
   return {
     intent,
-    prose: `${who} is blank — I don't have ${topic} for this org yet. Create your own invoice/quote here, use Banking (own cheque + starter CSV), or explore Harbour & Co as a guest where those sample answers live.`,
+    prose: `${who} is blank — I don't have ${topic} for this org yet. Create your own invoice/quote here, use Banking (own cheque + starter CSV), or try a demo as a guest where those sample answers live.`,
     citations: [{ label: "Ledger mode", value: "Blank", source: "onboarding choice" }],
     actions: [
       { id: "inv", label: "Mixed-tax invoice", kind: "link", href: "/demo/invoices?mixed=1" },

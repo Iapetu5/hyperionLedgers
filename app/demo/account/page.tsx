@@ -33,7 +33,7 @@ export default function AccountPage() {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold text-white">Account</h1>
         <div className="card p-6 text-sm text-slate-200">
-          You&apos;re browsing as a guest on the Harbour &amp; Co sample organisation.
+          You&apos;re browsing as a guest. This is a demo with sample data — not your real account.
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/signup" className="btn-primary">Sign up to keep an org</Link>
             <Link href="/login" className="btn-secondary">Log in</Link>
@@ -69,7 +69,7 @@ export default function AccountPage() {
         <div className="card border-brand-400/25 bg-brand-500/10 p-5">
           <p className="text-sm font-semibold text-white">Blank ledger</p>
           <p className="mt-1 text-sm text-slate-300">
-            Sample Harbour figures stay out of this organisation. Create an invoice, quote, or bill next — each can start from a ready-made example. Harbour &amp; Co is a separate guest tour and logs you out; log back in anytime.
+            Sample figures stay out of this organisation. Create an invoice, quote, or bill next — each can start from a ready-made example. Try a demo is a separate guest tour and logs you out; log back in anytime.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link href="/demo/invoices?mixed=1" className="btn-primary">
@@ -81,7 +81,7 @@ export default function AccountPage() {
             <Link href="/demo/bills?mixed=1" className="btn-secondary">
               Create bill
             </Link>
-            <ExploreSampleButton primary={false} label="Open Harbour & Co sample as guest" />
+            <ExploreSampleButton primary={false} />
           </div>
         </div>
       )}

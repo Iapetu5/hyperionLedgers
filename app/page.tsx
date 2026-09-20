@@ -69,7 +69,7 @@ export default function HomePage() {
               </div>
               <StartTrialButton className="btn-primary w-full" />
               <Link href="/demo" className="block text-center text-sm font-medium text-white/60 underline-offset-4 hover:text-white hover:underline">
-                Open Harbour &amp; Co
+                Try a demo
               </Link>
             </div>
           </div>

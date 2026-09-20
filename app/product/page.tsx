@@ -51,7 +51,7 @@ export default function ProductPage() {
             href="/demo"
             className="text-sm font-medium text-white/70 underline-offset-4 transition hover:text-white hover:underline"
           >
-            Open Harbour &amp; Co
+            Try a demo
           </Link>
         </div>
 

@@ -50,7 +50,7 @@ export default function TryPage() {
           </Link>
           {" · "}
           <Link href="/demo" className="font-medium text-white/80 underline-offset-4 hover:text-white hover:underline">
-            Open Harbour &amp; Co
+            Try a demo
           </Link>
         </p>
 

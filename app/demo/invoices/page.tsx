@@ -586,7 +586,7 @@ export default function InvoicesPage() {
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Harbour & Co sample invoices stay in the guest demo — they are not copied into your organisation."
+          hint="Demo sample invoices stay in the guest tour — they are not copied into your organisation."
         />
       ) : userRows.length === 0 ? null : (
         <div className="card overflow-x-auto">
@@ -640,7 +640,7 @@ export default function InvoicesPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Create a basic invoice (saved in this browser), or explore Harbour &amp; Co for the full sample list. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
+              Create a basic invoice (saved in this browser), or try a demo for the full sample list. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
             </>
           ) : (
             <>
@@ -697,7 +697,7 @@ export default function InvoicesPage() {
         <div className="card overflow-x-auto">
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Your created invoices</h2>
-            <p className="text-xs text-slate-400">Stored in this browser · not part of the Harbour sample story</p>
+            <p className="text-xs text-slate-400">Stored in this browser · not part of the demo sample</p>
           </div>
           <table className="min-w-full text-left text-sm">
             <thead className="table-head">
@@ -746,7 +746,7 @@ export default function InvoicesPage() {
 
       <div className="card overflow-x-auto">
         <div className="border-b border-white/10 px-4 py-3">
-          <h2 className="font-semibold text-white">Harbour &amp; Co sample</h2>
+          <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
             Copy a customer pay link or open the public page. INV-1042 is a mixed GST + GST Free example — View as customer to confirm the nebula tax-invoice header.
           </p>

@@ -66,7 +66,7 @@ export default function PricingPage() {
         <p className="mt-10 text-center text-sm text-slate-400">
           Want to look around first?{" "}
           <Link href="/demo" className="font-medium text-brand-300 hover:underline">
-            Open Harbour &amp; Co
+            Try a demo
           </Link>
           {" "}
           with no account, or{" "}

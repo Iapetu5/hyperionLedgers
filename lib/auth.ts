@@ -274,4 +274,4 @@ export function updateAccountProfile(patch: {
   return { ok: true, account: toPublic(updated) };
 }
 
-export const DEMO_ORG_LABEL = "Demo organisation — sample data only";
+export const DEMO_ORG_LABEL = "This is a demo with sample data — not your real account.";

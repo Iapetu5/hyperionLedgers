@@ -40,7 +40,7 @@ export default function LoginPage() {
           </Link>
           {" "}or{" "}
           <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            Look at a sample first
+            Try a demo
           </Link>
           .
         </p>

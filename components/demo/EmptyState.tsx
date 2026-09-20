@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { FileText, Sparkles } from "lucide-react";
 import { ExploreSampleButton, useExploreHarbourSample } from "@/components/demo/ExploreSampleButton";
+import { DEMO_CTA } from "@/lib/brand";
 
 export type EmptyStateAction = {
   label: string;
@@ -29,7 +30,7 @@ export function EmptyState({
   description: string;
   actions?: EmptyStateAction[];
   hint?: string;
-  /** Adds Harbour sample as a secondary path — never steals primary from create CTAs. */
+  /** Adds the guest demo as a secondary path — never steals primary from create CTAs. */
   showExploreSample?: boolean;
 }) {
   const explore = useExploreHarbourSample();
@@ -40,7 +41,7 @@ export function EmptyState({
     if (actions.length === 0) {
       return [
         {
-          label: "Explore Harbour & Co sample",
+          label: DEMO_CTA,
           primary: true,
           onClick: explore,
         },
@@ -54,7 +55,7 @@ export function EmptyState({
     return [
       ...mapped,
       {
-        label: "Explore Harbour & Co sample",
+        label: DEMO_CTA,
         primary: false,
         onClick: explore,
       },
@@ -82,7 +83,7 @@ export function EmptyState({
             <div className="mt-4 flex flex-wrap gap-2">
               {mergedActions.map((a) => {
                 const cls = a.primary ? "btn-primary" : "btn-secondary";
-                const isExplore = a.label.startsWith("Explore Harbour");
+                const isExplore = a.label === DEMO_CTA;
                 if (a.href) {
                   return (
                     <Link key={a.label} href={a.href} className={cls}>
@@ -111,9 +112,9 @@ export function BlankLedgerHint() {
     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
       <span className="inline-flex items-center gap-1.5">
         <Sparkles size={12} className="text-brand-300" />
-        Starting empty — browse the Harbour &amp; Co sample as a guest anytime.
+        Starting empty — try a demo as a guest anytime.
       </span>
-      <ExploreSampleButton primary={false} className="!px-2.5 !py-1 text-xs" label="Explore Harbour & Co sample" />
+      <ExploreSampleButton primary={false} className="!px-2.5 !py-1 text-xs" />
     </div>
   );
 }

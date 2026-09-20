@@ -16,6 +16,7 @@ import {
   type PublicQuote,
   setPublicDocStatus,
 } from "@/lib/public-docs";
+import { DEMO_ORG } from "@/lib/sample-data";
 
 function loadDoc(kind: "invoice" | "quote", id: string): PublicInvoice | PublicQuote | null {
   return kind === "invoice" ? getPublicInvoice(id) : getPublicQuote(id);
@@ -81,7 +82,7 @@ export function CustomerDocPage({
         <div className="card p-6">
           <h1 className="text-xl font-bold text-white">Document not found</h1>
           <p className="mt-2 text-sm text-slate-300">
-            This demo {kind === "invoice" ? "pay" : "quote"} link doesn&apos;t match a known {kind}. Sample docs use Harbour &amp; Co IDs; user-created invoices/quotes need the same browser where they were saved.
+            This demo {kind === "invoice" ? "pay" : "quote"} link doesn&apos;t match a known {kind}. Sample docs use demo IDs; user-created invoices/quotes need the same browser where they were saved.
           </p>
           <Link href="/demo" className="btn-primary mt-4 inline-flex no-print">
             Back to demo
@@ -143,6 +144,11 @@ export function CustomerDocPage({
                 </p>
               ) : doc.fromUser ? (
                 <p className="mt-1 text-xs text-white/40">Demo document · no street address on file</p>
+              ) : null}
+              {!doc.fromUser ? (
+                <p className="mt-1 text-[10px] text-white/35">
+                  Fictional sample trading name: {DEMO_ORG.tradingName}
+                </p>
               ) : null}
             </div>
             <div className="text-right">

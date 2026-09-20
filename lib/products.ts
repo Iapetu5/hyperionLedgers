@@ -181,7 +181,7 @@ export function updateUserProduct(
   },
 ): Product | { error: string } {
   if (isSampleProductId(id)) {
-    return { error: "Harbour sample products are read-only in this demo — add your own instead." };
+    return { error: "Demo sample products are read-only — add your own instead." };
   }
   const existing = loadUserProducts();
   const idx = existing.findIndex((p) => p.id === id);

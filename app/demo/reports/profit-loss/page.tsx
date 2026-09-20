@@ -56,7 +56,7 @@ export default function ProfitLossReportPage() {
       {usesSampleData ? (
         <>
           <div className="card border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
-            Harbour &amp; Co sample period · figures rounded for readability · illustrative draft only
+            Demo sample period · figures rounded for readability · illustrative draft only
           </div>
 
           <div className="card overflow-hidden">
@@ -146,7 +146,7 @@ export default function ProfitLossReportPage() {
         <EmptyState
           icon={TrendingUp}
           title="No profit & loss figures yet"
-          description="Create an invoice or bill, or explore Harbour & Co as a guest for a sample preview."
+          description="Create an invoice or bill, or try a demo as a guest for a sample preview."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },

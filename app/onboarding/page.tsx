@@ -152,7 +152,7 @@ export default function OnboardingPage() {
                 <span>
                   <strong className="text-white">Sample data</strong>
                   <span className="mt-0.5 block text-slate-300">
-                    Optional tour of Harbour &amp; Co invoices, banking and BAS. Not your own first document.
+                    Optional tour of demo invoices, banking and BAS. Not your own first document.
                   </span>
                 </span>
               </label>

@@ -349,7 +349,7 @@ export default function GstBasPage() {
                 )}
                 {usesSampleData && (
                   <p className="mt-1 text-xs text-slate-400">
-                    Harbour sample quarter label — GST boxes still roll up from listed invoices &amp;
+                    Demo sample quarter label — GST boxes still roll up from listed invoices &amp;
                     bills.
                   </p>
                 )}
@@ -365,7 +365,7 @@ export default function GstBasPage() {
                 <p className="text-lg font-bold text-white">{formatAUD(netGst)}</p>
                 <p className="text-[11px] text-slate-500">
                   {usesSampleData
-                    ? "From listed Harbour invoices & bills"
+                    ? "From listed demo invoices & bills"
                     : "This quarter only — other dates stay in the ledger"}
                 </p>
               </div>
@@ -499,7 +499,7 @@ export default function GstBasPage() {
               browser. Use View quarter to look at the previous AU quarter and any other quarter that
               has documents. Mark as prepared is stored for the quarter you are viewing — another
               quarter stays unprepared until you mark it. Profit &amp; loss stays year-to-date across all documents, so those GST
-              rows can differ. Harbour guest demo keeps its sample
+              rows can differ. The guest demo keeps its sample
               period list unchanged. Simulated preview — not lodged with the ATO.
             </div>
           )}
@@ -524,7 +524,7 @@ export default function GstBasPage() {
             { label: "View reports", href: "/demo/reports" },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="The due-date calendar above still applies for planning. Harbour guest demo keeps richer sample quarter history."
+          hint="The due-date calendar above still applies for planning. The guest demo keeps richer sample quarter history."
         />
       )}
     </div>

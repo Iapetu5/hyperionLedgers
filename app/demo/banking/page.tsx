@@ -391,7 +391,7 @@ export default function BankingPage() {
         ? "No CSV imports to clear."
         : mode === "blank"
           ? `Cleared ${n} imported row${n === 1 ? "" : "s"}. Opening balance was left as-is — use Clear opening if you want that gone too.`
-          : `Cleared ${n} imported row${n === 1 ? "" : "s"} (Harbour sample lines kept).`,
+          : `Cleared ${n} imported row${n === 1 ? "" : "s"} (demo sample lines kept).`,
     );
   }
 
@@ -412,7 +412,7 @@ export default function BankingPage() {
           <h1 className="text-2xl font-bold text-white">Banking</h1>
           <p className="text-sm text-white/70">
             {mode === "blank"
-              ? `${orgLabel} cheque account — browser-side CSV only. No live bank feeds, and Harbour sample lines stay out of this blank ledger.`
+              ? `${orgLabel} cheque account — browser-side CSV only. No live bank feeds, and demo sample lines stay out of this blank ledger.`
               : "Sample balances and browser-side CSV import only — no live bank feeds or APIs."}
           </p>
         </div>
@@ -536,7 +536,7 @@ export default function BankingPage() {
               </li>
             </ol>
             <p className="mt-4 border-t border-white/10 pt-3 text-xs text-slate-400">
-              Browser-only demo; no live feed. Generic starter lines stay separate from Harbour &amp; Co. Want the
+              Browser-only demo; no live feed. Generic starter lines stay separate from the guest sample. Want the
               pre-loaded sample story?{" "}
               <Link href="/demo" className="font-semibold text-brand-300 underline-offset-2 hover:underline">
                 Explore sample as guest
@@ -576,7 +576,7 @@ export default function BankingPage() {
           <strong className="text-white">First visit?</strong>{" "}
           Your sample cheque already has an opening balance. Next: <strong>Try sample CSV</strong>, review and
           import the preview, then use <strong>Apply</strong> on a suggested account code below. Imported lines
-          are labelled separately and can be cleared without removing Harbour&apos;s pre-loaded sample.
+          are labelled separately and can be cleared without removing the demo&apos;s pre-loaded sample.
         </div>
       )}
 
@@ -786,7 +786,7 @@ export default function BankingPage() {
                 type="button"
                 className="btn-secondary !px-3 !py-1.5 text-xs"
                 onClick={resetCats}
-                title="Undo Apply / Ask AI categorisations for this cheque account (Harbour and blank stay separate)"
+                title="Undo Apply / Ask AI categorisations for this cheque account (demo sample and blank stay separate)"
               >
                 <RotateCcw size={14} />
                 Reset categorisations
@@ -800,7 +800,7 @@ export default function BankingPage() {
                 title={
                   mode === "blank"
                     ? "Remove CSV-imported rows (opening balance kept)"
-                    : "Remove CSV-imported rows (Harbour sample lines stay)"
+                    : "Remove CSV-imported rows (demo sample lines stay)"
                 }
               >
                 <Trash2 size={14} />
@@ -852,7 +852,7 @@ export default function BankingPage() {
                     </p>
                     <p className="mx-auto mt-1 max-w-md text-sm text-slate-400">
                       {mode === "blank" && txns.length === 0
-                        ? "Set an opening balance above, use Try starter CSV for a few generic demo lines, or upload your own statement. Nothing from Harbour & Co is mixed in."
+                        ? "Set an opening balance above, use Try starter CSV for a few generic demo lines, or upload your own statement. Nothing from the guest sample is mixed in."
                         : (
                           <>
                             No unmatched transactions

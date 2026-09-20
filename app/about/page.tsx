@@ -24,7 +24,7 @@ export default function AboutPage() {
                 presented in plain English so you always know what to do next.
               </p>
               <p>
-                Harbour &amp; Co Studio is the sample organisation on this site.
+                The /demo path is a walkthrough with sample data — not a real HyperionInvoices account.
                 ATO lodgements and bank feeds are simulated. We use Australian English and AUD throughout.
               </p>
             </div>
@@ -36,7 +36,7 @@ export default function AboutPage() {
               {[
                 "Full suite UI for Australian SMB bookkeeping",
                 "Your session stays in this browser",
-                "Open Harbour & Co now, or start with your own organisation",
+                "Try a demo, or start with your own organisation",
                 "Not a tax agent, BAS agent, or financial adviser",
               ].map((item, i) => (
                 <li key={item} className="flex items-start gap-2">

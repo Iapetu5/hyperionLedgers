@@ -18,7 +18,7 @@ Production: [https://www.hyperioninvoices.com.au](https://www.hyperioninvoices.c
 | `/api/checkout` | Creates a Stripe Checkout subscription (`$69` / 14-day trial) |
 | `/api/stripe/webhook` | Verifies `checkout.session.completed` and records entitlement |
 | `/api/downloads/windows` | Gated stream of `HyperionInvoices-Setup.exe` |
-| `/demo` | Optional Harbour & Co **sample data** (banner: sample data) |
+| `/demo` | Optional **Try a demo** walkthrough (banner: sample data — not your real account) |
 
 The homepage does **not** dump visitors into the demo.
 

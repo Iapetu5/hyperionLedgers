@@ -1,12 +1,15 @@
 /** Fictional Australian sample data for the HyperionInvoices demo. */
 
 export const DEMO_ORG = {
-  name: "Harbour & Co Studio Pty Ltd",
+  name: "Demo Company Pty Ltd",
+  shortName: "Demo company",
+  /** Fine print only — not used as the org title or marketing CTA. */
+  tradingName: "Harbour & Co Studio Pty Ltd",
   abn: "51 824 753 556",
   suburb: "Surry Hills",
   state: "NSW",
   postcode: "2010",
-  demoLabel: "Demo organisation — sample data only",
+  demoLabel: "This is a demo with sample data — not your real account.",
 };
 
 export const accounts = [

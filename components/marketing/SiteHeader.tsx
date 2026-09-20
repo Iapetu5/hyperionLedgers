@@ -97,7 +97,7 @@ export function SiteHeader({
             </Link>
             {variant === "marketing" ? (
               <Link href="/demo" className="rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white">
-                Open Harbour &amp; Co
+                Try a demo
               </Link>
             ) : null}
             <div className="px-3 pt-2">

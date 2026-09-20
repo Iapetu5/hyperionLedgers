@@ -61,7 +61,7 @@ export default function BalanceSheetReportPage() {
       {usesSampleData ? (
         <>
           <div className="card border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
-            Harbour &amp; Co sample snapshot · balances rounded · illustrative preview only
+            Demo sample snapshot · balances rounded · illustrative preview only
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -174,7 +174,7 @@ export default function BalanceSheetReportPage() {
         <EmptyState
           icon={Scale}
           title="No balance sheet figures yet"
-          description="Create an invoice or bill, or explore Harbour & Co as a guest for a sample preview."
+          description="Create an invoice or bill, or try a demo as a guest for a sample preview."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
