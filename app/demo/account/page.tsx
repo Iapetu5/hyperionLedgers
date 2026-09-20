@@ -30,11 +30,15 @@ export default function AccountPage() {
 
   if (!user) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-white">Account</h1>
-        <div className="card p-6 text-sm text-slate-200">
-          You&apos;re browsing as a guest on the Harbour &amp; Co sample organisation.
-          <div className="mt-4 flex flex-wrap gap-2">
+      <div className="easy-form space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Your account</h1>
+          <p className="mt-2 max-w-xl text-base leading-relaxed text-slate-200">
+            You are looking at the Harbour &amp; Co sample. Sign up to keep your own business details.
+          </p>
+        </div>
+        <div className="card p-6 text-base text-slate-200">
+          <div className="flex flex-wrap gap-2">
             <Link href="/signup" className="btn-primary">Sign up to keep an org</Link>
             <Link href="/login" className="btn-secondary">Log in</Link>
           </div>
@@ -62,16 +66,21 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-white">Account</h1>
+    <div className="easy-form space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold text-white">Your account</h1>
+        <p className="mt-2 max-w-xl text-base leading-relaxed text-slate-200">
+          Change your business name, GST, and financial year. We save this in your account.
+        </p>
+      </div>
 
       {!usesSampleData && (
         <div className="card border-brand-400/25 bg-brand-500/10 p-5">
-          <p className="text-sm font-semibold text-white">Blank ledger</p>
-          <p className="mt-1 text-sm text-slate-300">
-            Sample Harbour figures stay out of this organisation. Create an invoice, quote, or bill next — each can start from a ready-made example. Harbour &amp; Co is a separate guest tour and logs you out; log back in anytime.
+          <p className="text-base font-semibold text-white">Your books start empty</p>
+          <p className="mt-1 text-base text-slate-300">
+            Sample Harbour figures stay out of this organisation. Create an invoice next — quotes and bills are here too. Harbour &amp; Co is a separate guest tour and logs you out; log back in anytime.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/demo/invoices?mixed=1" className="btn-primary">
               Create invoice
             </Link>
@@ -86,7 +95,7 @@ export default function AccountPage() {
         </div>
       )}
 
-      <form className="card max-w-xl space-y-4 p-6" onSubmit={onSave}>
+      <form className="card max-w-xl space-y-5 p-6" onSubmit={onSave}>
         <div>
           <label className="label" htmlFor="bn">Business name</label>
           <input id="bn" className="input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
@@ -94,7 +103,7 @@ export default function AccountPage() {
         <AbnField value={abn} onChange={setAbn} />
         <fieldset>
           <legend className="label">GST registered</legend>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
             {[true, false].map((v) => (
               <label
                 key={String(v)}
@@ -109,14 +118,17 @@ export default function AccountPage() {
         {gstRegistered && (
           <fieldset>
             <legend className="label">GST method</legend>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {(["accruals", "cash"] as const).map((m) => (
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              {([
+                ["accruals", "Accruals"],
+                ["cash", "Cash"],
+              ] as const).map(([val, label]) => (
                 <label
-                  key={m}
-                  className={`choice-card capitalize ${method === m ? "choice-card-active" : ""}`}
+                  key={val}
+                  className={`choice-card ${method === val ? "choice-card-active" : ""}`}
                 >
-                  <input type="radio" name="gstMethod" checked={method === m} onChange={() => setMethod(m)} />
-                  <span className="font-semibold text-white">{m}</span>
+                  <input type="radio" name="gstMethod" checked={method === val} onChange={() => setMethod(val)} />
+                  <span className="font-semibold text-white">{label}</span>
                 </label>
               ))}
             </div>
@@ -131,12 +143,12 @@ export default function AccountPage() {
             <option>30 September</option>
           </select>
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-sm text-slate-400">
           Ledger mode: <strong className="text-slate-200">{user.ledgerMode ?? "sample"}</strong> (set during onboarding).
         </p>
-        {error && <p className="text-sm text-rose-300">{error}</p>}
-        {message && <p className="text-sm text-emerald-300">{message}</p>}
-        <button type="submit" className="btn-primary">Save</button>
+        {error && <p className="text-base text-rose-300">{error}</p>}
+        {message && <p className="text-base text-emerald-300">{message}</p>}
+        <button type="submit" className="btn-primary w-full">Save</button>
       </form>
     </div>
   );

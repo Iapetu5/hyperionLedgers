@@ -7,6 +7,8 @@ import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { validateSignup } from "@/lib/auth";
 import { AbnField } from "@/components/abn/AbnField";
+import { EasyStepBar } from "@/components/easy/EasyStepBar";
+import { PLAN } from "@/lib/billing";
 
 export default function SignupPage() {
   const { signUp } = useAuth();
@@ -57,50 +59,56 @@ export default function SignupPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12">
       <BrandLogo className="mb-8 justify-center" />
-      <div className="card p-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 1 of 2 · Account</p>
-        <h1 className="mt-1 text-xl font-bold text-white">Start your free trial</h1>
-        <p className="mt-1 text-sm text-slate-300">
-          14 days of full HyperionLedgers for your organisation — then $69 a month. When Postgres is attached on Vercel, this account is stored on the server and works on phone and desktop. Next: a short setup, then your first invoice, quote, or bill. Prefer to look first?{" "}
-          <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            Browse the sample
-          </Link>
-          {" "}— no account needed.
+      <div className="card easy-form p-6 sm:p-8">
+        <EasyStepBar current={1} total={2} label="Your details" />
+        <h1 className="mt-4 text-2xl font-bold text-white">Create your account</h1>
+        <p className="mt-2 text-base leading-relaxed text-slate-200">
+          Enter your name, email, and business. Next we will set up GST and your financial year.
         </p>
-        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+        <form className="mt-6 space-y-5" onSubmit={onSubmit}>
           <div>
             <label className="label" htmlFor="fullName">Full name</label>
             <input id="fullName" className="input" required autoComplete="name" placeholder="Alex Nguyen" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-            {fieldErrors.fullName && <p className="mt-1 text-xs text-rose-300">{fieldErrors.fullName}</p>}
+            {fieldErrors.fullName && <p className="mt-1 text-sm text-rose-300">{fieldErrors.fullName}</p>}
           </div>
           <div>
             <label className="label" htmlFor="email">Email</label>
             <input id="email" className="input" type="email" required autoComplete="email" placeholder="you@business.com.au" value={email} onChange={(e) => setEmail(e.target.value)} />
-            {fieldErrors.email && <p className="mt-1 text-xs text-rose-300">{fieldErrors.email}</p>}
+            {fieldErrors.email && <p className="mt-1 text-sm text-rose-300">{fieldErrors.email}</p>}
           </div>
           <div>
             <label className="label" htmlFor="password">Password</label>
             <input id="password" className="input" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <p className="mt-1 text-xs text-slate-400">At least 8 characters. Stored only in this browser.</p>
-            {fieldErrors.password && <p className="mt-1 text-xs text-rose-300">{fieldErrors.password}</p>}
+            <p className="mt-1 text-sm text-slate-400">At least 8 characters. Stored only in this browser.</p>
+            {fieldErrors.password && <p className="mt-1 text-sm text-rose-300">{fieldErrors.password}</p>}
           </div>
           <div>
             <label className="label" htmlFor="businessName">Business name</label>
             <input id="businessName" className="input" required autoComplete="organization" placeholder="Harbour Cafe Pty Ltd" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-            {fieldErrors.businessName && <p className="mt-1 text-xs text-rose-300">{fieldErrors.businessName}</p>}
+            {fieldErrors.businessName && <p className="mt-1 text-sm text-rose-300">{fieldErrors.businessName}</p>}
           </div>
           <AbnField value={abn} onChange={setAbn} />
-          {fieldErrors.abn && <p className="text-xs text-rose-300">{fieldErrors.abn}</p>}
-          {error && <p className="text-sm text-rose-300">{error}</p>}
+          {fieldErrors.abn && <p className="text-sm text-rose-300">{fieldErrors.abn}</p>}
+          {error && <p className="text-base text-rose-300">{error}</p>}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy ? "Creating…" : "Continue to setup"}
+            {busy ? "Creating…" : "Next: set up your business"}
           </button>
+          <p className="text-center text-sm text-slate-400">
+            {PLAN.trialDays} days free. Then ${PLAN.amountAud} {PLAN.intervalLabel}. Cancel anytime.
+          </p>
         </form>
-        <p className="mt-4 text-center text-sm text-slate-300">
+        <p className="mt-5 text-center text-base text-slate-300">
           Already have an account?{" "}
           <Link href="/login" className="font-semibold text-brand-300 hover:underline">
             Log in
           </Link>
+        </p>
+        <p className="mt-2 text-center text-sm text-slate-400">
+          Prefer to look first?{" "}
+          <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
+            Browse the sample
+          </Link>
+          {" "}— no account needed.
         </p>
       </div>
     </div>

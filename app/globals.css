@@ -170,6 +170,33 @@ body {
     @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400;
   }
 
+  /* Scoped to signup / onboarding / account — larger type and tap targets for older users */
+  .easy-form .label {
+    @apply mb-1.5 block text-base font-semibold normal-case tracking-normal text-white;
+  }
+
+  .easy-form .input {
+    @apply min-h-[48px] px-3 py-3 text-base;
+  }
+
+  .easy-form .btn-primary {
+    @apply min-h-[48px] px-5 text-base;
+  }
+
+  .easy-form .btn-secondary {
+    @apply min-h-[44px] px-5 text-base;
+  }
+
+  .easy-form .choice-card {
+    @apply gap-3 p-4 text-base;
+  }
+
+  .easy-form input[type="radio"],
+  .easy-form input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
   .page-hero {
     @apply border-b border-white/10 bg-black/25;
   }

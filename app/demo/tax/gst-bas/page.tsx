@@ -9,7 +9,6 @@ import { BasDueDates } from "@/components/bas/BasDueDates";
 import { formatAUD, formatDateAU } from "@/lib/format";
 import { basPeriods, gstBas } from "@/lib/sample-data";
 import {
-  BAS_DRAFT_STATUS_SIMULATED,
   deriveBasDraftFromDocDates,
   formatBasRelative,
   isISODateInRange,
@@ -238,10 +237,8 @@ export default function GstBasPage() {
     : blankDraft?.periodLabel ?? "—";
   const periodStatus =
     mounted && simLodged
-      ? "Simulated lodgement marked — not sent to the ATO"
-      : usesSampleData
-        ? gstBas.status
-        : BAS_DRAFT_STATUS_SIMULATED;
+      ? "Marked as prepared — practice only, not sent to the tax office"
+      : "Practice preview — not sent to the tax office";
   const draftDueDate = usesSampleData
     ? basPeriods.find((p) => p.id === "q1-26")?.due ?? "2026-10-28"
     : blankDraft?.dueDate;
@@ -259,11 +256,9 @@ export default function GstBasPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">GST &amp; BAS</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          Draft GST figures and due dates for your records. Line tax follows Xero-style{" "}
-          <span className="text-white/90">GST on Income</span> /{" "}
-          <span className="text-white/90">GST Free</span> (and expense equivalents). HyperionLedgers
-          does not connect to or lodge with the ATO — lodgement here is always simulated.
+        <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-200">
+          This is a practice preview of GST and BAS. Nothing here is sent to the tax office.
+          You can switch quarters and mark a period as prepared for practice.
         </p>
       </div>
 
@@ -271,8 +266,8 @@ export default function GstBasPage() {
 
       {!gstOn && (
         <div className="card border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-100">
-          Your account is marked as not GST registered. BAS widgets still show for demo education —
-          treat figures as illustrative only.
+          Your account is marked as not GST registered. These figures are still shown so you can
+          practise — they are not sent to the tax office.
         </div>
       )}
 
@@ -281,7 +276,7 @@ export default function GstBasPage() {
           <div className="card p-5">
             {!usesSampleData && blankQuarters.length > 1 && blankDraft && (
               <div className="mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <p className="text-base font-semibold text-white">
                   View quarter
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2" role="tablist" aria-label="BAS quarter">
@@ -295,14 +290,14 @@ export default function GstBasPage() {
                         role="tab"
                         aria-selected={active}
                         onClick={() => selectBlankQuarter(q.periodEnd)}
-                        className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
+                        className={`min-h-[48px] rounded-lg border px-4 py-3 text-left text-sm transition ${
                           active
                             ? "border-cyan-400/40 bg-cyan-500/15 text-white"
                             : "border-white/15 bg-white/5 text-slate-300 hover:bg-white/10"
                         }`}
                       >
                         <span className="block font-semibold">{q.periodLabel}</span>
-                        <span className="mt-0.5 block text-[10px] uppercase tracking-wide text-slate-400">
+                        <span className="mt-0.5 block text-xs text-slate-400">
                           {isLatest
                             ? "Latest documents"
                             : q.hasDocuments
@@ -314,11 +309,10 @@ export default function GstBasPage() {
                     );
                   })}
                 </div>
-                <p className="mt-2 text-[11px] text-slate-500">
-                  Defaults to the quarter of your latest invoice or bill. A refresh keeps the quarter
-                  you last opened in this browser; if that quarter is no longer listed, the draft
-                  returns to your latest documents. Only documents dated in the selected quarter change
-                  the GST boxes. Simulated — not lodged with the ATO.
+                <p className="mt-2 text-sm text-slate-400">
+                  Opens on the quarter of your latest invoice or bill. A refresh keeps the quarter
+                  you last opened. Only documents dated in the selected quarter change the GST boxes.
+                  Practice preview — not sent to the tax office.
                 </p>
               </div>
             )}
@@ -343,8 +337,8 @@ export default function GstBasPage() {
                     {viewingLatest
                       ? "Period derived from your latest invoice issue / bill dates (demo calendar)."
                       : "Earlier AU quarter on the demo calendar — not the latest-document period."}{" "}
-                    Period end {formatDateAU(blankDraft.periodEnd)}. Simulated preview — not lodged
-                    with the ATO.
+                    Period end {formatDateAU(blankDraft.periodEnd)}. Practice preview — not sent to
+                    the tax office.
                   </p>
                 )}
                 {usesSampleData && (
@@ -361,7 +355,7 @@ export default function GstBasPage() {
                 )}
               </div>
               <div className="text-right">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Net GST (preview)</p>
+                <p className="text-xs uppercase tracking-wide text-slate-400">Net GST (practice preview)</p>
                 <p className="text-lg font-bold text-white">{formatAUD(netGst)}</p>
                 <p className="text-[11px] text-slate-500">
                   {usesSampleData
@@ -399,7 +393,7 @@ export default function GstBasPage() {
                     Nothing is dated between {formatDateAU(blankDraft.periodStart)} and{" "}
                     {formatDateAU(blankDraft.periodEnd)}. GST on Income, GST on Expenses, and net GST
                     are $0 for this period. Documents from other quarters stay in the ledger and do
-                    not fill these boxes. Simulated preview — not lodged with the ATO.
+                    not fill these boxes. Practice preview — not sent to the tax office.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Link href="/demo/invoices?mixed=1" className="btn-primary">
@@ -439,24 +433,24 @@ export default function GstBasPage() {
               <p className="mt-1 text-[11px] text-slate-500">
                 {docsOutsideQuarter} document{docsOutsideQuarter === 1 ? "" : "s"} dated outside this
                 quarter {docsOutsideQuarter === 1 ? "is" : "are"} left out of these boxes. Simulated
-                preview — not lodged with the ATO.
+                practice preview — not sent to the tax office.
               </p>
             )}
 
             <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn-primary min-h-[48px] px-5 text-base"
                 disabled={mounted && simLodged}
                 onClick={markSimLodged}
               >
-                <FileCheck2 size={16} />
-                {mounted && simLodged ? "Simulated lodgement recorded" : "Mark as prepared (simulated)"}
+                <FileCheck2 size={18} />
+                {mounted && simLodged ? "Marked as prepared" : "Mark as prepared"}
               </button>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm text-slate-400">
                 {usesSampleData
-                  ? "Does not file with the ATO. Saved in this browser so a refresh keeps the simulated mark."
-                  : "Does not file with the ATO. Saved in this browser for this quarter only — other quarters stay unmarked until you prepare them. Simulated — not lodged with the ATO."}
+                  ? "Practice only — not sent to the tax office. Saved in this browser so a refresh keeps the mark."
+                  : "Practice only — not sent to the tax office. Saved in this browser for this quarter only. Other quarters stay unmarked until you prepare them."}
               </p>
             </div>
           </div>
@@ -465,9 +459,8 @@ export default function GstBasPage() {
             <div className="card overflow-hidden">
               <div className="border-b border-white/10 px-4 py-3">
                 <h2 className="font-semibold text-white">Recent periods</h2>
-                <p className="text-xs text-slate-400">
-                  Sample quarter history — Q1 matches the listed-doc roll-up above; earlier quarters are
-                  demo labels, not ATO lodgement receipts.
+                <p className="text-sm text-slate-400">
+                  Sample quarter history. These are practice labels — nothing is sent to the tax office.
                 </p>
               </div>
               <ul className="divide-y divide-white/10 text-sm">
@@ -477,7 +470,7 @@ export default function GstBasPage() {
                       <p className="font-medium text-white">{p.label}</p>
                       <p className="text-xs text-slate-400">
                         {p.id === "q1-26" && mounted && simLodged
-                          ? "Simulated lodgement — for your records only"
+                          ? "Marked as prepared — practice only, not sent to the tax office"
                           : `${p.status} · due ${formatDateAU(p.due)}`}
                       </p>
                     </div>
@@ -500,7 +493,7 @@ export default function GstBasPage() {
               has documents. Mark as prepared is stored for the quarter you are viewing — another
               quarter stays unprepared until you mark it. Profit &amp; loss stays year-to-date across all documents, so those GST
               rows can differ. Harbour guest demo keeps its sample
-              period list unchanged. Simulated preview — not lodged with the ATO.
+              period list unchanged. Practice preview — not sent to the tax office.
             </div>
           )}
 
@@ -509,14 +502,14 @@ export default function GstBasPage() {
             <Link href="/demo/reports" className="font-semibold text-brand-300 hover:underline">
               Open Reports
             </Link>{" "}
-            for profit &amp; loss and balance sheet previews (also not ATO-lodged).
+            for profit &amp; loss and balance sheet practice previews (also not sent to the tax office).
           </p>
         </>
       ) : (
         <EmptyState
           icon={Calculator}
           title="No BAS draft figures yet"
-          description="Blank ledger — create an invoice or bill and this page will show a draft period (from your document dates), due date, and GST on Income / GST on Expenses boxes. GST Free lines stay out of the GST boxes. Lodgement stays simulated — never sent to the ATO."
+          description="Create an invoice or bill and this page will show a practice BAS draft from your dates. Nothing here is sent to the tax office. GST Free lines stay out of the GST boxes."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },

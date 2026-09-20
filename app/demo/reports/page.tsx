@@ -29,7 +29,7 @@ const REPORT_LINKS = [
     href: "/demo/tax/gst-bas",
     title: "GST & BAS",
     blurb:
-      "Quarterly BAS due dates and draft GST on Income / GST Free-aware figures. Lodgement is simulated.",
+      "Quarterly BAS due dates and draft GST figures. Practice preview — not sent to the tax office.",
     icon: Calculator,
   },
 ];
@@ -59,9 +59,8 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Reports</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          Management reports for your records. Figures are previews from demo or ledger activity —
-          they are not ATO-lodged returns and HyperionLedgers does not file with the ATO.
+        <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-200">
+          These reports are a practice preview for your records. They are not sent to the tax office.
         </p>
       </div>
 
@@ -87,7 +86,7 @@ export default function ReportsPage() {
           <div className="card p-5">
             <h2 className="font-semibold text-white">Profit &amp; loss (YTD preview)</h2>
             <p className="mt-1 text-xs text-slate-400">
-              Net profit from Harbour &amp; Co listed invoices and bills — illustrative only, not a lodged tax figure.
+              Net profit from Harbour &amp; Co listed invoices and bills — a practice preview, not sent to the tax office.
             </p>
             <p className="mt-3 text-3xl font-bold text-white">{formatAUD(rollupSampleReports().netProfit)}</p>
             <p className="mt-1 text-xs text-slate-500">Matches listed invoice/bill roll-up on P&amp;L</p>
@@ -101,7 +100,7 @@ export default function ReportsPage() {
           <div className="card p-5">
             <h2 className="font-semibold text-white">Business health (demo score)</h2>
             <p className="mt-1 text-xs text-slate-400">
-              A simple demo score from sample cash and receivables — not a credit or ATO rating.
+              A simple demo score from sample cash and receivables — not a credit or tax-office rating.
             </p>
             <p className="mt-3 text-3xl font-bold text-white">
               {kpis.healthScore}{" "}
@@ -120,7 +119,7 @@ export default function ReportsPage() {
           <div className="card p-5">
             <h2 className="font-semibold text-white">Profit &amp; loss (from your docs)</h2>
             <p className="mt-1 text-xs text-slate-400">
-              Rolled up from your invoices and bills — preview only, not an ATO figure.
+              Rolled up from your invoices and bills — a practice preview, not sent to the tax office.
             </p>
             <p className="mt-3 text-3xl font-bold text-white">{formatAUD(rollup.netProfit)}</p>
             <p className="mt-1 text-xs text-slate-500">
@@ -162,7 +161,7 @@ export default function ReportsPage() {
             { label: "Create bill", href: "/demo/bills?mixed=1" },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Reports update from your invoices and bills. Sample figures stay in the guest demo. Nothing here is lodged with the ATO."
+          hint="Reports update from your invoices and bills. Sample figures stay in the guest demo. Nothing here is sent to the tax office."
         />
       )}
     </div>

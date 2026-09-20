@@ -51,17 +51,15 @@ export default function BalanceSheetReportPage() {
           / Balance sheet
         </p>
         <h1 className="mt-1 text-2xl font-bold text-white">Balance sheet</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          A point-in-time snapshot of assets, liabilities, and equity. Useful for understanding cash
-          and what is owed — for your records only. This is not an ATO form and HyperionLedgers does
-          not lodge balance sheets with the ATO.
+        <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-200">
+          This is a practice preview of what you own and owe. It is not sent to the tax office.
         </p>
       </div>
 
       {usesSampleData ? (
         <>
           <div className="card border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
-            Harbour &amp; Co sample snapshot · balances rounded · illustrative preview only
+            Harbour &amp; Co sample snapshot · balances rounded · practice preview only
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -181,7 +179,7 @@ export default function BalanceSheetReportPage() {
             { label: "Create bill", href: "/demo/bills?mixed=1" },
             { label: "All reports", href: "/demo/reports" },
           ]}
-          hint="Balance sheet updates from open invoices and bills. Never an ATO lodgement."
+          hint="Balance sheet updates from open invoices and bills. Nothing here is sent to the tax office."
         />
       )}
     </div>

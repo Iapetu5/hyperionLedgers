@@ -46,17 +46,17 @@ export default function ProfitLossReportPage() {
           / Profit &amp; loss
         </p>
         <h1 className="mt-1 text-2xl font-bold text-white">Profit &amp; loss</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          Shows trading income and expenses for the period. Amounts are tax-exclusive where noted;
-          GST on Income / GST Free lines affect GST boxes on BAS, not this operating profit view.
-          This is a management preview for your records — not an ATO-lodged return.
+        <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-200">
+          This is a practice preview of income and expenses. It is not sent to the tax office.
+          Amounts are tax-exclusive where noted. GST on Income / GST Free lines affect BAS GST boxes,
+          not this operating profit view.
         </p>
       </div>
 
       {usesSampleData ? (
         <>
           <div className="card border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
-            Harbour &amp; Co sample period · figures rounded for readability · illustrative draft only
+            Harbour &amp; Co sample period · figures rounded for readability · practice preview only
           </div>
 
           <div className="card overflow-hidden">
@@ -139,7 +139,7 @@ export default function ProfitLossReportPage() {
             <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
               Open GST &amp; BAS
             </Link>{" "}
-            for the quarter-scoped simulated draft (not lodged with the ATO).
+            for the quarter-scoped practice draft (not sent to the tax office).
           </p>
         </>
       ) : (
@@ -153,7 +153,7 @@ export default function ProfitLossReportPage() {
             { label: "Create bill", href: "/demo/bills?mixed=1" },
             { label: "All reports", href: "/demo/reports" },
           ]}
-          hint="P&L updates from your invoices and bills. Nothing here is filed with the ATO."
+          hint="P&L updates from your invoices and bills. Nothing here is sent to the tax office."
         />
       )}
     </div>
