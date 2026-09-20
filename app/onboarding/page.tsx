@@ -36,9 +36,9 @@ export default function OnboardingPage() {
     router.push(mode === "blank" ? "/demo?welcome=1" : "/demo");
   }
 
-  function finish(e?: FormEvent) {
+  async function finish(e?: FormEvent) {
     e?.preventDefault();
-    const res = completeOnboarding({
+    const res = await completeOnboarding({
       gstRegistered,
       gstAccountingMethod: gstRegistered ? method : undefined,
       financialYearEnd: fyEnd,
@@ -53,8 +53,8 @@ export default function OnboardingPage() {
     goAfterSetup(ledgerMode);
   }
 
-  function onSkip() {
-    const res = skipOnboarding();
+  async function onSkip() {
+    const res = await skipOnboarding();
     if (!res.ok) {
       setError(res.error);
       return;

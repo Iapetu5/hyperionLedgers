@@ -679,7 +679,7 @@ export default function BankingPage() {
                 </span>
               </div>
             )}
-            <div className="max-h-56 overflow-auto rounded-lg border border-white/10 bg-black/40">
+            <div className="max-h-56 overflow-auto overflow-x-auto rounded-lg border border-white/10 bg-black/40">
               <table className="min-w-full text-left text-sm">
                 <thead className="sticky top-0 border-b border-white/10 bg-white/[0.04] text-xs uppercase tracking-wide text-slate-400">
                   <tr>

@@ -20,16 +20,20 @@ The homepage does **not** dump visitors into the demo.
 
 ## Environment
 
-See [docs/ENV.md](docs/ENV.md) and `.env.example`:
+See [docs/ENV.md](docs/ENV.md) and `.env.example` (placeholders only — never commit a real `.env`):
 
 ```
 NEXT_PUBLIC_APP_URL=https://www.hyperioninvoices.com.au
+DATABASE_URL=
+SESSION_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_PRICE_ID=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 ```
 
-Set the Stripe test keys on the Vercel project `hyperion-ledgers` to enable Checkout. Without them, the UI buy path still ships.
+**Accounts:** attach Neon on the Vercel project (`Storage → Create Database → Neon`) so `DATABASE_URL` is set, then add `SESSION_SECRET` and redeploy. Schema is in `docs/schema.sql` and is applied on first sign-up.
+
+**Stripe:** set the three test keys on Vercel project `hyperion-ledgers` to enable Checkout. Without them, the UI buy path still ships.
 
 ## Local development
 

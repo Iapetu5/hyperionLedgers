@@ -43,11 +43,11 @@ export default function AccountPage() {
     );
   }
 
-  function onSave(e: FormEvent) {
+  async function onSave(e: FormEvent) {
     e.preventDefault();
     setMessage(null);
     setError(null);
-    const res = updateProfile({
+    const res = await updateProfile({
       businessName,
       abn,
       gstRegistered,
@@ -58,7 +58,7 @@ export default function AccountPage() {
       setError(res.error);
       return;
     }
-    setMessage("Saved locally in this browser.");
+    setMessage("Saved.");
   }
 
   return (

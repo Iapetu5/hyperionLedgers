@@ -8,8 +8,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 export function useExploreHarbourSample() {
   const { user, logOut } = useAuth();
   const router = useRouter();
-  return () => {
-    if (user) logOut();
+  return async () => {
+    if (user) await logOut();
     router.push("/demo");
   };
 }
