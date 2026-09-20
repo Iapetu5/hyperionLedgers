@@ -6,6 +6,7 @@ Copy `.env.example` for local work. Set the same **names** on the Vercel project
 NEXT_PUBLIC_APP_URL=https://www.hyperioninvoices.com.au
 DATABASE_URL=
 SESSION_SECRET=
+NEXTAUTH_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_PRICE_ID=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
@@ -23,7 +24,7 @@ Nicholas: attach Neon from the Vercel dashboard so signups survive across device
 
 1. Open the `hyperion-ledgers` project on Vercel → **Storage** → **Create Database** → **Neon**.
 2. Confirm `DATABASE_URL` appears under **Settings → Environment Variables** (Production + Preview).
-3. Add `SESSION_SECRET` as a long random string (32+ characters). Do not reuse a password. Generate locally with `openssl rand -hex 32` and paste only into Vercel.
+3. Add `SESSION_SECRET` (or `NEXTAUTH_SECRET` — either name works) as a long random string (32+ characters). Do not reuse a password. Generate locally with `openssl rand -hex 32` and paste only into Vercel.
 4. Redeploy Production.
 
 The app creates `users`, `organisations`, and `sessions` on first sign-up (`docs/schema.sql`). Until those vars are set, sign-up still works in this browser only.
@@ -32,6 +33,7 @@ The app creates `users`, `organisations`, and `sessions` on first sign-up (`docs
 |------|----------------|--------|
 | `DATABASE_URL` | `postgresql://USER:PASSWORD@HOST/DB?sslmode=require` | Vercel secret (Neon sets this) |
 | `SESSION_SECRET` | random 32+ character string | Vercel secret |
+| `NEXTAUTH_SECRET` | same value, optional alias | Used only if `SESSION_SECRET` is empty |
 
 ## Stripe (Phase 1 buy — test mode)
 

@@ -26,6 +26,7 @@ See [docs/ENV.md](docs/ENV.md) and `.env.example` (placeholders only — never c
 NEXT_PUBLIC_APP_URL=https://www.hyperioninvoices.com.au
 DATABASE_URL=
 SESSION_SECRET=
+NEXTAUTH_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_PRICE_ID=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
