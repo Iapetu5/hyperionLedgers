@@ -22,7 +22,7 @@ export function BrandLogo({
         className="rounded-full"
       />
       {showWordmark && (
-        <span className="text-base font-bold tracking-tight text-white sm:text-lg">
+        <span className="text-lg font-bold tracking-tight text-white">
           Hyperion<span className="text-brand-400">Ledgers</span>
         </span>
       )}

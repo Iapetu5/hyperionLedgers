@@ -18,13 +18,16 @@ export default function PricingPage() {
     <div>
       <SiteHeader variant="compact" />
       <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
+        <p className="text-center text-sm font-semibold uppercase tracking-widest text-brand-300">
+          Next step: start the trial
+        </p>
+        <div className="mx-auto mt-3 max-w-2xl text-center">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
             One plan. $69 a month.
           </h1>
           <p className="mt-4 text-white/75">
-            Start free for 14 days. Quotes, invoices, bills, banking tools, and reports — written so an
-            Australian small business can see what to do next.
+            Start free for 14 days. Then $69 a month. Cancel anytime. Quotes, invoices, bills,
+            banking tools, and reports — so you can see what to do next.
           </p>
         </div>
 
@@ -35,7 +38,7 @@ export default function PricingPage() {
             </span>
             <h2 className="text-xl font-bold text-white">HyperionLedgers</h2>
             <p className="mt-1 text-sm text-slate-300">
-              One price for the books. Not a starter tier you outgrow.
+              One price for the books. Not a starter plan you outgrow.
             </p>
             <p className="mt-5">
               <span className="text-4xl font-bold text-white">$69</span>
@@ -52,7 +55,7 @@ export default function PricingPage() {
             </ul>
             <div className="mt-6 flex flex-col gap-2">
               <StartTrialButton className="btn-primary" />
-              <Link href="/signup" className="btn-secondary">
+              <Link href="/signup" className="text-center text-sm font-medium text-white/70 underline-offset-4 hover:text-white hover:underline">
                 Sign up
               </Link>
             </div>
@@ -62,7 +65,7 @@ export default function PricingPage() {
         <p className="mt-10 text-center text-sm text-slate-400">
           Want to look around first?{" "}
           <Link href="/demo" className="font-medium text-brand-300 hover:underline">
-            Browse the Harbour &amp; Co sample
+            Open Harbour &amp; Co
           </Link>
           {" "}
           with no account, or{" "}
@@ -72,7 +75,7 @@ export default function PricingPage() {
           .
         </p>
         <p className="mt-3 text-center text-xs text-slate-500">
-          Prices in AUD. Cancel anytime. HyperionLedgers does not lodge with the ATO for you.
+          Prices in Australian dollars. Cancel anytime. HyperionLedgers does not lodge with the ATO.
         </p>
       </main>
       <MarketingFooter />

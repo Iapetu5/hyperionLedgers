@@ -10,7 +10,7 @@ import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 const LINKS = [
   { href: "/product", label: "Product" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/try", label: "How to try" },
+  { href: "/try", label: "How it works" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -36,7 +36,7 @@ export function SiteHeader({
 
   return (
     <header className="page-hero no-print">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <BrandLogo />
         <nav className="hidden items-center gap-5 text-sm text-white/70 md:flex">
           {LINKS.map((l) => {
@@ -57,58 +57,49 @@ export function SiteHeader({
           })}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/login" className="hidden min-h-11 items-center text-sm font-medium text-white/80 hover:text-white sm:inline-flex">
+          <Link href="/login" className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline">
             Log in
           </Link>
-          <Link href="/signup" className="hidden min-h-11 items-center text-sm font-medium text-white/80 hover:text-white sm:inline-flex">
+          <Link href="/signup" className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline">
             Sign up
           </Link>
           <StartTrialButton className="btn-primary !px-3" showArrow={false} />
           <button
             type="button"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/20 text-white md:hidden"
+            className="inline-flex items-center justify-center rounded-lg border border-white/20 p-2 text-white md:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
           >
-            {open ? <X size={20} /> : <Menu size={20} />}
+            {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
 
       {open ? (
-        <div className="border-t border-white/10 bg-slate-950/95 px-4 py-4 md:hidden">
-          <nav className="flex flex-col gap-1">
+        <div className="border-t border-white/10 bg-slate-950/95 px-4 py-3 md:hidden">
+          <nav className="flex flex-col">
             {LINKS.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
-                className="flex min-h-11 items-center rounded-lg px-3 text-base text-white/85 hover:bg-white/10 hover:text-white"
+                className="rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10 hover:text-white"
               >
                 {l.label}
               </Link>
             ))}
-            <Link
-              href="/login"
-              className="flex min-h-11 items-center rounded-lg px-3 text-base text-white/85 hover:bg-white/10 hover:text-white"
-            >
+            <Link href="/login" className="rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10 hover:text-white">
               Log in
             </Link>
-            <Link
-              href="/signup"
-              className="flex min-h-11 items-center rounded-lg px-3 text-base font-semibold text-white hover:bg-white/10"
-            >
+            <Link href="/signup" className="rounded-lg px-3 py-2 text-sm font-semibold text-white hover:bg-white/10">
               Sign up
             </Link>
             {variant === "marketing" ? (
-              <Link
-                href="/demo"
-                className="flex min-h-11 items-center rounded-lg px-3 text-sm text-white/70 hover:bg-white/10 hover:text-white"
-              >
-                Sample data
+              <Link href="/demo" className="rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white">
+                Open Harbour &amp; Co
               </Link>
             ) : null}
-            <div className="pt-2">
+            <div className="px-3 pt-2">
               <StartTrialButton className="btn-primary w-full" />
             </div>
           </nav>

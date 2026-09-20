@@ -15,11 +15,11 @@ export function MarketingFooter() {
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
           <Link href="/pricing" className="hover:text-white">Pricing</Link>
           <Link href="/signup" className="hover:text-white">Sign up</Link>
-          <Link href="/try" className="hover:text-white">Start free trial</Link>
+          <Link href="/try" className="hover:text-white">How it works</Link>
           <Link href="/product" className="hover:text-white">Product</Link>
           <Link href="/about" className="hover:text-white">About</Link>
           <Link href="/contact" className="hover:text-white">Contact</Link>
-          <Link href="/demo" className="hover:text-white">Sample data</Link>
+          <Link href="/demo" className="hover:text-white">Open Harbour &amp; Co</Link>
         </div>
       </div>
     </footer>

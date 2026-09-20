@@ -204,7 +204,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
                     active
                       ? "bg-brand-500/20 text-brand-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.35)]"
                       : "text-slate-300 hover:bg-white/5 hover:text-white"
@@ -216,10 +216,10 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               );
             })}
             <div className="mt-2 border-t border-white/10 pt-2 lg:hidden">
-              <Link href="/pricing" onClick={() => setMobileOpen(false)} className="flex min-h-11 items-center rounded-lg px-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
+              <Link href="/pricing" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
                 Pricing
               </Link>
-              <Link href="/signup" onClick={() => setMobileOpen(false)} className="flex min-h-11 items-center rounded-lg px-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
+              <Link href="/signup" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
                 Start free trial
               </Link>
             </div>
