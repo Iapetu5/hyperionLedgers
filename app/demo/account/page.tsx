@@ -33,8 +33,8 @@ export default function AccountPage() {
       <div className="easy-form space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Your account</h1>
-          <p className="mt-2 max-w-xl text-base leading-relaxed text-slate-200">
-            You are looking at the Harbour &amp; Co sample. Sign up to keep your own business details.
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">
+            You are looking at the Harbour &amp; Co sample. Sign up to keep your own HyperionInvoices details.
           </p>
         </div>
         <div className="card p-6 text-base text-slate-200">
@@ -69,15 +69,15 @@ export default function AccountPage() {
     <div className="easy-form space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-white">Your account</h1>
-        <p className="mt-2 max-w-xl text-base leading-relaxed text-slate-200">
-          Change your business name, GST, and financial year. We save this in your account.
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">
+          Change your HyperionInvoices business name, GST, and financial year. We save this in your account.
         </p>
       </div>
 
       {!usesSampleData && (
         <div className="card border-brand-400/25 bg-brand-500/10 p-5">
-          <p className="text-base font-semibold text-white">Your books start empty</p>
-          <p className="mt-1 text-base text-slate-300">
+          <p className="text-sm font-semibold text-white">Your books start empty</p>
+          <p className="mt-1 text-sm text-slate-300">
             Sample Harbour figures stay out of this organisation. Create an invoice next — quotes and bills are here too. Harbour &amp; Co is a separate guest tour and logs you out; log back in anytime.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -146,9 +146,9 @@ export default function AccountPage() {
         <p className="text-sm text-slate-400">
           Ledger mode: <strong className="text-slate-200">{user.ledgerMode ?? "sample"}</strong> (set during onboarding).
         </p>
-        {error && <p className="text-base text-rose-300">{error}</p>}
-        {message && <p className="text-base text-emerald-300">{message}</p>}
-        <button type="submit" className="btn-primary w-full">Save</button>
+        {error && <p className="text-sm text-rose-300">{error}</p>}
+        {message && <p className="text-sm text-emerald-300">{message}</p>}
+        <button type="submit" className="btn-primary">Save</button>
       </form>
     </div>
   );

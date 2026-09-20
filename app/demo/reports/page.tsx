@@ -59,8 +59,8 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Reports</h1>
-        <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-200">
-          These reports are a practice preview for your records. They are not sent to the tax office.
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
+          These HyperionInvoices reports are a practice preview for your records. They are not sent to the tax office.
         </p>
       </div>
 

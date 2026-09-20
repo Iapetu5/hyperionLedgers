@@ -46,8 +46,8 @@ export default function ProfitLossReportPage() {
           / Profit &amp; loss
         </p>
         <h1 className="mt-1 text-2xl font-bold text-white">Profit &amp; loss</h1>
-        <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-200">
-          This is a practice preview of income and expenses. It is not sent to the tax office.
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
+          This is a HyperionInvoices practice preview of income and expenses. It is not sent to the tax office.
           Amounts are tax-exclusive where noted. GST on Income / GST Free lines affect BAS GST boxes,
           not this operating profit view.
         </p>

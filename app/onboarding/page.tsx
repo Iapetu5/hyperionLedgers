@@ -124,10 +124,10 @@ export default function OnboardingPage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
       <BrandLogo className="mb-8 justify-center" />
-      <div className="card easy-form p-6 sm:p-8">
+      <div className="card easy-form p-6">
         <EasyStepBar current={stepIndex + 1} total={steps.length} label={STEP_LABEL[current]} />
-        <h1 className="mt-4 text-2xl font-bold text-white">Set up your business</h1>
-        <p className="mt-2 text-base leading-relaxed text-slate-200">
+        <h1 className="mt-4 text-xl font-bold text-white">Set up your HyperionInvoices business</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-300">
           One question at a time for {user.businessName}. You can change these later in Your account.
         </p>
         <form className="mt-6 space-y-5" onSubmit={onSubmit}>
@@ -232,20 +232,22 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {error && <p className="text-base text-rose-300">{error}</p>}
+          {error && <p className="text-sm text-rose-300">{error}</p>}
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             <button type="submit" className="btn-primary w-full">
               {continueLabel}
             </button>
-            {stepIndex > 0 && (
-              <button type="button" className="btn-secondary w-full" onClick={goBack}>
-                Back
+            <div className="flex flex-wrap gap-2">
+              {stepIndex > 0 && (
+                <button type="button" className="btn-secondary" onClick={goBack}>
+                  Back
+                </button>
+              )}
+              <button type="button" className="btn-secondary" onClick={onSkip}>
+                Skip — use sample data
               </button>
-            )}
-            <button type="button" className="btn-secondary w-full" onClick={onSkip}>
-              Skip — use sample data
-            </button>
+            </div>
           </div>
         </form>
         <p className="mt-5 text-sm text-slate-400">Demo setup — preferences stay in this browser only.</p>

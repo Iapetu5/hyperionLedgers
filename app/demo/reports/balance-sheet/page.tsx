@@ -51,8 +51,8 @@ export default function BalanceSheetReportPage() {
           / Balance sheet
         </p>
         <h1 className="mt-1 text-2xl font-bold text-white">Balance sheet</h1>
-        <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-200">
-          This is a practice preview of what you own and owe. It is not sent to the tax office.
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
+          This is a HyperionInvoices practice preview of what you own and owe. It is not sent to the tax office.
         </p>
       </div>
 

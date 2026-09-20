@@ -59,10 +59,10 @@ export default function SignupPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12">
       <BrandLogo className="mb-8 justify-center" />
-      <div className="card easy-form p-6 sm:p-8">
+      <div className="card easy-form p-6">
         <EasyStepBar current={1} total={2} label="Your details" />
-        <h1 className="mt-4 text-2xl font-bold text-white">Create your account</h1>
-        <p className="mt-2 text-base leading-relaxed text-slate-200">
+        <h1 className="mt-4 text-xl font-bold text-white">Create your HyperionInvoices account</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-300">
           Enter your name, email, and business. Next we will set up GST and your financial year.
         </p>
         <form className="mt-6 space-y-5" onSubmit={onSubmit}>
@@ -89,7 +89,7 @@ export default function SignupPage() {
           </div>
           <AbnField value={abn} onChange={setAbn} />
           {fieldErrors.abn && <p className="text-sm text-rose-300">{fieldErrors.abn}</p>}
-          {error && <p className="text-base text-rose-300">{error}</p>}
+          {error && <p className="text-sm text-rose-300">{error}</p>}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
             {busy ? "Creating…" : "Next: set up your business"}
           </button>
@@ -97,7 +97,7 @@ export default function SignupPage() {
             {PLAN.trialDays} days free. Then ${PLAN.amountAud} {PLAN.intervalLabel}. Cancel anytime.
           </p>
         </form>
-        <p className="mt-5 text-center text-base text-slate-300">
+        <p className="mt-4 text-center text-sm text-slate-300">
           Already have an account?{" "}
           <Link href="/login" className="font-semibold text-brand-300 hover:underline">
             Log in

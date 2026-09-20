@@ -256,8 +256,8 @@ export default function GstBasPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">GST &amp; BAS</h1>
-        <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-200">
-          This is a practice preview of GST and BAS. Nothing here is sent to the tax office.
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
+          This is a HyperionInvoices practice preview of GST and BAS. Nothing here is sent to the tax office.
           You can switch quarters and mark a period as prepared for practice.
         </p>
       </div>
@@ -276,7 +276,7 @@ export default function GstBasPage() {
           <div className="card p-5">
             {!usesSampleData && blankQuarters.length > 1 && blankDraft && (
               <div className="mb-4">
-                <p className="text-base font-semibold text-white">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                   View quarter
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2" role="tablist" aria-label="BAS quarter">
@@ -290,14 +290,14 @@ export default function GstBasPage() {
                         role="tab"
                         aria-selected={active}
                         onClick={() => selectBlankQuarter(q.periodEnd)}
-                        className={`min-h-[48px] rounded-lg border px-4 py-3 text-left text-sm transition ${
+                        className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
                           active
                             ? "border-cyan-400/40 bg-cyan-500/15 text-white"
                             : "border-white/15 bg-white/5 text-slate-300 hover:bg-white/10"
                         }`}
                       >
                         <span className="block font-semibold">{q.periodLabel}</span>
-                        <span className="mt-0.5 block text-xs text-slate-400">
+                        <span className="mt-0.5 block text-[10px] uppercase tracking-wide text-slate-400">
                           {isLatest
                             ? "Latest documents"
                             : q.hasDocuments
@@ -440,11 +440,11 @@ export default function GstBasPage() {
             <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
               <button
                 type="button"
-                className="btn-primary min-h-[48px] px-5 text-base"
+                className="btn-secondary"
                 disabled={mounted && simLodged}
                 onClick={markSimLodged}
               >
-                <FileCheck2 size={18} />
+                <FileCheck2 size={16} />
                 {mounted && simLodged ? "Marked as prepared" : "Mark as prepared"}
               </button>
               <p className="text-sm text-slate-400">
