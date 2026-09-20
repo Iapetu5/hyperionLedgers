@@ -185,6 +185,11 @@ body {
   .table-row {
     @apply text-slate-200;
   }
+
+  .overflow-x-auto {
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 @media print {

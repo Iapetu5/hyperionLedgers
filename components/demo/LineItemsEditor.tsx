@@ -892,7 +892,7 @@ export function LineItemsEditor({
             >
               {/* Product picker + description on their own row so mid-width chrome does not crush placeholders */}
               {showProductPicker || showAddProduct ? (
-                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
                   {showProductPicker ? productField : addProductField}
                   {descriptionField}
                 </div>
@@ -900,8 +900,8 @@ export function LineItemsEditor({
               <div
                 className={
                   showProductPicker || showAddProduct
-                    ? "grid gap-2 sm:grid-cols-[4.5rem_7rem_7.5rem_minmax(10rem,1fr)_auto]"
-                    : "grid gap-2 sm:grid-cols-[minmax(0,1.3fr)_4.5rem_7rem_7.5rem_minmax(10rem,1fr)_auto]"
+                    ? "grid grid-cols-1 gap-2 sm:grid-cols-[4.5rem_7rem_7.5rem_minmax(10rem,1fr)_auto]"
+                    : "grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1.3fr)_4.5rem_7rem_7.5rem_minmax(10rem,1fr)_auto]"
                 }
               >
                 {showProductPicker || showAddProduct ? null : descriptionField}

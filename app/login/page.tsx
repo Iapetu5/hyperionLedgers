@@ -29,7 +29,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
       <BrandLogo className="mb-8 justify-center" />
       <div className="card p-6">
         <h1 className="text-xl font-bold text-white">Log in</h1>
@@ -40,7 +40,7 @@ export default function LoginPage() {
           </Link>
           {" "}or{" "}
           <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            browse sample data
+            Look at a sample first
           </Link>
           .
         </p>

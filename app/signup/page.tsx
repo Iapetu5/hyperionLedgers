@@ -55,7 +55,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12">
+    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-4 py-12">
       <BrandLogo className="mb-8 justify-center" />
       <div className="card p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 1 of 2 · Account</p>

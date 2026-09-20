@@ -10,8 +10,8 @@ export default function HomePage() {
       <SiteHeader />
 
       <main className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
-        <section className="grid items-center gap-12 lg:grid-cols-2">
-          <div>
+        <section className="grid min-w-0 items-center gap-12 lg:grid-cols-2">
+          <div className="min-w-0">
             <p className="text-sm font-semibold uppercase tracking-widest text-brand-300">
               Next step: start the trial
             </p>

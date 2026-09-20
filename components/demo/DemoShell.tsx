@@ -90,8 +90,45 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
     };
   }, [usesSampleData]);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   const orgName = user?.businessName || DEMO_ORG.name;
   const demoBanner = usesSampleData;
+
+  const navLinks = (
+    <>
+      <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-brand-300/80">
+        {orgName}
+      </p>
+      {NAV.map(({ href, label, icon: Icon }) => {
+        const active = pathname === href || (href !== "/demo" && pathname.startsWith(href));
+        return (
+          <Link
+            key={href}
+            href={href}
+            onClick={() => setMobileOpen(false)}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+              active
+                ? "bg-brand-500/20 text-brand-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.35)]"
+                : "text-slate-300 hover:bg-white/5 hover:text-white"
+            }`}
+          >
+            <Icon size={16} className={active ? "text-brand-300" : "text-slate-400"} />
+            {label}
+          </Link>
+        );
+      })}
+    </>
+  );
 
   return (
     <div className="min-h-screen text-slate-100">
@@ -106,19 +143,19 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
             >
               {mobileOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
-            <BrandLogo href="/" size={32} />
+            <BrandLogo href="/" size={32} hideWordmarkOnMobile />
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="btn-secondary"
+              className="btn-secondary !px-3"
               onClick={() => {
                 setAiSeed(undefined);
                 setAiOpen(true);
               }}
             >
               <Sparkles size={16} />
-              Ask AI
+              <span className="hidden sm:inline">Ask AI</span>
             </button>
             {user ? (
               <>
@@ -189,40 +226,50 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 sm:px-6">
-        <aside
-          className={`no-print ${mobileOpen ? "block" : "hidden"} w-full shrink-0 lg:block lg:w-56`}
-        >
-          <nav className="card sticky top-4 space-y-1 border-white/10 bg-black/35 p-2 shadow-soft backdrop-blur-xl">
-            <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-brand-300/80">
-              {orgName}
-            </p>
-            {NAV.map(({ href, label, icon: Icon }) => {
-              const active = pathname === href || (href !== "/demo" && pathname.startsWith(href));
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    active
-                      ? "bg-brand-500/20 text-brand-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.35)]"
-                      : "text-slate-300 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <Icon size={16} className={active ? "text-brand-300" : "text-slate-400"} />
-                  {label}
-                </Link>
-              );
-            })}
-            <div className="mt-2 border-t border-white/10 pt-2 lg:hidden">
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60"
+            aria-label="Close menu"
+            onClick={() => setMobileOpen(false)}
+          />
+          <nav className="relative flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-white/10 bg-slate-950 p-3">
+            {navLinks}
+            <div className="mt-2 border-t border-white/10 pt-2">
+              <Link href="/product" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
+                Product
+              </Link>
               <Link href="/pricing" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
                 Pricing
               </Link>
-              <Link href="/signup" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
+              <Link href="/try" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
+                How it works
+              </Link>
+              {!user ? (
+                <>
+                  <Link href="/login" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
+                    <LogIn size={16} className="mr-2" />
+                    Log in
+                  </Link>
+                  <Link href="/signup" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
+                    <UserPlus size={16} className="mr-2" />
+                    Sign up
+                  </Link>
+                </>
+              ) : null}
+              <Link href="/signup" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-white hover:bg-white/5">
                 Start free trial
               </Link>
             </div>
+          </nav>
+        </div>
+      ) : null}
+
+      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 sm:px-6">
+        <aside className="no-print hidden w-56 shrink-0 lg:block">
+          <nav className="card sticky top-4 space-y-1 border-white/10 bg-black/35 p-2 shadow-soft backdrop-blur-xl">
+            {navLinks}
           </nav>
         </aside>
 
