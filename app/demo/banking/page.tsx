@@ -82,11 +82,18 @@ function bankingWhereNext(opts: {
   return "Next: 2 Import CSV, then 3 Apply.";
 }
 
+function bankingPathHint(step1Done: boolean) {
+  return step1Done
+    ? "Path: 2 Import CSV → 3 Apply. Opening is already saved — skip 1 Save opening. Debit/credit samples, Reset categorisations, and Clear CSV imports live under More. No live bank feed."
+    : "Path: 1 Save opening → 2 Import CSV → 3 Apply. Debit/credit samples, Reset categorisations, and Clear CSV imports live under More. No live bank feed.";
+}
+
 export default function BankingPage() {
   const { usesSampleData, user } = useAuth();
   const mode: BankLedgerMode = usesSampleData ? "sample" : "blank";
   const chequeAccountId = mode === "blank" ? BLANK_CHEQUE_ACCOUNT_ID : CHEQUE_ACCOUNT_ID;
   const fileRef = useRef<HTMLInputElement>(null);
+  const importButtonRef = useRef<HTMLButtonElement>(null);
   const openingInputRef = useRef<HTMLInputElement>(null);
   const importSectionRef = useRef<HTMLDivElement>(null);
   const reconSectionRef = useRef<HTMLDivElement>(null);
@@ -168,6 +175,7 @@ export default function BankingPage() {
   const importedCount = unmatched.filter((t) => t.source === "import").length;
   const hasImport = txns.some((t) => t.source === "import");
   const canAskAi = unmatched.length > 0;
+  const step1Done = mode === "sample" || openingSet;
   const whereNext = bankingWhereNext({
     mode,
     openingSet,
@@ -175,6 +183,20 @@ export default function BankingPage() {
     unmatchedCount: unmatched.length,
     categorisedCount: categorised.length,
   });
+
+  function jumpToStep(step: 1 | 2 | 3) {
+    if (step === 1) {
+      openingInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      openingInputRef.current?.focus();
+      return;
+    }
+    if (step === 2) {
+      importSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.setTimeout(() => importButtonRef.current?.focus(), 320);
+      return;
+    }
+    reconSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   const blankMovements = useMemo(() => blankChequeMovements(txns), [txns]);
   const blankBalance = useMemo(() => blankChequeBalance(txns, opening), [txns, opening]);
   const orgLabel = user?.businessName?.trim() || "Your organisation";
@@ -380,7 +402,7 @@ export default function BankingPage() {
     const remaining = unmatchedForAccount(loadBankTransactions(mode), chequeAccountId).length;
     setSuccess(
       applied === 0
-        ? "Nothing left to Apply automatically. Next: 3 Ask AI on a remaining line (under More), or 2 Import CSV."
+        ? "Nothing left to Apply automatically. Next: Ask AI under More, or 2 Import CSV."
         : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${
             remaining > 0
               ? `Next: 3 Apply the rest, or Ask AI under More (${remaining} left).`
@@ -486,7 +508,9 @@ export default function BankingPage() {
                 : unmatched.length > 0
                   ? linesToApplyLabel(unmatched.length)
                   : txns.length === 0
-                    ? "Next: 1 Save opening, then 2 Import CSV"
+                    ? openingSet
+                      ? "Next: 2 Import CSV"
+                      : "Next: 1 Save opening, then 2 Import CSV"
                     : "Nothing to Apply"}
               {importedCount > 0 ? ` · ${importedCount} from CSV to Apply` : ""}
               {categorised.length > 0 ? ` · ${categorised.length} categorised` : ""}
@@ -610,10 +634,32 @@ export default function BankingPage() {
         <p>
           <strong className="text-white">Where next?</strong> {whereNext}
         </p>
-        <p className="mt-1 text-xs text-slate-400">
-          Path: 1 Save opening → 2 Import CSV → 3 Apply. Debit/credit samples, Reset categorisations, and Clear CSV
-          imports live under <strong className="text-slate-300">More</strong>. No live bank feed.
+        <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          {!step1Done && (
+            <button
+              type="button"
+              className="font-semibold text-brand-300 underline-offset-2 hover:underline"
+              onClick={() => jumpToStep(1)}
+            >
+              Go to 1 Save opening
+            </button>
+          )}
+          <button
+            type="button"
+            className="font-semibold text-brand-300 underline-offset-2 hover:underline"
+            onClick={() => jumpToStep(2)}
+          >
+            Go to 2 Import CSV
+          </button>
+          <button
+            type="button"
+            className="font-semibold text-brand-300 underline-offset-2 hover:underline"
+            onClick={() => jumpToStep(3)}
+          >
+            Go to 3 Apply
+          </button>
         </p>
+        <p className="mt-1 text-xs text-slate-400">{bankingPathHint(step1Done)}</p>
       </div>
 
       <div ref={importSectionRef} id="import" className="card scroll-mt-4 space-y-4 p-5">
@@ -641,7 +687,12 @@ export default function BankingPage() {
             className="hidden"
             onChange={(e) => onFileSelected(e.target.files?.[0] ?? null)}
           />
-          <button type="button" className="btn-primary" onClick={() => fileRef.current?.click()}>
+          <button
+            ref={importButtonRef}
+            type="button"
+            className="btn-primary"
+            onClick={() => fileRef.current?.click()}
+          >
             <Upload size={16} />
             Import CSV
           </button>
@@ -907,13 +958,15 @@ export default function BankingPage() {
                     </p>
                     <p className="mx-auto mt-1 max-w-md text-sm text-slate-400">
                       {mode === "blank" && txns.length === 0
-                        ? "Next: 1 Save opening above, then 2 Import CSV. Try starter CSV adds a few generic demo lines. Nothing from the guest sample is mixed in."
+                        ? openingSet
+                          ? "Opening is already saved. Next: 2 Import CSV. Try starter CSV adds a few generic demo lines. Nothing from the guest sample is mixed in."
+                          : "Next: 1 Save opening above, then 2 Import CSV. Try starter CSV adds a few generic demo lines. Nothing from the guest sample is mixed in."
                         : categorised.length > 0
                           ? "Nothing left to Apply. Use More for Reset categorisations or Clear CSV imports, or Undo match below. Next: 2 Import CSV if you have another statement."
                           : "Nothing left to Apply. Next: 2 Import CSV or Try sample CSV above, then 3 Apply."}
                     </p>
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      {mode === "blank" && txns.length === 0 ? (
+                      {mode === "blank" && txns.length === 0 && !openingSet ? (
                         <button
                           type="button"
                           className="btn-secondary !px-3 !py-1.5 text-xs"
@@ -1017,8 +1070,8 @@ export default function BankingPage() {
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Recently categorised</h2>
             <p className="text-xs text-slate-400">
-              Applied in this browser demo (including via Ask AI). Undo match or Reset anytime — demos are not
-              one-way.
+              Applied in this browser demo (including via Ask AI). Undo match below, or Reset categorisations
+              under More — demos are not one-way.
             </p>
           </div>
           <ul className="divide-y divide-white/10 text-sm">

@@ -294,7 +294,7 @@ export default function BillsPage() {
   }
 
   function noteBillStatus(id: string, next: UserBill["status"]) {
-    if (next === "Paid") return `${id} marked Paid. Next: More to Print, or Undo paid.`;
+    if (next === "Paid") return `${id} marked Paid. Next: Print, or More for Undo paid.`;
     if (next === "Approved") return `${id} approved. Next: Mark paid.`;
     if (next === "Awaiting approval") return `${id} back to Awaiting approval. Next: Approve.`;
     return `${id} updated.`;
@@ -308,7 +308,7 @@ export default function BillsPage() {
     setStatusNote(note);
     if (next === "Paid") {
       setFormOk(
-        `${row.id} marked Paid (back office only — no public pay link). Next: More to Print, or Undo paid.`,
+        `${row.id} marked Paid (back office only — no public pay link). Next: Print, or More for Undo paid.`,
       );
     } else {
       setFormOk(note);
@@ -591,6 +591,7 @@ export default function BillsPage() {
     const keep = paid ? 1 : awaiting ? 3 : 2;
     return (
       <DocRowActions keep={keep}>
+        {paid && <PrintBillButton id={b.id} compact primary />}
         {awaiting && (
           <button
             type="button"
@@ -644,7 +645,7 @@ export default function BillsPage() {
             Undo paid
           </button>
         )}
-        <PrintBillButton id={b.id} compact primary={paid} />
+        {!paid && <PrintBillButton id={b.id} compact />}
         <button
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
@@ -817,7 +818,7 @@ export default function BillsPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Line amounts before GST. Next: Approve, then Mark paid. Undo Approve, Undo paid, and Print sit under More.
+            Line amounts before GST. Next: Approve, then Mark paid. After Paid, Print is on the row. Undo Approve and Undo paid sit under More.
             Print is an internal summary only — no public supplier pay link. Past-due unpaid rows show Overdue.
           </p>
         </div>

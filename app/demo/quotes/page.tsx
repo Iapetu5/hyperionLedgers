@@ -130,7 +130,7 @@ export default function QuotesPage() {
       businessName: q.businessName || user?.businessName || "HyperionInvoices",
       amount: q.amount,
     });
-    setSendNote("Send quote is open below. After you send: View, or More to Print.");
+    setSendNote("Email quote is open. After you Send: View, or More to Print.");
   }
 
   /** One-click: Acme + GST/GST-free lines → customer-link strip (no second Create click). */
@@ -343,7 +343,8 @@ export default function QuotesPage() {
     if (editingId === id) resetForm();
     if (lastCreatedId === id) setLastCreatedId(null);
     reloadUser();
-    setFormOk(`Removed ${id}. Create a new quote above if you need a fresh draft.`);
+    setSendNote(`Removed ${id}. Next: Create quote.`);
+    setFormOk(`Removed ${id}. Next: Create quote.`);
   }
 
   function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {
@@ -445,7 +446,7 @@ export default function QuotesPage() {
       {lastCreatedId && !editingId && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-3 py-2 text-xs text-cyan-50">
           <span className="font-semibold text-white">{lastCreatedId}</span>
-          <span className="text-cyan-100/80">ready — View, Send quote, or print the customer quote page</span>
+          <span className="text-cyan-100/80">ready — View, Send quote, Email quote, or Print</span>
           <Link
             href={publicQuoteUrl(lastCreatedId)}
             target="_blank"
@@ -472,7 +473,7 @@ export default function QuotesPage() {
             }}
           >
             <Mail size={12} />
-            Send quote
+            Email quote
           </button>
         </div>
       )}
@@ -606,14 +607,6 @@ export default function QuotesPage() {
         <button
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
-          onClick={() => openSend(q)}
-        >
-          <Mail size={12} />
-          Send quote
-        </button>
-        <button
-          type="button"
-          className="btn-secondary !px-2 !py-1 text-xs"
           onClick={() => copyLink(q.id)}
           title="Copy the customer quote link to send"
         >
@@ -636,6 +629,14 @@ export default function QuotesPage() {
         >
           <Pencil size={12} />
           Edit
+        </button>
+        <button
+          type="button"
+          className="btn-secondary !px-2 !py-1 text-xs"
+          onClick={() => openSend(q)}
+        >
+          <Mail size={12} />
+          Email quote
         </button>
         <PrintDocButton kind="quote" id={q.id} compact />
         <button
@@ -863,7 +864,7 @@ export default function QuotesPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Send quote copies the customer link. View opens the public page. Print sits under More. QU-210 is a mixed GST + GST Free example.
+            Send quote copies the customer link. View opens the public page. Email quote and Print sit under More. QU-210 is a mixed GST + GST Free example.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">
@@ -938,7 +939,7 @@ export default function QuotesPage() {
                       }
                     >
                       <Mail size={12} />
-                      Send quote
+                      Email quote
                     </button>
                   </DocRowActions>
                 </td>

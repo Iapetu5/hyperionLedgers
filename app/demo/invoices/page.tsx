@@ -310,7 +310,8 @@ export default function InvoicesPage() {
     if (editingId === id) resetForm();
     if (lastCreatedId === id) setLastCreatedId(null);
     reloadUser();
-    setFormOk(`Removed ${id}. Create a new invoice above if you need a fresh draft.`);
+    setSendNote(`Removed ${id}. Next: Create invoice.`);
+    setFormOk(`Removed ${id}. Next: Create invoice.`);
   }
 
   function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {

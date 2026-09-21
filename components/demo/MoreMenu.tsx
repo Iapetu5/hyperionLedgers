@@ -1,6 +1,16 @@
 "use client";
 
-import { Children, isValidElement, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { MoreHorizontal } from "lucide-react";
 
 function menuFocusables(root: HTMLElement) {
@@ -28,6 +38,7 @@ export function MoreMenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const focusLastRef = useRef(false);
   const menuId = useId();
 
   useEffect(() => {
@@ -67,8 +78,10 @@ export function MoreMenu({
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
     const id = window.requestAnimationFrame(() => {
-      const first = menuRef.current ? menuFocusables(menuRef.current)[0] : null;
-      first?.focus();
+      const list = menuRef.current ? menuFocusables(menuRef.current) : [];
+      const target = focusLastRef.current ? list[list.length - 1] : list[0];
+      target?.focus();
+      focusLastRef.current = false;
     });
     return () => {
       window.cancelAnimationFrame(id);
@@ -89,13 +102,20 @@ export function MoreMenu({
         aria-controls={menuId}
         aria-haspopup="menu"
         title={title}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          focusLastRef.current = false;
+          setOpen((v) => !v);
+        }}
         onKeyDown={(e) => {
-          if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
-            if (!open && e.key === "ArrowDown") {
-              e.preventDefault();
-              setOpen(true);
-            }
+          if (open) return;
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            focusLastRef.current = false;
+            setOpen(true);
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            focusLastRef.current = true;
+            setOpen(true);
           }
         }}
       >
@@ -120,7 +140,9 @@ export function MoreMenu({
                 className="doc-row-actions-menu-item"
                 onClick={() => setOpen(false)}
               >
-                {node}
+                {isValidElement(node)
+                  ? cloneElement(node as ReactElement, { role: "menuitem" })
+                  : node}
               </div>
             ))}
           </div>
