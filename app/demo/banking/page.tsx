@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { openAssistant } from "@/components/demo/AiAssistant";
+import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
 import { formatAUD, formatDateAU } from "@/lib/format";
 import { accounts } from "@/lib/sample-data";
 import { suggestCategory } from "@/lib/chart-of-accounts";
@@ -410,6 +411,7 @@ export default function BankingPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Banking</h1>
+          <BooksSectionNav />
           <p className="text-sm text-white/70">
             {mode === "blank"
               ? `${orgLabel} cheque account — browser-side CSV only. No live bank feeds, and demo sample lines stay out of this blank ledger.`

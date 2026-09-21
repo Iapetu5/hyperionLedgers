@@ -7,6 +7,7 @@ import { PrintDocButton } from "@/components/pay/PrintDocButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { DocRowActions } from "@/components/demo/DocRowActions";
+import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
 import { SendQuotePanel, type SendQuoteTarget } from "@/components/demo/SendQuotePanel";
 import {
   LineItemsEditor,
@@ -560,6 +561,7 @@ export default function QuotesPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Quotes</h1>
+          <BooksSectionNav />
           <p className="text-sm text-white/70">{subtitle}</p>
           <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
             <input

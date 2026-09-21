@@ -6,6 +6,7 @@ import { Banknote, Check, Package, Pencil, Plus, Receipt, Trash2, Undo2, X } fro
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { DocRowActions } from "@/components/demo/DocRowActions";
+import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
 import {
   LineItemsEditor,
   draftsToInputs,
@@ -548,6 +549,7 @@ export default function BillsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Bills</h1>
+          <BooksSectionNav />
           <p className="text-sm text-white/70">{subtitle}</p>
         </div>
         {!showComposer && (
