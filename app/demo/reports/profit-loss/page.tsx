@@ -2,33 +2,23 @@
 
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { formatAUD } from "@/lib/format";
 import { rollupBlankReports, rollupSampleReports, EMPTY_REPORT_ROLLUP, type BlankReportRollup } from "@/lib/blank-reports";
 import { loadBills, loadInvoices } from "@/lib/books-client";
+import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
 
 export default function ProfitLossReportPage() {
   const { usesSampleData } = useAuth();
   const [rollup, setRollup] = useState<BlankReportRollup>(EMPTY_REPORT_ROLLUP);
 
-  useEffect(() => {
-    if (usesSampleData) {
-      setRollup(EMPTY_REPORT_ROLLUP);
-      return;
-    }
-    const reload = async () =>
-      setRollup(rollupBlankReports(await loadInvoices(), await loadBills()));
-    void reload();
-    const onUpdate = () => void reload();
-    window.addEventListener("hl-user-docs-updated", onUpdate);
-    window.addEventListener("hl-doc-status", onUpdate);
-    return () => {
-      window.removeEventListener("hl-user-docs-updated", onUpdate);
-      window.removeEventListener("hl-doc-status", onUpdate);
-    };
-  }, [usesSampleData]);
+  const reload = useCallback(async () => {
+    setRollup(rollupBlankReports(await loadInvoices(), await loadBills()));
+  }, []);
+
+  const { ready } = useBlankBooksReload(reload);
 
   const sampleRollup = usesSampleData ? rollupSampleReports() : null;
   const incomeExGst = usesSampleData ? sampleRollup!.incomeExGst : rollup.incomeExGst;
@@ -37,6 +27,10 @@ export default function ProfitLossReportPage() {
   const expenseGst = usesSampleData ? sampleRollup!.expenseGst : rollup.expenseGst;
   const netProfit = usesSampleData ? sampleRollup!.netProfit : rollup.netProfit;
   const showBlank = !usesSampleData && rollup.hasActivity;
+
+  if (!ready) {
+    return <div className="card p-6 text-sm text-white/70">Loading profit &amp; loss…</div>;
+  }
 
   return (
     <div className="space-y-6">

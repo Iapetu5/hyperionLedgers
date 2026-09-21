@@ -46,16 +46,27 @@ export function CustomerDocPage({
       setDoc(local);
       return;
     }
-    try {
-      const path = kind === "invoice" ? `/api/public/invoice/${encodeURIComponent(id)}` : `/api/public/quote/${encodeURIComponent(id)}`;
-      const res = await fetch(path, { cache: "no-store" });
-      const data = (await res.json().catch(() => ({}))) as { doc?: PublicInvoice | PublicQuote | null };
-      if (data.doc) {
-        setDoc(data.doc);
+    const path =
+      kind === "invoice"
+        ? `/api/public/invoice/${encodeURIComponent(id)}`
+        : `/api/public/quote/${encodeURIComponent(id)}`;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      try {
+        const res = await fetch(path, { cache: "no-store" });
+        const data = (await res.json().catch(() => ({}))) as { doc?: PublicInvoice | PublicQuote | null };
+        if (data.doc) {
+          setDoc(data.doc);
+          return;
+        }
+      } catch {
+        /* retry */
+      }
+      await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+      const again = loadDoc(kind, id);
+      if (again) {
+        setDoc(again);
         return;
       }
-    } catch {
-      /* fall through */
     }
     setDoc(null);
   }, [kind, id]);
@@ -98,7 +109,8 @@ export function CustomerDocPage({
         <div className="card p-6">
           <h1 className="text-xl font-bold text-white">Document not found</h1>
           <p className="mt-2 text-sm text-slate-300">
-            This demo {kind === "invoice" ? "pay" : "quote"} link doesn&apos;t match a known {kind}. Sample docs use demo IDs; user-created invoices/quotes need the same browser where they were saved.
+            This {kind} was not found. If you just created it, wait a moment and refresh — signed-in
+            invoices are saved to your organisation. Guest demo docs stay in this browser.
           </p>
           <Link href="/demo" className="btn-primary mt-4 inline-flex no-print">
             Back to demo

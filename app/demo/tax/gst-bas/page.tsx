@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Calculator, FileCheck2 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -29,6 +29,8 @@ import {
 } from "@/lib/blank-reports";
 import { loadBills, loadInvoices } from "@/lib/books-client";
 import type { UserBill, UserInvoice } from "@/lib/user-docs";
+import { toIsoDate } from "@/lib/iso-date";
+import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
 
 const SIM_LODGE_KEY = "hl_bas_sim_lodged_v1";
 
@@ -113,21 +115,12 @@ export default function GstBasPage() {
   /** Blank mode only. null = follow the latest-document quarter. */
   const [selectedPeriodEnd, setSelectedPeriodEnd] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (usesSampleData) return;
-    const reload = async () => {
-      setBlankInvoices(await loadInvoices());
-      setBlankBills(await loadBills());
-    };
-    void reload();
-    const onUpdate = () => void reload();
-    window.addEventListener("hl-user-docs-updated", onUpdate);
-    window.addEventListener("hl-doc-status", onUpdate);
-    return () => {
-      window.removeEventListener("hl-user-docs-updated", onUpdate);
-      window.removeEventListener("hl-doc-status", onUpdate);
-    };
-  }, [usesSampleData]);
+  const reloadBlank = useCallback(async () => {
+    setBlankInvoices(await loadInvoices());
+    setBlankBills(await loadBills());
+  }, []);
+
+  const { ready } = useBlankBooksReload(reloadBlank);
 
   function markSimLodged() {
     // Sample: unchanged one-way write to the org-wide key.
@@ -152,8 +145,8 @@ export default function GstBasPage() {
 
   const blankDocDates = useMemo(
     () => [
-      ...blankInvoices.map((inv) => inv.issueDate),
-      ...blankBills.map((bill) => bill.date),
+      ...blankInvoices.map((inv) => toIsoDate(inv.issueDate)),
+      ...blankBills.map((bill) => toIsoDate(bill.date)),
     ],
     [blankInvoices, blankBills],
   );
@@ -220,10 +213,10 @@ export default function GstBasPage() {
   const quarterRollup: BlankReportRollup = useMemo(() => {
     if (!blankDraft) return EMPTY_REPORT_ROLLUP;
     const invoices = blankInvoices.filter((inv) =>
-      isISODateInRange(inv.issueDate, blankDraft.periodStart, blankDraft.periodEnd),
+      isISODateInRange(toIsoDate(inv.issueDate), blankDraft.periodStart, blankDraft.periodEnd),
     );
     const bills = blankBills.filter((bill) =>
-      isISODateInRange(bill.date, blankDraft.periodStart, blankDraft.periodEnd),
+      isISODateInRange(toIsoDate(bill.date), blankDraft.periodStart, blankDraft.periodEnd),
     );
     return rollupBlankReports(invoices, bills);
   }, [blankDraft, blankInvoices, blankBills]);
@@ -268,6 +261,14 @@ export default function GstBasPage() {
       isNext: blankDraft.isNext,
     });
   const draftDueWeekend = draftDueDate ? isWeekendISO(draftDueDate) : false;
+
+  if (!ready) {
+    return (
+      <div className="card p-6 text-sm text-white/70">
+        Loading GST &amp; BAS…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

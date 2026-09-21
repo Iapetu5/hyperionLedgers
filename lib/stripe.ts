@@ -28,7 +28,7 @@ export function stripeSecret(): string {
 }
 
 export function isCheckoutSessionId(value: string): boolean {
-  return /^cs_(test|live)_[A-Za-z0-9]{8,128}$/.test(value);
+  return /^cs_(test|live)_[A-Za-z0-9]{8,255}$/.test(value);
 }
 
 export function isStripeEventId(value: string): boolean {

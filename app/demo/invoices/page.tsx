@@ -33,9 +33,10 @@ import {
   updateInvoice,
 } from "@/lib/books-client";
 import { effectiveInvoiceStatus, type UserInvoice } from "@/lib/user-docs";
+import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
 
 export default function InvoicesPage() {
-  const { usesSampleData, loading: authLoading, persistence } = useAuth();
+  const { usesSampleData } = useAuth();
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
@@ -58,17 +59,7 @@ export default function InvoicesPage() {
     setUserRows(await loadInvoices());
   }, []);
 
-  useEffect(() => {
-    if (authLoading || persistence === "unknown") return;
-    reloadUser();
-    const onUpdate = () => reloadUser();
-    window.addEventListener("hl-user-docs-updated", onUpdate);
-    window.addEventListener("storage", onUpdate);
-    return () => {
-      window.removeEventListener("hl-user-docs-updated", onUpdate);
-      window.removeEventListener("storage", onUpdate);
-    };
-  }, [reloadUser, authLoading, persistence]);
+  const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
 
 
   const [mounted, setMounted] = useState(false);
@@ -641,6 +632,14 @@ export default function InvoicesPage() {
         {!paid && <PrintDocButton kind="invoice" id={inv.id} compact />}
         <DocDeleteButton id={inv.id} kind="invoice" onDelete={onDelete} />
       </DocRowActions>
+    );
+  }
+
+  if (!ready) {
+    return (
+      <div className="card p-6 text-sm text-white/70">
+        Loading invoices…
+      </div>
     );
   }
 

@@ -10,7 +10,9 @@
     "lint": "next lint",
     "test:abn": "node scripts/test-abn.mjs",
     "test:iso-date": "node scripts/test-iso-date.mjs",
-    "test": "node scripts/test-abn.mjs && node scripts/test-iso-date.mjs"
+    "test:checkout-aud": "node scripts/test-checkout-aud.mjs",
+    "test:books-mode": "node scripts/test-books-mode.mjs",
+    "test": "node scripts/test-abn.mjs && node scripts/test-iso-date.mjs && node scripts/test-checkout-aud.mjs && node scripts/test-books-mode.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

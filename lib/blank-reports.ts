@@ -3,6 +3,7 @@
 import { bills as sampleBills, invoices as sampleInvoices } from "@/lib/sample-data";
 import { isISODateInRange } from "@/lib/bas-dates";
 import { todayISO } from "@/lib/format";
+import { toIsoDate } from "@/lib/iso-date";
 
 function round2(n: number) {
   return Math.round(n * 100) / 100;
@@ -157,8 +158,8 @@ export function rollupDocsInIsoRange(
   end: string,
 ): BlankReportRollup {
   return rollupFromDocs(
-    invoices.filter((inv) => isISODateInRange(inv.issueDate, start, end)),
-    bills.filter((bill) => isISODateInRange(bill.date, start, end)),
+    invoices.filter((inv) => isISODateInRange(toIsoDate(inv.issueDate), start, end)),
+    bills.filter((bill) => isISODateInRange(toIsoDate(bill.date), start, end)),
   );
 }
 

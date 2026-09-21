@@ -34,9 +34,10 @@ import {
   updateQuote,
 } from "@/lib/books-client";
 import { effectiveQuoteStatus, type UserQuote } from "@/lib/user-docs";
+import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
 
 export default function QuotesPage() {
-  const { usesSampleData, user, loading: authLoading, persistence } = useAuth();
+  const { usesSampleData, user } = useAuth();
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
@@ -61,17 +62,7 @@ export default function QuotesPage() {
     setUserRows(await loadQuotes());
   }, []);
 
-  useEffect(() => {
-    if (authLoading || persistence === "unknown") return;
-    reloadUser();
-    const onUpdate = () => reloadUser();
-    window.addEventListener("hl-user-docs-updated", onUpdate);
-    window.addEventListener("storage", onUpdate);
-    return () => {
-      window.removeEventListener("hl-user-docs-updated", onUpdate);
-      window.removeEventListener("storage", onUpdate);
-    };
-  }, [reloadUser, authLoading, persistence]);
+  const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
 
 
   const [mounted, setMounted] = useState(false);
@@ -651,6 +642,14 @@ export default function QuotesPage() {
         <PrintDocButton kind="quote" id={q.id} compact />
         <DocDeleteButton id={q.id} kind="quote" onDelete={onDelete} />
       </DocRowActions>
+    );
+  }
+
+  if (!ready) {
+    return (
+      <div className="card p-6 text-sm text-white/70">
+        Loading quotes…
+      </div>
     );
   }
 

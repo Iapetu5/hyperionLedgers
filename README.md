@@ -25,6 +25,8 @@ Production: [https://www.hyperioninvoices.com.au](https://www.hyperioninvoices.c
 
 The homepage does **not** dump visitors into the demo.
 
+Signed-in `/demo` books (invoices, quotes, bills, products) use `/api/books/*` when `/api/auth/me` returns `persistence: "server"`. Guest demo stays in this browser.
+
 **Stripe:** Start free trial / Buy posts to `/api/stripe/checkout` (server-only; `/api/checkout` remains as an alias). Signed-out visitors are sent to **sign up** (or log in) before Checkout when Postgres is attached. Checkout is `card` + `link` so customers can **pay with card, Apple Pay, or Link** (Google Pay on the same hosted page when Stripe shows it). Amount is **$69 AUD / month** (adaptive pricing off). Success URL is `/downloads?session_id={CHECKOUT_SESSION_ID}`. The Downloads page **retrieves the session from Stripe** (or a signed `hl_entitlement` cookie / `has_paid_download`). It does **not** set cookies during page render. `?success=1` is ignored. The `.exe` is **not** in `public/` — `/api/downloads/windows` streams `private/downloads/HyperionInvoices-Setup.exe` after a 10-minute single-use token, a verified `session_id`, or an httpOnly session/entitlement.
 
 Apple Pay domain verification for `www.hyperioninvoices.com.au` and the apex: [docs/STRIPE_APPLE_PAY.md](docs/STRIPE_APPLE_PAY.md).

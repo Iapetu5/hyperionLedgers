@@ -2,34 +2,24 @@
 
 import Link from "next/link";
 import { Scale } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { formatAUD } from "@/lib/format";
 import { accounts, kpis } from "@/lib/sample-data";
 import { rollupBlankReports, EMPTY_REPORT_ROLLUP, type BlankReportRollup } from "@/lib/blank-reports";
 import { loadBills, loadInvoices } from "@/lib/books-client";
+import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
 
 export default function BalanceSheetReportPage() {
   const { usesSampleData } = useAuth();
   const [rollup, setRollup] = useState<BlankReportRollup>(EMPTY_REPORT_ROLLUP);
 
-  useEffect(() => {
-    if (usesSampleData) {
-      setRollup(EMPTY_REPORT_ROLLUP);
-      return;
-    }
-    const reload = async () =>
-      setRollup(rollupBlankReports(await loadInvoices(), await loadBills()));
-    void reload();
-    const onUpdate = () => void reload();
-    window.addEventListener("hl-user-docs-updated", onUpdate);
-    window.addEventListener("hl-doc-status", onUpdate);
-    return () => {
-      window.removeEventListener("hl-user-docs-updated", onUpdate);
-      window.removeEventListener("hl-doc-status", onUpdate);
-    };
-  }, [usesSampleData]);
+  const reload = useCallback(async () => {
+    setRollup(rollupBlankReports(await loadInvoices(), await loadBills()));
+  }, []);
+
+  const { ready } = useBlankBooksReload(reload);
 
   const cash = usesSampleData
     ? Math.round(accounts.reduce((s, a) => s + a.balance, 0) * 100) / 100
@@ -42,6 +32,10 @@ export default function BalanceSheetReportPage() {
   const receivables = usesSampleData ? kpis.receivables : rollup.receivables;
   const payables = usesSampleData ? kpis.payables : rollup.payables;
   const showBlank = !usesSampleData && rollup.hasActivity;
+
+  if (!ready) {
+    return <div className="card p-6 text-sm text-white/70">Loading balance sheet…</div>;
+  }
 
   return (
     <div className="space-y-6">
