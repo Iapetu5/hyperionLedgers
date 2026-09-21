@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 
@@ -60,14 +60,22 @@ export function ConfirmDialog({
     onConfirm();
   }
 
+  function handleBackdrop(e: MouseEvent<HTMLDivElement>) {
+    if (e.target === e.currentTarget) onCancel();
+  }
+
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 p-3 sm:items-center">
+    <div
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 p-3 sm:items-center"
+      onMouseDown={handleBackdrop}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={bodyId}
         className="card w-full max-w-md p-5"
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
           <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-200" aria-hidden />

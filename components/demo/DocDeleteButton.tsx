@@ -46,28 +46,30 @@ export function DocDeleteButton({
   kind: DocDeleteKind;
   onDelete: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const copy = docDeleteCopy(kind, id);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const namedId = pendingId ?? id;
+  const copy = docDeleteCopy(kind, namedId);
   return (
     <>
       <button
         type="button"
         className="btn-quiet-danger !px-2 !py-1 text-xs"
-        onClick={() => setOpen(true)}
+        onClick={() => setPendingId(id)}
         title={`Remove ${id} from this browser — other documents stay`}
       >
         <Trash2 size={12} />
         Delete
       </button>
       <ConfirmDialog
-        open={open}
+        open={pendingId != null}
         title={copy.title}
         body={copy.body}
         confirmLabel={copy.confirmLabel}
-        onCancel={() => setOpen(false)}
+        onCancel={() => setPendingId(null)}
         onConfirm={() => {
-          setOpen(false);
-          onDelete(id);
+          const del = pendingId;
+          setPendingId(null);
+          if (del) onDelete(del);
         }}
       />
     </>
