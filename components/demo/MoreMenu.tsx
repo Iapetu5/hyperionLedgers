@@ -164,32 +164,31 @@ export function MoreMenu({
         <MoreHorizontal size={12} />
         {label}
       </button>
-      {open && (
-        <div
-          id={menuId}
-          ref={menuRef}
-          role="menu"
-          aria-label={title}
-          className={`absolute z-30 mt-1 min-w-[11rem] rounded-lg border border-white/15 bg-slate-950/95 p-1.5 shadow-xl shadow-black/40 backdrop-blur-xl ${
-            align === "left" ? "left-0" : "right-0"
-          }`}
-        >
-          <div className="flex flex-col gap-1">
-            {items.map((node, i) => (
-              <div
-                key={isValidElement(node) && node.key != null ? String(node.key) : i}
-                role="none"
-                className="doc-row-actions-menu-item"
-                onClick={() => closeMenu(false)}
-              >
-                {isValidElement(node)
-                  ? cloneElement(node as ReactElement, { role: "menuitem" })
-                  : node}
-              </div>
-            ))}
-          </div>
+      <div
+        id={menuId}
+        ref={menuRef}
+        role="menu"
+        aria-label={title}
+        hidden={!open}
+        className={`absolute z-30 mt-1 min-w-[11rem] rounded-lg border border-white/15 bg-slate-950/95 p-1.5 shadow-xl shadow-black/40 backdrop-blur-xl ${
+          align === "left" ? "left-0" : "right-0"
+        }`}
+      >
+        <div className="flex flex-col gap-1">
+          {items.map((node, i) => (
+            <div
+              key={isValidElement(node) && node.key != null ? String(node.key) : i}
+              role="none"
+              className="doc-row-actions-menu-item"
+              onClick={() => closeMenu(false)}
+            >
+              {isValidElement(node)
+                ? cloneElement(node as ReactElement, { role: "menuitem" })
+                : node}
+            </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
