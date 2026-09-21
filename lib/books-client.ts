@@ -75,11 +75,16 @@ export function getBooksPersistence(): BooksPersistence {
 
 export function booksModeFromMe(data: {
   persistence?: string | null;
+  configured?: boolean;
   account?: unknown | null;
 }): { mode: BooksPersistence; hasAccount: boolean } {
   const hasAccount = Boolean(data.account);
-  if (data.persistence === "server") return { mode: "server", hasAccount };
-  if (data.persistence === "local") return { mode: "local", hasAccount: false };
+  if (data.configured === false || data.persistence === "local") {
+    return { mode: "local", hasAccount: false };
+  }
+  if (data.persistence === "server" || data.configured === true || hasAccount) {
+    return { mode: "server", hasAccount };
+  }
   return { mode: hasAccount ? "server" : "local", hasAccount };
 }
 
@@ -93,7 +98,7 @@ export async function ensureBooksPersistence(): Promise<BooksPersistence> {
   if (resolvingPersistence) return resolvingPersistence;
   resolvingPersistence = (async () => {
     try {
-      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      const res = await fetch("/api/auth/me", { cache: "no-store", credentials: "include" });
       const data = (await res.json().catch(() => ({}))) as {
         persistence?: string;
         account?: unknown | null;
@@ -131,8 +136,25 @@ async function readJson<T>(res: Response): Promise<T> {
   return (await res.json().catch(() => ({}))) as T;
 }
 
+async function waitForPublicDoc(kind: "invoice" | "quote", id: string): Promise<void> {
+  const path =
+    kind === "invoice"
+      ? `/api/public/invoice/${encodeURIComponent(id)}`
+      : `/api/public/quote/${encodeURIComponent(id)}`;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      const res = await fetch(path, { cache: "no-store", credentials: "include" });
+      const data = await readJson<{ doc?: unknown }>(res);
+      if (res.ok && data.doc) return;
+    } catch {
+      /* retry */
+    }
+    await new Promise((r) => setTimeout(r, 120 * (attempt + 1)));
+  }
+}
+
 async function booksFetch<T>(path: string, init?: RequestInit): Promise<T | { error: string }> {
-  const res = await fetch(path, { ...init, cache: "no-store" });
+  const res = await fetch(path, { ...init, cache: "no-store", credentials: "include" });
   const data = await readJson<{ error?: string } & T>(res);
   if (!res.ok) return { error: data.error || "Request failed." };
   return data;
@@ -155,6 +177,7 @@ export async function createInvoice(
     body: JSON.stringify(input),
   });
   if ("error" in data) return { error: data.error };
+  await waitForPublicDoc("invoice", data.invoice.id);
   emitBooksUpdated();
   return data.invoice;
 }
@@ -214,6 +237,7 @@ export async function createQuote(
     body: JSON.stringify(input),
   });
   if ("error" in data) return { error: data.error };
+  await waitForPublicDoc("quote", data.quote.id);
   emitBooksUpdated();
   return data.quote;
 }

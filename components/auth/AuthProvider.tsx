@@ -55,32 +55,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [persistence, setPersistence] = useState<"server" | "local" | "unknown">("unknown");
 
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch("/api/auth/me", { cache: "no-store" });
-      const data = await readJson(res);
-      if (data.configured && data.account) {
-        setPersistence("server");
-        setBooksPersistence("server", { hasAccount: true });
-        setUser(data.account);
-        setLoading(false);
-        return;
-      }
-      if (data.configured) {
-        setPersistence("server");
-        setBooksPersistence("server", { hasAccount: false });
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-    } catch {
-      // Fall through to browser-local demo accounts when the API is unavailable.
+  const applyMe = useCallback((data: Awaited<ReturnType<typeof readJson>>) => {
+    if (data.configured === true) {
+      const hasAccount = Boolean(data.account);
+      setPersistence("server");
+      setBooksPersistence("server", { hasAccount });
+      setUser(data.account ?? null);
+      return true;
     }
-    setPersistence("local");
-    setBooksPersistence("local", { hasAccount: false });
-    setUser(getCurrentAccount());
-    setLoading(false);
+    if (data.configured === false || data.persistence === "local") {
+      setPersistence("local");
+      setBooksPersistence("local", { hasAccount: Boolean(getCurrentAccount()) });
+      setUser(getCurrentAccount());
+      return true;
+    }
+    return false;
   }, []);
+
+  const refresh = useCallback(async () => {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store", credentials: "include" });
+        const data = await readJson(res);
+        if (applyMe(data)) {
+          setLoading(false);
+          return;
+        }
+      } catch {
+        /* retry */
+      }
+    }
+    // Ambiguous (rate-limit HTML, network): do not invent a localStorage session.
+    setLoading(false);
+  }, [applyMe]);
 
   useEffect(() => {
     void refresh();
@@ -101,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const res = await fetch("/api/auth/signup", {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(input),
           });
@@ -111,11 +119,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(data.account);
             return { ok: true, account: data.account };
           }
-          if (res.status !== 503) {
+          if (!(res.status === 503 && data.configured === false)) {
             return { ok: false, error: data.error || "Sign-up failed." };
           }
         } catch {
-          // Local fallback when Postgres is not attached.
+          return { ok: false, error: "Could not reach HyperionInvoices. Try again." };
         }
         const local = await signUpLib(input);
         if (local.ok) {
@@ -129,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const res = await fetch("/api/auth/login", {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
           });
@@ -139,11 +148,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(data.account);
             return { ok: true, account: data.account };
           }
-          if (res.status !== 503) {
+          if (!(res.status === 503 && data.configured === false)) {
             return { ok: false, error: data.error || "Log-in failed." };
           }
         } catch {
-          // Local fallback when Postgres is not attached.
+          return { ok: false, error: "Could not reach HyperionInvoices. Try again." };
         }
         const local = await logInLib(email, password);
         if (local.ok) {
@@ -155,32 +164,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       logOut: async () => {
         try {
-          await fetch("/api/auth/logout", { method: "POST" });
+          await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
         } catch {
           // Cookie clear is best-effort.
         }
         logOutLib();
-        setBooksPersistence("local", { hasAccount: false });
-        setPersistence("local");
+        const keepServer = persistence !== "local";
+        setBooksPersistence(keepServer ? "server" : "local", { hasAccount: false });
+        setPersistence(keepServer ? "server" : "local");
         setUser(null);
       },
       completeOnboarding: async (input) => {
         try {
           const res = await fetch("/api/auth/onboarding", {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(input),
           });
           const data = await readJson(res);
           if (res.ok && data.account) {
+            setPersistence("server");
+            setBooksPersistence("server", { hasAccount: true });
             setUser(data.account);
             return { ok: true, account: data.account };
           }
-          if (res.status !== 503) {
+          if (!(res.status === 503 && data.configured === false)) {
             return { ok: false, error: data.error || "Could not save setup." };
           }
         } catch {
-          // Local fallback.
+          return { ok: false, error: "Could not reach HyperionInvoices. Try again." };
         }
         const local = completeOnboardingLib(input);
         if (local.ok) setUser(local.account);
@@ -196,19 +209,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const res = await fetch("/api/auth/onboarding", {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(input),
           });
           const data = await readJson(res);
           if (res.ok && data.account) {
+            setPersistence("server");
+            setBooksPersistence("server", { hasAccount: true });
             setUser(data.account);
             return { ok: true, account: data.account };
           }
-          if (res.status !== 503) {
+          if (!(res.status === 503 && data.configured === false)) {
             return { ok: false, error: data.error || "Could not skip setup." };
           }
         } catch {
-          // Local fallback.
+          return { ok: false, error: "Could not reach HyperionInvoices. Try again." };
         }
         const local = skipOnboardingLib();
         if (local.ok) setUser(local.account);
@@ -218,19 +234,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const res = await fetch("/api/auth/profile", {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(patch),
           });
           const data = await readJson(res);
           if (res.ok && data.account) {
+            setPersistence("server");
+            setBooksPersistence("server", { hasAccount: true });
             setUser(data.account);
             return { ok: true, account: data.account };
           }
-          if (res.status !== 503) {
+          if (!(res.status === 503 && data.configured === false)) {
             return { ok: false, error: data.error || "Could not save profile." };
           }
         } catch {
-          // Local fallback.
+          return { ok: false, error: "Could not reach HyperionInvoices. Try again." };
         }
         const local = updateProfileLib(patch);
         if (local.ok) setUser(local.account);

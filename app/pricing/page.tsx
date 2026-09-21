@@ -6,6 +6,8 @@ import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { PricingCardDemoLink, PricingFooterDemoLine } from "@/components/marketing/PricingDemoLinks";
 import { getPlatformStatus, windowsDownloadLabel } from "@/lib/platform-status.server";
 
+export const dynamic = "force-dynamic";
+
 export default function PricingPage() {
   const { windowsInstallerReady } = getPlatformStatus();
   const features = [

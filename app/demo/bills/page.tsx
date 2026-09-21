@@ -39,9 +39,11 @@ import {
   type UserBill,
 } from "@/lib/user-docs";
 import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
+import { booksListHint, booksSampleHint, booksStoredHint, usesServerBooksUi } from "@/lib/books-copy";
 
 export default function BillsPage() {
-  const { usesSampleData } = useAuth();
+  const { usesSampleData, user, persistence } = useAuth();
+  const serverBooks = usesServerBooksUi(persistence, user);
   const [userRows, setUserRows] = useState<UserBill[]>([]);
   const [supplier, setSupplier] = useState("");
   const [lines, setLines] = useState<LineDraft[]>(() => [emptyLineDraft()]);
@@ -764,7 +766,7 @@ export default function BillsPage() {
               {" · "}
               {overdueUserBills.length} overdue
               {" · "}
-              browser-local only
+              {booksListHint(serverBooks)}
             </>
           ),
         )}
@@ -798,7 +800,7 @@ export default function BillsPage() {
           {" · "}
           Due soon: {formatAUD(dueSoonTotal)}
           {" · "}
-          sample + your browser-local creates below
+          {booksSampleHint(serverBooks)}
         </>,
       )}
 
@@ -809,7 +811,7 @@ export default function BillsPage() {
         <div className="space-y-2">
           <div className="border-b border-white/10 px-1 py-1">
             <h2 className="font-semibold text-white">Your created bills</h2>
-            <p className="text-xs text-slate-400">Stored in this browser · not part of the demo sample</p>
+            <p className="text-xs text-slate-400">{booksStoredHint(serverBooks)}</p>
           </div>
           {userTable()}
         </div>

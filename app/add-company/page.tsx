@@ -25,7 +25,7 @@ import {
   safeAddCompanyReturn,
   saveSelectedCompany,
 } from "@/lib/company-pickup";
-import { continueTrialCheckout, hasTrialIntent } from "@/lib/start-trial";
+import { continueTrialCheckout, hasTrialIntent, trialCheckoutOpened } from "@/lib/start-trial";
 
 function AddCompanyLoading() {
   return <div className="p-8 text-center text-white">Loading…</div>;
@@ -237,6 +237,7 @@ function AddCompanyForm() {
     const dest = nextUrl || nextSetupPath(res.account);
     if (hasTrialIntent() && dest === "/demo") {
       const checkoutUrl = await continueTrialCheckout(res.account.email);
+      if (trialCheckoutOpened(checkoutUrl)) return;
       if (checkoutUrl?.startsWith("/")) router.push(checkoutUrl);
       return;
     }

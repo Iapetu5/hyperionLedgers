@@ -72,8 +72,14 @@ export function CustomerDocPage({
   }, [kind, id]);
 
   useEffect(() => {
-    reload();
-    setClientReady(true);
+    let cancelled = false;
+    void (async () => {
+      await reload();
+      if (!cancelled) setClientReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [reload]);
 
   // Optional ?print=1 — read from window, never useSearchParams (avoids Suspense hang)

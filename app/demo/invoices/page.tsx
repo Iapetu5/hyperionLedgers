@@ -34,9 +34,11 @@ import {
 } from "@/lib/books-client";
 import { effectiveInvoiceStatus, type UserInvoice } from "@/lib/user-docs";
 import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
+import { booksListHint, booksSampleHint, booksStoredHint, usesServerBooksUi } from "@/lib/books-copy";
 
 export default function InvoicesPage() {
-  const { usesSampleData } = useAuth();
+  const { usesSampleData, user, persistence } = useAuth();
+  const serverBooks = usesServerBooksUi(persistence, user);
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
@@ -734,7 +736,7 @@ export default function InvoicesPage() {
               {" · "}
               {overdueUserInvs.length} overdue
               {" · "}
-              browser-local only
+              {booksListHint(serverBooks)}
             </>
           ),
         )}
@@ -772,7 +774,7 @@ export default function InvoicesPage() {
           {" · "}
           {sampleOverdue.length} overdue
           {" · "}
-          sample + your browser-local creates below
+          {booksSampleHint(serverBooks)}
         </>,
       )}
 
@@ -783,7 +785,7 @@ export default function InvoicesPage() {
         <div className="card overflow-x-auto">
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Your created invoices</h2>
-            <p className="text-xs text-slate-400">Stored in this browser · not part of the demo sample</p>
+            <p className="text-xs text-slate-400">{booksStoredHint(serverBooks)}</p>
           </div>
           <table className="min-w-full text-left text-sm">
             <thead className="table-head">

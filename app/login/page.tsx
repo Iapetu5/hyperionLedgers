@@ -11,6 +11,7 @@ import { beginHostedCheckout } from "@/lib/begin-checkout";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
 import { MARKETING_LIMITS } from "@/lib/brand";
 import { SIGNUP_FOR_TRIAL, wantsTrialCheckout } from "@/lib/trial-next";
+import { markTrialIntent } from "@/lib/start-trial";
 
 export default function LoginPage() {
   return (
@@ -76,6 +77,13 @@ function LoginForm() {
       return;
     }
     if (trialNext) {
+      const dest = nextSetupPath(res.account);
+      if (dest !== "/demo") {
+        markTrialIntent();
+        setBusy(false);
+        router.push(dest);
+        return;
+      }
       const checkout = await beginHostedCheckout(email);
       if (checkout.kind === "stripe") return;
       setBusy(false);

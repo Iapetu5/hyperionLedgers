@@ -8,7 +8,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
 import { SETUP_STEP, addCompanyHref, isRealCompanyName } from "@/lib/company-pickup";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
-import { continueTrialCheckout, hasTrialIntent } from "@/lib/start-trial";
+import { continueTrialCheckout, hasTrialIntent, trialCheckoutOpened } from "@/lib/start-trial";
 
 type WizardStep = "gst" | "method" | "fy" | "start";
 
@@ -58,11 +58,11 @@ export default function OnboardingPage() {
   async function goAfterSetup(mode: LedgerMode) {
     if (hasTrialIntent()) {
       const url = await continueTrialCheckout(user?.email);
+      if (trialCheckoutOpened(url)) return;
       if (url?.startsWith("/")) {
         router.push(url);
         return;
       }
-      if (url?.startsWith("http")) return;
     }
     router.push(mode === "blank" ? "/demo?welcome=1" : "/demo");
   }
@@ -101,11 +101,11 @@ export default function OnboardingPage() {
     }
     if (hasTrialIntent()) {
       const url = await continueTrialCheckout(user?.email);
+      if (trialCheckoutOpened(url)) return;
       if (url?.startsWith("/")) {
         router.push(url);
         return;
       }
-      if (url?.startsWith("http")) return;
     }
     router.push("/demo");
   }

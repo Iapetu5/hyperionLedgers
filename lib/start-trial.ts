@@ -1,3 +1,5 @@
+import { beginHostedCheckout } from "@/lib/begin-checkout";
+
 /** Remember that Start free trial should open Stripe only after signup + company. */
 
 export const TRIAL_INTENT_KEY = "hl_start_trial_v1";
@@ -29,33 +31,18 @@ export function clearTrialIntent() {
   }
 }
 
-export async function beginHostedCheckout(email?: string): Promise<{ url: string } | { error: string }> {
-  const res = await fetch("/api/stripe/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(email ? { email } : {}),
-  });
-  const data = (await res.json().catch(() => ({}))) as {
-    url?: string;
-    configured?: boolean;
-    message?: string;
-  };
-  if (data.url) return { url: data.url };
-  return { error: data.message || "Checkout could not start." };
+export function trialCheckoutOpened(url: string | null | undefined): boolean {
+  return url === "stripe" || Boolean(url?.startsWith("http://") || url?.startsWith("https://"));
 }
 
 /** After signup/company/onboarding: open Stripe only once the org exists. */
 export async function continueTrialCheckout(email?: string): Promise<string | null> {
   if (!hasTrialIntent()) return null;
   const result = await beginHostedCheckout(email);
-  if ("url" in result && result.url.startsWith("http")) {
+  if (result.kind === "stripe") {
     clearTrialIntent();
-    window.location.assign(result.url);
-    return result.url;
+    return "stripe";
   }
-  if ("url" in result && result.url.startsWith("/")) {
-    clearTrialIntent();
-    return result.url;
-  }
-  return "/checkout?reason=unconfigured";
+  clearTrialIntent();
+  return result.path;
 }
