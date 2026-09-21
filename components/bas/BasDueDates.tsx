@@ -44,7 +44,7 @@ export function BasDueDates({ compact = false }: { compact?: boolean }) {
           </Link>
         </div>
         <p className="mt-2 text-[11px] text-slate-500">
-          Demo calendar for your records — lodgement is simulated, not sent to the ATO.
+          Practice calendar for your records — not sent to the tax office.
         </p>
       </div>
     );
@@ -88,8 +88,8 @@ export function BasDueDates({ compact = false }: { compact?: boolean }) {
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-slate-400">
-            This is a preview calendar for planning. HyperionLedgers does not lodge with the ATO — any
-            &ldquo;prepared&rdquo; status below is a simulated lodgement for your records only.
+            This is a practice calendar for planning. Nothing here is sent to the tax office.
+            &ldquo;Mark as prepared&rdquo; is for practice only.
           </p>
         </div>
       )}
@@ -98,8 +98,8 @@ export function BasDueDates({ compact = false }: { compact?: boolean }) {
         <div className="border-b border-white/10 px-4 py-3">
           <h3 className="font-semibold text-white">BAS due dates</h3>
           <p className="text-xs text-slate-400">
-            Australian quarterly calendar (approx. 28th of the month after quarter end). Demo preview —
-            not an official ATO schedule for your ABN.
+            Australian quarterly calendar (about the 28th of the month after quarter end). Practice
+            preview — not an official tax-office schedule for your ABN.
           </p>
         </div>
         <ul className="divide-y divide-white/10">
