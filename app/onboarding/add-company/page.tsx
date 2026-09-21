@@ -8,24 +8,29 @@ import { EasyStepBar } from "@/components/easy/EasyStepBar";
 import { searchAbrCompanies, type AbrCompany } from "@/lib/abn";
 import { saveSelectedCompany, safeAddCompanyReturn } from "@/lib/add-company";
 
+type Phase = "search" | "results" | "confirm";
+
 export default function AddCompanyPage() {
   const router = useRouter();
-  const [returnTo, setReturnTo] = useState("/signup");
+  const [returnTo, setReturnTo] = useState("/onboarding");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AbrCompany[]>([]);
-  const [searched, setSearched] = useState(false);
   const [selected, setSelected] = useState<AbrCompany | null>(null);
+  const [phase, setPhase] = useState<Phase>("search");
 
   useEffect(() => {
     const raw = new URLSearchParams(window.location.search).get("return");
-    setReturnTo(safeAddCompanyReturn(raw));
+    setReturnTo(safeAddCompanyReturn(raw || "/onboarding"));
   }, []);
+
+  const stepNum = phase === "search" ? 1 : phase === "results" ? 2 : 3;
+  const stepLabel = phase === "search" ? "Search" : phase === "results" ? "Select" : "Confirm";
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
     setResults(searchAbrCompanies(query));
-    setSearched(true);
     setSelected(null);
+    setPhase("results");
   }
 
   function confirm() {
@@ -42,18 +47,14 @@ export default function AddCompanyPage() {
     <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
       <BrandLogo className="mb-8 justify-center" />
       <div className="card p-6">
-        <EasyStepBar
-          current={selected ? 2 : 1}
-          total={2}
-          label={selected ? "Confirm" : "Search"}
-        />
+        <EasyStepBar current={stepNum} total={3} label={stepLabel} />
         <h1 className="mt-4 text-xl font-bold text-white">Add company</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-          Search HyperionInvoices&apos; simulated ABR for a company name or ABN, then confirm to fill your details.
-          This is a practice lookup — not a live ABR request.
+          Search the HyperionInvoices practice ABR, select a match, then confirm to fill your company.
+          This is not a live ABR request.
         </p>
 
-        {!selected && (
+        {phase === "search" && (
           <form className="mt-6 space-y-4" onSubmit={onSearch}>
             <div>
               <label className="label" htmlFor="companySearch">Company name or ABN</label>
@@ -72,8 +73,8 @@ export default function AddCompanyPage() {
           </form>
         )}
 
-        {!selected && searched && (
-          <div className="mt-5">
+        {phase === "results" && (
+          <div className="mt-6">
             <p className="text-sm font-semibold text-white">
               {results.length === 0 ? "No matches" : "Select a company"}
             </p>
@@ -88,7 +89,10 @@ export default function AddCompanyPage() {
                     <button
                       type="button"
                       className="choice-card w-full text-left"
-                      onClick={() => setSelected(row)}
+                      onClick={() => {
+                        setSelected(row);
+                        setPhase("confirm");
+                      }}
                     >
                       <span>
                         <strong className="text-white">{row.legalName}</strong>
@@ -102,28 +106,41 @@ export default function AddCompanyPage() {
                 ))}
               </ul>
             )}
+            <button type="button" className="btn-secondary mt-4" onClick={() => setPhase("search")}>
+              Back to search
+            </button>
           </div>
         )}
 
-        {selected && (
+        {phase === "confirm" && selected && (
           <div className="mt-6 space-y-4">
-            <div className="rounded-lg border border-brand-400/30 bg-brand-500/10 px-3 py-3 text-sm text-slate-200">
-              <p className="font-semibold text-white">{selected.legalName}</p>
-              <p className="mt-1">ABN {selected.abn}</p>
-              <p>
-                {selected.state} {selected.postcode} · {selected.entityStatus}
-                {selected.gstRegistered ? " · GST registered" : " · Not GST registered"}
-              </p>
-              <p className="mt-2 text-xs text-slate-400">
-                Confirm to fill business name, ABN, and GST on the previous screen.
-              </p>
-            </div>
+            <p className="text-sm font-semibold text-white">These details will be filled in</p>
+            <dl className="rounded-lg border border-brand-400/30 bg-brand-500/10 px-3 py-3 text-sm text-slate-200">
+              <div className="flex justify-between gap-4 py-1">
+                <dt className="text-slate-400">Business name</dt>
+                <dd className="font-semibold text-white">{selected.legalName}</dd>
+              </div>
+              <div className="flex justify-between gap-4 py-1">
+                <dt className="text-slate-400">ABN</dt>
+                <dd className="text-white">{selected.abn}</dd>
+              </div>
+              <div className="flex justify-between gap-4 py-1">
+                <dt className="text-slate-400">GST</dt>
+                <dd className="text-white">{selected.gstRegistered ? "Registered" : "Not registered"}</dd>
+              </div>
+              <div className="flex justify-between gap-4 py-1">
+                <dt className="text-slate-400">Status</dt>
+                <dd className="text-white">
+                  {selected.entityStatus} · {selected.state} {selected.postcode}
+                </dd>
+              </div>
+            </dl>
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn-primary" onClick={confirm}>
                 Confirm
               </button>
-              <button type="button" className="btn-secondary" onClick={() => setSelected(null)}>
-                Back to results
+              <button type="button" className="btn-secondary" onClick={() => setPhase("results")}>
+                Back to matches
               </button>
             </div>
           </div>

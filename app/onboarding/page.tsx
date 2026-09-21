@@ -4,22 +4,25 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
+import Link from "next/link";
 import { AbnField } from "@/components/abn/AbnField";
-import { CompanyNameTypeahead } from "@/components/abn/CompanyNameTypeahead";
 import { EasyStepBar } from "@/components/easy/EasyStepBar";
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
 import { clearSelectedCompany, readSelectedCompany } from "@/lib/add-company";
 
-type StepId = "gst" | "method" | "year" | "ledger";
+type StepId = "company" | "gst" | "method" | "year" | "ledger";
 
 const FY_ENDS = ["30 June", "31 March", "31 December", "30 September"] as const;
 
 function stepsFor(gstRegistered: boolean): StepId[] {
-  return gstRegistered ? ["gst", "method", "year", "ledger"] : ["gst", "year", "ledger"];
+  return gstRegistered
+    ? ["company", "gst", "method", "year", "ledger"]
+    : ["company", "gst", "year", "ledger"];
 }
 
 const STEP_LABEL: Record<StepId, string> = {
+  company: "Company",
   gst: "GST",
   method: "GST method",
   year: "Year end",
@@ -36,7 +39,7 @@ export default function OnboardingPage() {
   const [abn, setAbn] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [stepId, setStepId] = useState<StepId>("gst");
+  const [stepId, setStepId] = useState<StepId>("company");
 
   const steps = useMemo(() => stepsFor(gstRegistered), [gstRegistered]);
   const stepIndex = Math.max(0, steps.indexOf(stepId));
@@ -52,7 +55,9 @@ export default function OnboardingPage() {
       router.replace("/demo");
       return;
     }
-    setBusinessName((current) => current || user.businessName);
+    if (user.businessName && user.businessName !== "Your organisation") {
+      setBusinessName((current) => current || user.businessName);
+    }
     if (user.abn) setAbn((current) => current || user.abn || "");
     const picked = readSelectedCompany();
     if (!picked) return;
@@ -132,12 +137,15 @@ export default function OnboardingPage() {
     return <div className="p-8 text-center text-white">Loading…</div>;
   }
 
+  const hasCompany = Boolean(businessName && abn);
   const isLast = current === "ledger";
   const continueLabel = isLast
     ? ledgerMode === "blank"
       ? "Continue — create your first document"
       : "Continue to your organisation"
-    : "Continue";
+    : current === "company" && !hasCompany
+      ? "Continue without a company"
+      : "Continue";
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
@@ -146,9 +154,34 @@ export default function OnboardingPage() {
         <EasyStepBar current={stepIndex + 1} total={steps.length} label={STEP_LABEL[current]} />
         <h1 className="mt-4 text-xl font-bold text-white">Set up your HyperionInvoices business</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-          One question at a time for {businessName || user.businessName}. You can change these later in Your account.
+          One question at a time{businessName ? ` for ${businessName}` : ""}. You can change these later in Your account.
         </p>
         <form className="mt-6 space-y-5" onSubmit={onSubmit}>
+          {current === "company" && (
+            <div className="space-y-4">
+              <p className="label">Your company</p>
+              {businessName && abn ? (
+                <div className="rounded-lg border border-brand-400/30 bg-brand-500/10 px-3 py-3 text-sm text-slate-200">
+                  <p className="font-semibold text-white">{businessName}</p>
+                  <p className="mt-1">ABN {abn}</p>
+                  <p className="mt-1 text-slate-400">
+                    {gstRegistered ? "GST registered" : "Not GST registered"} — from Add company.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-300">
+                  Add your company on the dedicated HyperionInvoices page. We search a practice ABR, you select a match, then confirm.
+                </p>
+              )}
+              <Link
+                href="/onboarding/add-company?return=/onboarding"
+                className={businessName && abn ? "btn-secondary" : "btn-primary"}
+              >
+                {businessName && abn ? "Change company" : "Add company"}
+              </Link>
+            </div>
+          )}
+
           {current === "gst" && (
             <fieldset>
               <legend className="label">Are you registered for GST?</legend>
@@ -210,22 +243,6 @@ export default function OnboardingPage() {
                   ))}
                 </div>
               </fieldset>
-              <CompanyNameTypeahead
-                id="onboardingBusiness"
-                value={businessName}
-                returnTo="/onboarding"
-                onChange={setBusinessName}
-                onPick={(row) => {
-                  setBusinessName(row.legalName);
-                  setAbn(row.abn);
-                  setGstRegistered(row.gstRegistered);
-                  void updateProfile({
-                    businessName: row.legalName,
-                    abn: row.abn,
-                    gstRegistered: row.gstRegistered,
-                  });
-                }}
-              />
               <AbnField value={abn} onChange={setAbn} />
             </>
           )}
@@ -269,9 +286,16 @@ export default function OnboardingPage() {
           {error && <p className="text-sm text-rose-300">{error}</p>}
 
           <div className="flex flex-col gap-2">
-            <button type="submit" className="btn-primary w-full">
-              {continueLabel}
-            </button>
+            {!(current === "company" && !hasCompany) && (
+              <button type="submit" className="btn-primary w-full">
+                {continueLabel}
+              </button>
+            )}
+            {current === "company" && !hasCompany && (
+              <button type="submit" className="btn-secondary">
+                Continue without a company
+              </button>
+            )}
             <div className="flex flex-wrap gap-2">
               {stepIndex > 0 && (
                 <button type="button" className="btn-secondary" onClick={goBack}>

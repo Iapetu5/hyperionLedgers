@@ -14,7 +14,7 @@ export function safeAddCompanyReturn(raw: string | null | undefined): (typeof AD
   const path = (raw ?? "").split("?")[0];
   return (ADD_COMPANY_RETURNS as readonly string[]).includes(path)
     ? (path as (typeof ADD_COMPANY_RETURNS)[number])
-    : "/signup";
+    : "/onboarding";
 }
 
 export function saveSelectedCompany(company: SelectedCompany) {
