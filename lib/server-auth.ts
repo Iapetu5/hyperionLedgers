@@ -180,6 +180,8 @@ export async function signUpServer(input: {
   password: string;
   businessName?: string;
   abn?: string;
+  entityType?: string;
+  businessAddress?: string;
 }): Promise<{ ok: true; account: PublicAccount } | { ok: false; error: string }> {
   await ensureSchema();
   const errors = validateSignup(input);
@@ -194,13 +196,15 @@ export async function signUpServer(input: {
   const named = input.businessName?.trim() ?? "";
   const businessName = named || PENDING_ORG_NAME;
   const companyAdded = Boolean(named && named !== PENDING_ORG_NAME);
+  const entityType = input.entityType?.trim() || null;
+  const address = input.businessAddress?.trim() || null;
   await db()`
     INSERT INTO users (id, email, password_hash, full_name)
     VALUES (${userId}, ${email}, ${passwordHash}, ${input.fullName.trim()})
   `;
   await db()`
-    INSERT INTO organisations (id, user_id, name, abn, onboarding_complete, ledger_mode, company_added)
-    VALUES (${orgId}, ${userId}, ${businessName}, ${abn}, false, 'blank', ${companyAdded})
+    INSERT INTO organisations (id, user_id, name, abn, onboarding_complete, ledger_mode, company_added, entity_type, address)
+    VALUES (${orgId}, ${userId}, ${businessName}, ${abn}, false, 'blank', ${companyAdded}, ${entityType}, ${address})
   `;
   await createSession(userId);
   const account = await getSessionAccount();
@@ -235,6 +239,14 @@ export async function completeOnboardingServer(
   const abnErr = validateAbnField(input.abn ?? "", false);
   if (abnErr) return { ok: false, error: abnErr };
   const abn = input.abn?.trim() ? formatAbn(input.abn) : account.abn ?? null;
+  const name = input.businessName?.trim() || account.businessName;
+  const companyAdded = Boolean(name && name !== PENDING_ORG_NAME);
+  const entityType =
+    input.entityType !== undefined ? input.entityType.trim() || null : account.entityType ?? null;
+  const address =
+    input.businessAddress !== undefined
+      ? input.businessAddress.trim() || null
+      : account.businessAddress ?? null;
   await db()`
     UPDATE organisations
     SET
@@ -243,7 +255,11 @@ export async function completeOnboardingServer(
       gst_accounting_method = ${input.gstRegistered ? input.gstAccountingMethod ?? "accruals" : null},
       financial_year_end = ${input.financialYearEnd.trim() || "30 June"},
       ledger_mode = ${input.ledgerMode},
-      abn = ${abn}
+      abn = ${abn},
+      name = ${name},
+      entity_type = ${entityType},
+      address = ${address},
+      company_added = ${companyAdded}
     WHERE user_id = ${account.id}
   `;
   const next = await getSessionAccount();

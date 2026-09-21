@@ -21,6 +21,8 @@ export async function POST(req: Request) {
     password?: string;
     businessName?: string;
     abn?: string;
+    entityType?: string;
+    businessAddress?: string;
   };
   const result = await signUpServer({
     fullName: body.fullName ?? "",
@@ -28,6 +30,8 @@ export async function POST(req: Request) {
     password: body.password ?? "",
     businessName: body.businessName ?? "",
     abn: body.abn,
+    entityType: body.entityType,
+    businessAddress: body.businessAddress,
   });
   if (!result.ok) return NextResponse.json({ configured: true, error: result.error }, { status: 400 });
   return NextResponse.json({ configured: true, account: result.account });

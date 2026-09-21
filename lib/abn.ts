@@ -24,7 +24,7 @@ export type AbrCompany = {
   entityStatus: "Active" | "Cancelled";
   gstRegistered: boolean;
   address?: string;
-  simulated: true;
+  simulated: boolean;
 };
 
 /** @deprecated Use AbrCompany — kept so existing ABN field code type-checks. */
@@ -305,3 +305,6 @@ export function searchAbr(query: string, limit = 8): AbrCompany[] {
 
   return results.slice(0, limit);
 }
+
+/** Alias used by add-company / signup typeahead. Same as searchAbr (simulated). */
+export const searchAbrByName = searchAbr;

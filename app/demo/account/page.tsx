@@ -4,13 +4,17 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AbnField } from "@/components/abn/AbnField";
+import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahead";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import type { GstAccountingMethod } from "@/lib/auth";
+import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
 
 export default function AccountPage() {
   const { user, updateProfile, loading, usesSampleData } = useAuth();
   const [businessName, setBusinessName] = useState("");
   const [abn, setAbn] = useState("");
+  const [entityType, setEntityType] = useState<AbrEntityType | "">("");
+  const [address, setAddress] = useState("");
   const [gstRegistered, setGstRegistered] = useState(true);
   const [method, setMethod] = useState<GstAccountingMethod>("accruals");
   const [fyEnd, setFyEnd] = useState("30 June");
@@ -21,6 +25,10 @@ export default function AccountPage() {
     if (!user) return;
     setBusinessName(user.businessName);
     setAbn(user.abn ?? "");
+    if (user.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(user.entityType)) {
+      setEntityType(user.entityType as AbrEntityType);
+    }
+    setAddress(user.businessAddress ?? "");
     setGstRegistered(user.gstRegistered ?? true);
     setMethod(user.gstAccountingMethod ?? "accruals");
     setFyEnd(user.financialYearEnd ?? "30 June");
@@ -50,9 +58,12 @@ export default function AccountPage() {
     const res = await updateProfile({
       businessName,
       abn,
+      entityType: entityType || undefined,
+      businessAddress: address,
       gstRegistered,
       gstAccountingMethod: gstRegistered ? method : undefined,
       financialYearEnd: fyEnd,
+      companyAdded: Boolean(businessName.trim()),
     });
     if (!res.ok) {
       setError(res.error);
@@ -100,11 +111,59 @@ export default function AccountPage() {
       </div>
 
       <form className="card max-w-xl space-y-4 p-6" onSubmit={onSave}>
-        <div>
-          <label className="label" htmlFor="bn">Business name</label>
-          <input id="bn" className="input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-        </div>
-        <AbnField value={abn} onChange={setAbn} />
+        <BusinessNameTypeahead
+          id="bn"
+          value={businessName}
+          onChange={setBusinessName}
+          onSelect={(company: AbrCompany) => {
+            setBusinessName(company.legalName);
+            setAbn(company.abn);
+            setEntityType(company.entityType);
+            setAddress(company.address ?? "");
+            setGstRegistered(company.gstRegistered);
+          }}
+        />
+        <AbnField
+          value={abn}
+          onChange={setAbn}
+          onLookup={(company) => {
+            if (!company) return;
+            if (!businessName.trim()) setBusinessName(company.legalName);
+            if (!entityType) setEntityType(company.entityType);
+            if (!address && company.address) setAddress(company.address);
+          }}
+        />
+        {(entityType || address) && (
+          <>
+            <div>
+              <label className="label" htmlFor="entityType">Entity type</label>
+              <select
+                id="entityType"
+                className="input"
+                value={entityType}
+                onChange={(e) => setEntityType(e.target.value as AbrEntityType)}
+              >
+                <option value="">Choose if you know it</option>
+                {ABR_ENTITY_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="accountAddress">Address</label>
+              <input
+                id="accountAddress"
+                className="input"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Street, suburb, state and postcode"
+                autoComplete="street-address"
+              />
+            </div>
+          </>
+        )}
         <fieldset>
           <legend className="label">GST registered</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">

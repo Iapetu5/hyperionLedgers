@@ -61,6 +61,9 @@ export type OnboardingInput = {
   financialYearEnd: string;
   ledgerMode: LedgerMode;
   abn?: string;
+  businessName?: string;
+  entityType?: string;
+  businessAddress?: string;
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -187,6 +190,8 @@ export async function signUp(input: {
   password: string;
   businessName?: string;
   abn?: string;
+  entityType?: string;
+  businessAddress?: string;
 }): Promise<AuthResult> {
   if (!isBrowser()) return { ok: false, error: "Sign-up is only available in the browser." };
   const errors = validateSignup(input);
@@ -205,6 +210,8 @@ export async function signUp(input: {
     passwordHash,
     businessName: named || PENDING_ORG_NAME,
     abn: input.abn?.trim() ? formatAbn(input.abn) : undefined,
+    entityType: input.entityType?.trim() || undefined,
+    businessAddress: input.businessAddress?.trim() || undefined,
     companyAdded: Boolean(named && named !== PENDING_ORG_NAME),
     createdAt: new Date().toISOString(),
     onboardingComplete: false,
@@ -255,6 +262,15 @@ export function completeOnboarding(input: OnboardingInput): AuthResult {
     financialYearEnd: input.financialYearEnd.trim() || "30 June",
     ledgerMode: input.ledgerMode,
     abn: input.abn?.trim() ? formatAbn(input.abn) : accounts[idx].abn,
+    ...(input.businessName?.trim()
+      ? { businessName: input.businessName.trim(), companyAdded: true }
+      : {}),
+    ...(input.entityType !== undefined
+      ? { entityType: input.entityType.trim() || undefined }
+      : {}),
+    ...(input.businessAddress !== undefined
+      ? { businessAddress: input.businessAddress.trim() || undefined }
+      : {}),
   };
   accounts[idx] = updated;
   saveAccounts(accounts);

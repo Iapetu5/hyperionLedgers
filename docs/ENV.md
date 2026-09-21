@@ -19,6 +19,7 @@ EMAIL_SMTP_PASS=
 GMAIL_USER=
 GMAIL_APP_PASSWORD=
 EMAIL_API_KEY=
+ABR_GUID=
 ```
 
 ## Required for production marketing
@@ -74,5 +75,18 @@ Do not invent or commit real keys.
 | `EMAIL_API_KEY` | Resend `re_…` | Vercel secret |
 
 Do not invent or commit real keys.
+
+## Australian Business Register (optional)
+
+Name typeahead on signup, onboarding, add-company, and Account calls `GET /api/abr/search?q=`.
+
+| Name | Example shape | Where |
+|------|----------------|--------|
+| `ABR_GUID` | ABR web-services GUID | Vercel secret |
+| `ABR_GUID_KEY` | same value, optional alias | Used only if `ABR_GUID` is empty |
+
+Leave empty in Git and on local machines that should stay on the demo register. When `ABR_GUID` is set, the server calls ABR JSON (`MatchingNames.aspx` / `AbnDetails.aspx`). If that call fails, the route falls back to the same demo matches so people can still pick a company or type details themselves.
+
+Register a GUID at [ABR web services](https://abr.business.gov.au/Tools/WebServices). Do not invent or commit a real GUID.
 
 HyperionInvoices does not lodge with the ATO. Do not change DNS.

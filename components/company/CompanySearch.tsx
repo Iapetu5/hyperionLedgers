@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { AbrCompany } from "@/lib/abn";
+import { enrichAbrCompany, useAbrSearch } from "@/components/company/useAbrSearch";
 
 type Props = {
   selected: AbrCompany | null;
@@ -12,62 +13,28 @@ export function CompanySearch({ selected, onSelect }: Props) {
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<AbrCompany[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const { results, busy, error, simulated } = useAbrSearch(query, !selected);
 
   useEffect(() => {
     if (!selected) inputRef.current?.focus();
   }, [selected]);
 
   useEffect(() => {
-    if (selected) return;
-    const q = query.trim();
-    if (q.length < 2) {
-      setResults([]);
-      setBusy(false);
-      setError(null);
-      return;
-    }
+    setActiveIndex(0);
+  }, [results]);
 
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setBusy(true);
-      try {
-        const res = await fetch(`/api/abr/search?q=${encodeURIComponent(q)}`, {
-          signal: controller.signal,
-          cache: "no-store",
-        });
-        const data = (await res.json()) as { results?: AbrCompany[]; error?: string };
-        if (!res.ok) {
-          setError(data.error || "Search is unavailable right now.");
-          setResults([]);
-          return;
-        }
-        setError(null);
-        setResults(data.results ?? []);
-        setActiveIndex(0);
-      } catch (err) {
-        if ((err as Error).name === "AbortError") return;
-        setError("Could not search the register. Try again.");
-        setResults([]);
-      } finally {
-        setBusy(false);
-      }
-    }, 220);
-
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query, selected]);
+  async function pick(company: AbrCompany) {
+    onSelect(await enrichAbrCompany(company));
+  }
 
   if (selected) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-slate-300">
-          Selected from the register. Check the details below, then confirm.
+          {selected.simulated
+            ? "Selected from the demo register. Check the details below, then confirm."
+            : "Selected from the Australian Business Register. Check the details below, then confirm."}
         </p>
         <button
           type="button"
@@ -91,7 +58,7 @@ export function CompanySearch({ selected, onSelect }: Props) {
       <input
         ref={inputRef}
         id="company-search"
-        className="input !px-4 !py-4 !text-lg"
+        className="input"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Example Cafe or 51 824 753 556"
@@ -113,15 +80,16 @@ export function CompanySearch({ selected, onSelect }: Props) {
             setActiveIndex((i) => (i - 1 + results.length) % results.length);
           } else if (e.key === "Enter") {
             e.preventDefault();
-            onSelect(results[activeIndex]);
+            void pick(results[activeIndex]);
           } else if (e.key === "Escape") {
-            setResults([]);
+            setQuery("");
           }
         }}
       />
       <p className="mt-2 text-xs text-slate-400">
-        Type at least two letters. Results update as you type from a simulated ABR lookup — not a live
-        ABR connection.
+        {simulated
+          ? "Type at least two letters. Demo register — pick a match or enter the details yourself."
+          : "Type at least two letters. Matches come from the Australian Business Register."}
       </p>
       {busy && <p className="mt-2 text-sm text-slate-300">Searching…</p>}
       {error && <p className="mt-2 text-sm text-rose-300">{error}</p>}
@@ -147,7 +115,7 @@ export function CompanySearch({ selected, onSelect }: Props) {
                     active ? "bg-brand-500/15" : "hover:bg-white/5"
                   }`}
                   onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => onSelect(row)}
+                  onClick={() => void pick(row)}
                 >
                   <p className="font-semibold text-white">{row.legalName}</p>
                   <p className="mt-0.5 text-sm text-slate-300">

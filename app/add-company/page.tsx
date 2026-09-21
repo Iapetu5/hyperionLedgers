@@ -241,7 +241,9 @@ function AddCompanyForm() {
                 <p className="text-xs text-slate-400">
                   Status: {selected.entityStatus}
                   {selected.gstRegistered ? " · GST registered" : " · Not GST registered"}
-                  . Simulated ABR result for demo.
+                  {selected.simulated
+                    ? ". Demo register result — you can edit any field."
+                    : ". From the Australian Business Register."}
                 </p>
               )}
               {error && <p className="text-sm text-rose-300">{error}</p>}

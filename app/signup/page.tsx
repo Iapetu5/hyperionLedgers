@@ -7,7 +7,9 @@ import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { validateSignup } from "@/lib/auth";
 import { AbnField } from "@/components/abn/AbnField";
+import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahead";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
 
 export default function SignupPage() {
   const { signUp } = useAuth();
@@ -17,6 +19,8 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [abn, setAbn] = useState("");
+  const [entityType, setEntityType] = useState<AbrEntityType | "">("");
+  const [address, setAddress] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -31,7 +35,15 @@ export default function SignupPage() {
     }
     setBusy(true);
     setError(null);
-    const res = await signUp({ fullName, email, password, businessName, abn });
+    const res = await signUp({
+      fullName,
+      email,
+      password,
+      businessName,
+      abn,
+      entityType: entityType || undefined,
+      businessAddress: address || undefined,
+    });
     if (!res.ok) {
       setBusy(false);
       setError(res.error);
@@ -102,20 +114,58 @@ export default function SignupPage() {
             <p className="mt-1 text-xs text-slate-400">At least 8 characters.</p>
             {fieldErrors.password && <p className="mt-1 text-xs text-rose-300">{fieldErrors.password}</p>}
           </div>
-          <div>
-            <label className="label" htmlFor="businessName">Business name</label>
-            <input
-              id="businessName"
-              className="input"
-              autoComplete="organization"
-              placeholder="Sunrise Cafe Pty Ltd"
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-            />
-            <p className="mt-1 text-xs text-slate-400">Optional here. You can search the register on the next page.</p>
-            {fieldErrors.businessName && <p className="mt-1 text-xs text-rose-300">{fieldErrors.businessName}</p>}
-          </div>
-          <AbnField value={abn} onChange={setAbn} />
+          <BusinessNameTypeahead
+            value={businessName}
+            onChange={setBusinessName}
+            onSelect={(company: AbrCompany) => {
+              setBusinessName(company.legalName);
+              setAbn(company.abn);
+              setEntityType(company.entityType);
+              setAddress(company.address ?? "");
+            }}
+          />
+          {fieldErrors.businessName && <p className="mt-1 text-xs text-rose-300">{fieldErrors.businessName}</p>}
+          <AbnField
+            value={abn}
+            onChange={setAbn}
+            onLookup={(company) => {
+              if (!company) return;
+              if (!businessName.trim()) setBusinessName(company.legalName);
+              if (!entityType) setEntityType(company.entityType);
+              if (!address && company.address) setAddress(company.address);
+            }}
+          />
+          {(entityType || address) && (
+            <div className="space-y-3">
+              <div>
+                <label className="label" htmlFor="entityType">Entity type</label>
+                <select
+                  id="entityType"
+                  className="input"
+                  value={entityType}
+                  onChange={(e) => setEntityType(e.target.value as AbrEntityType)}
+                >
+                  <option value="">Choose if you know it</option>
+                  {ABR_ENTITY_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="signupAddress">Address</label>
+                <input
+                  id="signupAddress"
+                  className="input"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Street, suburb, state and postcode"
+                  autoComplete="street-address"
+                />
+              </div>
+            </div>
+          )}
           {fieldErrors.abn && <p className="text-xs text-rose-300">{fieldErrors.abn}</p>}
           {error && <p className="text-sm text-rose-300">{error}</p>}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
