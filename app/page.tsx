@@ -5,6 +5,7 @@ import { HomeHeroLead } from "@/components/marketing/HomeHeroLead";
 import { HomeHeroActions } from "@/components/marketing/HomeHeroActions";
 import { HomePreviewDemoButton } from "@/components/marketing/HomePreviewDemoButton";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
+import { MARKETING_LIMITS } from "@/lib/brand";
 import { ShieldCheck, Sparkles, Wallet } from "lucide-react";
 
 const TRUST_POINTS = [
@@ -18,7 +19,7 @@ const FEATURES = [
   {
     icon: Wallet,
     title: "Cash in and out",
-    body: "See overdue bills and invoices on one page. Then pay or follow up.",
+    body: "See overdue bills and invoices on one page. Follow up from there.",
   },
   {
     icon: ShieldCheck,
@@ -47,9 +48,7 @@ export default function HomePage() {
             </h1>
             <HomeHeroLead />
             <HomeHeroActions />
-            <p className="mt-5 text-base leading-7 text-slate-100">
-              HyperionInvoices does not send forms to the tax office. Mac is coming soon.
-            </p>
+            <p className="mt-5 text-base leading-7 text-slate-100">{MARKETING_LIMITS}</p>
           </div>
 
           <div className="card overflow-hidden shadow-soft">

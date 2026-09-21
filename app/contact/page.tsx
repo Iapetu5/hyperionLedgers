@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { MARKETING_LIMITS } from "@/lib/brand";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
@@ -23,7 +24,7 @@ export default function ContactPage() {
         <p className="marketing-kicker">Australian bookkeeping · get in touch</p>
         <h1 className="marketing-title">Contact</h1>
         <p className="marketing-lead">
-          Questions about HyperionInvoices? Send a note. This preview does not deliver email.
+          Questions about HyperionInvoices? Leave a note here. This page does not send email yet.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
           <StartTrialButton className="btn-marketing-primary" />
@@ -45,7 +46,7 @@ export default function ContactPage() {
                 <span>
                   <strong className="font-semibold text-white">Email</strong>
                   <br />
-                  Use the form on this page.
+                  Use the form on this page. It does not send a message yet.
                 </span>
               </li>
               <li className="flex gap-3">
@@ -53,15 +54,15 @@ export default function ContactPage() {
                 <span>
                   <strong className="font-semibold text-white">Based in Australia</strong>
                   <br />
-                  Conceptually Sydney / Australia — AUD, AEST/AEDT.
+                  Australian dollars and dates (DD/MM/YYYY).
                 </span>
               </li>
               <li className="flex gap-3">
                 <Clock className="mt-1 shrink-0 text-brand-200" size={20} aria-hidden="true" />
                 <span>
-                  <strong className="font-semibold text-white">Response time</strong>
+                  <strong className="font-semibold text-white">This page</strong>
                   <br />
-                  We aim to reply within one business day.
+                  Notes stay in this browser until email is switched on.
                 </span>
               </li>
             </ul>
@@ -70,7 +71,7 @@ export default function ContactPage() {
           <form onSubmit={onSubmit} className="card space-y-4 p-6">
             {sent ? (
               <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-4 py-3 text-base leading-7 text-emerald-50">
-                Thanks — this preview does not send email. Your note stayed in this browser.
+                Thanks — this page does not send email yet. Your note stayed in this browser.
               </div>
             ) : null}
             <div>
@@ -108,10 +109,11 @@ export default function ContactPage() {
               <textarea id="message" name="message" required rows={4} className="input" placeholder="How can we help?" />
             </div>
             <button type="submit" className="btn-primary">
-              Send message
+              Leave a note
             </button>
           </form>
         </div>
+        <p className="mt-14 max-w-2xl text-base leading-7 text-slate-50">{MARKETING_LIMITS}</p>
       </main>
       <MarketingFooter />
     </div>
