@@ -80,11 +80,34 @@ export default function SignupPage() {
               </Link>
               <TryDemoLink className="link-quiet" />
             </div>
+            <aside className="card mt-10 h-fit p-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">What happens next</p>
+              <ul className="mt-4 space-y-3 text-base leading-7 text-slate-50">
+                {NEXT_STEPS.map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <span className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-brand-300" aria-hidden="true" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <GuestOnly>
+                <p className="mt-6 marketing-copy">
+                  Prefer to look first?{" "}
+                  <TryDemoLink className="link-quiet" />
+                  {" "}
+                  with sample data, not your real account.
+                </p>
+              </GuestOnly>
+              <Link href="/pricing" className="link-quiet mt-4 block">
+                See the $69 plan
+              </Link>
+            </aside>
             <p className="mt-10 marketing-copy">
               HyperionInvoices does not send forms to the tax office. Mac is coming soon.
             </p>
+          </div>
 
-            <form className="card mt-10 space-y-4 p-6 sm:p-8" onSubmit={onSubmit} noValidate>
+          <form className="card h-fit space-y-4 p-6 sm:p-8" onSubmit={onSubmit} noValidate>
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">
                 {SETUP_STEP.account}
               </p>
@@ -169,30 +192,6 @@ export default function SignupPage() {
                 </Link>
               </p>
             </form>
-          </div>
-
-          <aside className="card h-fit p-6">
-            <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">What happens next</p>
-            <ul className="mt-4 space-y-3 text-base leading-7 text-slate-50">
-              {NEXT_STEPS.map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <span className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-brand-300" aria-hidden="true" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <GuestOnly>
-              <p className="mt-6 marketing-copy">
-                Prefer to look first?{" "}
-                <TryDemoLink className="link-quiet" />
-                {" "}
-                with sample data, not your real account.
-              </p>
-            </GuestOnly>
-            <Link href="/pricing" className="link-quiet mt-4 block">
-              See the $69 plan
-            </Link>
-          </aside>
         </div>
       </main>
       <MarketingFooter />
