@@ -46,12 +46,32 @@ function parseLines(raw: unknown): UserDocLineItem[] | undefined {
   return raw as UserDocLineItem[];
 }
 
+/** Postgres `date` values must round-trip as YYYY-MM-DD — not locale strings like "Mon Sep 21". */
+function dbDateToISO(value: unknown): string {
+  if (value instanceof Date) {
+    const y = value.getUTCFullYear();
+    const m = String(value.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(value.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(value ?? "").trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const parsed = new Date(s);
+  if (!Number.isNaN(parsed.getTime())) {
+    const y = parsed.getUTCFullYear();
+    const m = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(parsed.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  return s.slice(0, 10);
+}
+
 function rowToInvoice(row: Record<string, unknown>): UserInvoice {
   return {
     id: String(row.id),
     contact: String(row.contact),
-    issueDate: String(row.issue_date).slice(0, 10),
-    dueDate: String(row.due_date).slice(0, 10),
+    issueDate: dbDateToISO(row.issue_date),
+    dueDate: dbDateToISO(row.due_date),
     amount: num(row.amount),
     gst: num(row.gst),
     status: row.status as UserInvoice["status"],
@@ -68,8 +88,8 @@ function rowToQuote(row: Record<string, unknown>): UserQuote {
     id: String(row.id),
     contact: String(row.contact),
     contactEmail: row.contact_email ? String(row.contact_email) : undefined,
-    issueDate: String(row.issue_date).slice(0, 10),
-    expiryDate: String(row.expiry_date).slice(0, 10),
+    issueDate: dbDateToISO(row.issue_date),
+    expiryDate: dbDateToISO(row.expiry_date),
     amount: num(row.amount),
     gst: num(row.gst),
     status: row.status as UserQuote["status"],
@@ -84,8 +104,8 @@ function rowToBill(row: Record<string, unknown>): UserBill {
   return {
     id: String(row.id),
     supplier: String(row.supplier),
-    date: String(row.bill_date).slice(0, 10),
-    dueDate: String(row.due_date).slice(0, 10),
+    date: dbDateToISO(row.bill_date),
+    dueDate: dbDateToISO(row.due_date),
     amount: num(row.amount),
     gst: num(row.gst),
     status: row.status as UserBill["status"],
