@@ -58,7 +58,11 @@ export default function LoginPage() {
             <label className="label" htmlFor="password">Password</label>
             <input id="password" className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
           </div>
-          {error && <p className="text-sm text-rose-300">{error}</p>}
+          {error && (
+            <p className="text-sm text-rose-300" role="alert">
+              {error}
+            </p>
+          )}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
             {busy ? "Signing in…" : "Log in"}
           </button>

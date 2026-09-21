@@ -75,21 +75,66 @@ export default function SignupPage() {
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <div>
             <label className="label" htmlFor="fullName">Full name</label>
-            <input id="fullName" className="input" required autoComplete="name" placeholder="Alex Nguyen" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-            {fieldErrors.fullName && <p className="mt-1 text-xs text-rose-300">{fieldErrors.fullName}</p>}
+            <input
+              id="fullName"
+              className="input"
+              required
+              autoComplete="name"
+              placeholder="Alex Nguyen"
+              value={fullName}
+              aria-invalid={Boolean(fieldErrors.fullName)}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+            {fieldErrors.fullName && (
+              <p className="mt-1 text-sm text-rose-300" role="alert">
+                {fieldErrors.fullName}
+              </p>
+            )}
           </div>
           <div>
             <label className="label" htmlFor="email">Email</label>
-            <input id="email" className="input" type="email" required autoComplete="email" placeholder="you@business.com.au" value={email} onChange={(e) => setEmail(e.target.value)} />
-            {fieldErrors.email && <p className="mt-1 text-xs text-rose-300">{fieldErrors.email}</p>}
+            <input
+              id="email"
+              className="input"
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="you@business.com.au"
+              value={email}
+              aria-invalid={Boolean(fieldErrors.email)}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            {fieldErrors.email && (
+              <p className="mt-1 text-sm text-rose-300" role="alert">
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
           <div>
             <label className="label" htmlFor="password">Password</label>
-            <input id="password" className="input" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input
+              id="password"
+              className="input"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              value={password}
+              aria-invalid={Boolean(fieldErrors.password)}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <p className="mt-1 text-xs text-slate-400">Use at least 8 characters.</p>
-            {fieldErrors.password && <p className="mt-1 text-xs text-rose-300">{fieldErrors.password}</p>}
+            {fieldErrors.password && (
+              <p className="mt-1 text-sm text-rose-300" role="alert">
+                {fieldErrors.password}
+              </p>
+            )}
           </div>
-          {error && <p className="text-sm text-rose-300">{error}</p>}
+          {error && (
+            <p className="text-sm text-rose-300" role="alert">
+              {error}
+            </p>
+          )}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
             {busy ? "Creating…" : "Next: add your company"}
           </button>

@@ -31,10 +31,30 @@ Back on steps 2+. Skip is a secondary text action (sample defaults). Then Overvi
 
 ## Account (`/demo/account`)
 - Title: Your account.
-- Intro: Change your business details here. Press Save when you finish.
+- Intro: Change your business details here. Press Save changes when you finish.
 - Blank books: **Create invoice** is the only primary.
 
 ## GST/BAS and reports
 Owned by another lane. Do not change tax math here.
 - Lead: Practice preview. Not sent to the tax office.
 - Keep quarter switcher and Mark as prepared. PAYG: Not calculated.
+
+## Follow-on after PR #8 (copy only)
+
+Do not redo the step labels, one-question wizard, or Confirm company primary. Remaining clarity:
+
+### Onboarding
+- Inner step names the question: `Step 1 of 4 · GST`.
+- Recap of earlier answers: `So far: GST yes · Accruals. Back changes an earlier answer.`
+- Step 1 Back is **Back to add company**. Later steps keep **Back**.
+- Next names the following question (`Next: year end`). Last CTAs unchanged.
+- On a phone, Next is the full-width primary; Back stays text underneath (same `btn-primary` size — do not enlarge).
+
+### Add company / Account labels
+- Confirm fields: **Business name**, **Business type** (options unchanged).
+- Empty name: `Enter the business name.`
+- ABN help: `11 digits. Spaces are fine. You can leave this blank.`
+- Bad ABN: `That ABN does not look right. Check the 11 digits and try again.`
+- Account Save: **Save changes**, then `Saved your business details.`
+
+GST/FY/blank-vs-sample questions, simulated ABR, Stripe, and tax math stay as they are.
