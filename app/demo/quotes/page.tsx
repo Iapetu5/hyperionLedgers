@@ -2,11 +2,13 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { ExternalLink, FileSignature, Package, Pencil, Plus, Send, Trash2, X } from "lucide-react";
+import { ExternalLink, FileSignature, Mail, Package, Pencil, Plus, Send, Trash2, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { DocRowActions } from "@/components/demo/DocRowActions";
+import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
+import { SendQuotePanel, type SendQuoteTarget } from "@/components/demo/SendQuotePanel";
 import {
   LineItemsEditor,
   draftsToInputs,
@@ -28,17 +30,20 @@ import {
   deleteUserQuote,
   effectiveQuoteStatus,
   loadUserQuotes,
+  setUserQuoteStatus,
   updateUserQuote,
   type UserQuote
 } from "@/lib/user-docs";
 
 export default function QuotesPage() {
-  const { usesSampleData } = useAuth();
+  const { usesSampleData, user } = useAuth();
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [showTaxTreatment, setShowTaxTreatment] = useState(true);
   const [userRows, setUserRows] = useState<UserQuote[]>([]);
   const [contact, setContact] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [sendTarget, setSendTarget] = useState<SendQuoteTarget | null>(null);
   const [lines, setLines] = useState<LineDraft[]>(() => [emptyLineDraft()]);
   const [formError, setFormError] = useState<string | null>(null);
   const [formOk, setFormOk] = useState<string | null>(null);
@@ -100,12 +105,25 @@ export default function QuotesPage() {
 
   function resetForm() {
     setContact("");
+    setContactEmail("");
     setLines([emptyLineDraft()]);
     setEditingId(null);
     setIssueDate(defaultIssue());
     setExpiryDate(defaultExpiry());
     setStatus("Sent");
     setFormError(null);
+  }
+
+  function openSend(q: { id: string; contact: string; contactEmail?: string; amount: number; businessName?: string }) {
+    const inferred =
+      q.contactEmail || (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(q.contact) ? q.contact : "") || undefined;
+    setSendTarget({
+      id: q.id,
+      contact: q.contact,
+      contactEmail: inferred,
+      businessName: q.businessName || user?.businessName || "HyperionInvoices",
+      amount: q.amount,
+    });
   }
 
   /** One-click: Acme + GST/GST-free lines → customer-link strip (no second Create click). */
@@ -147,7 +165,8 @@ export default function QuotesPage() {
     setPublicDocStatus("quote", res.id, res.status);
     resetForm();
     setLastCreatedId(res.id);
-    setFormOk(`Created ${res.id} with mixed GST + GST-free lines — open the customer link below.`);
+    setFormOk(`Created ${res.id} as Sent — email it, or open the customer link.`);
+    openSend(res);
     reloadUser();
     window.setTimeout(() => {
       document.getElementById("qu-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -215,17 +234,18 @@ export default function QuotesPage() {
 
   useComposeQuery(openComposer);
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  function persistQuote(asDraft: boolean) {
     setFormError(null);
     setFormOk(null);
+    const nextStatus: UserQuote["status"] = editingId ? status : asDraft ? "Draft" : "Sent";
     if (editingId) {
       const res = updateUserQuote(editingId, {
         contact,
+        contactEmail,
         lines: draftsToInputs(lines),
         issueDate,
         expiryDate,
-        status,
+        status: nextStatus,
       });
       if ("error" in res) {
         setFormError(res.error);
@@ -238,7 +258,12 @@ export default function QuotesPage() {
       reloadUser();
       return;
     }
-    const res = createUserQuote({ contact, lines: draftsToInputs(lines) });
+    const res = createUserQuote({
+      contact,
+      contactEmail,
+      lines: draftsToInputs(lines),
+      status: nextStatus,
+    });
     if ("error" in res) {
       const nudge =
         /amount|line/i.test(res.error) && !editingId
@@ -249,24 +274,38 @@ export default function QuotesPage() {
     }
     const updated = updateUserQuote(res.id, {
       contact: res.contact,
+      contactEmail,
       lines: draftsToInputs(lines),
       issueDate,
       expiryDate,
-      status,
+      status: nextStatus,
     });
     if (!("error" in updated)) {
       setPublicDocStatus("quote", updated.id, updated.status);
     }
-    const createdId = "error" in updated ? res.id : updated.id;
+    const created = "error" in updated ? res : updated;
     resetForm();
-    setLastCreatedId(createdId);
-    setFormOk(`Created ${createdId}.`);
+    setLastCreatedId(created.id);
+    setFormOk(
+      created.status === "Draft"
+        ? `Saved ${created.id} as a draft.`
+        : `Created ${created.id} as Sent — add a To email and subject to send it.`,
+    );
+    if (created.status !== "Draft") {
+      openSend({ ...created, contactEmail: contactEmail || created.contactEmail });
+    }
     reloadUser();
+  }
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    persistQuote(false);
   }
 
   function onEdit(q: UserQuote) {
     setEditingId(q.id);
     setContact(q.contact);
+    setContactEmail(q.contactEmail ?? "");
     setIssueDate(q.issueDate);
     setExpiryDate(q.expiryDate);
     // Stored workflow status in the form (not auto-Expired). Badge uses effectiveQuoteStatus.
@@ -337,6 +376,20 @@ export default function QuotesPage() {
           placeholder="Acme Pty Ltd"
         />
       </div>
+      <div>
+        <label className="label" htmlFor="qu-email">
+          Customer email
+        </label>
+        <input
+          id="qu-email"
+          className="input"
+          type="email"
+          autoComplete="email"
+          value={contactEmail}
+          onChange={(e) => setContactEmail(e.target.value)}
+          placeholder="accounts@acme.com.au"
+        />
+      </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
           <label className="label" htmlFor="qu-issue">
@@ -403,6 +456,17 @@ export default function QuotesPage() {
             {copied === lastCreatedId ? "Copied" : "Send quote"}
           </button>
           <PrintDocButton kind="quote" id={lastCreatedId} compact />
+          <button
+            type="button"
+            className="btn-primary !px-2.5 !py-1 text-xs"
+            onClick={() => {
+              const row = loadUserQuotes().find((q) => q.id === lastCreatedId);
+              if (row) openSend(row);
+            }}
+          >
+            <Mail size={12} />
+            Send quote
+          </button>
         </div>
       )}
       {!editingId && (
@@ -455,6 +519,15 @@ export default function QuotesPage() {
             </>
           )}
         </button>
+        {!editingId ? (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => persistQuote(true)}
+          >
+            Save as draft
+          </button>
+        ) : null}
         {editingId ? (
           <button
             type="button"
@@ -488,6 +561,7 @@ export default function QuotesPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Quotes</h1>
+          <BooksSectionNav />
           <p className="text-sm text-white/70">{subtitle}</p>
           <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
             <input
@@ -512,6 +586,14 @@ export default function QuotesPage() {
   function userActions(q: UserQuote) {
     return (
       <DocRowActions keep={3}>
+        <button
+          type="button"
+          className="btn-secondary !px-2 !py-1 text-xs"
+          onClick={() => openSend(q)}
+        >
+          <Mail size={12} />
+          Send quote
+        </button>
         <button
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
@@ -580,7 +662,7 @@ export default function QuotesPage() {
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Harbour & Co sample quotes stay in the guest demo — they are not copied into your organisation."
+          hint="Demo sample quotes stay in the guest tour — they are not copied into your organisation."
         />
       ) : userRows.length === 0 ? null : (
         <div className="card overflow-x-auto">
@@ -631,10 +713,21 @@ export default function QuotesPage() {
 
     return (
       <div className="space-y-4">
+        {sendTarget ? (
+          <SendQuotePanel
+            quote={sendTarget}
+            onClose={() => setSendTarget(null)}
+            onSent={() => {
+              setUserQuoteStatus(sendTarget.id, "Sent");
+              setPublicDocStatus("quote", sendTarget.id, "Sent");
+              reloadUser();
+            }}
+          />
+        ) : null}
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Create a basic quote (saved in this browser), or explore Harbour &amp; Co for the full sample list. Sent quotes past expiry show Expired automatically.
+              Make a quote with an example (saved in this browser). Sent quotes past expiry show Expired automatically.
             </>
           ) : (
             <>
@@ -673,6 +766,17 @@ export default function QuotesPage() {
 
   return (
     <div className="space-y-4">
+      {sendTarget ? (
+        <SendQuotePanel
+          quote={sendTarget}
+          onClose={() => setSendTarget(null)}
+          onSent={() => {
+            setUserQuoteStatus(sendTarget.id, "Sent");
+            setPublicDocStatus("quote", sendTarget.id, "Sent");
+            reloadUser();
+          }}
+        />
+      ) : null}
       {pageHeader(
         <>
           Awaiting: <strong className="text-cyan-200">{formatAUD(sampleOpenTotal)}</strong>
@@ -691,7 +795,7 @@ export default function QuotesPage() {
         <div className="card overflow-x-auto">
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Your created quotes</h2>
-            <p className="text-xs text-slate-400">Stored in this browser · not part of the Harbour sample story</p>
+            <p className="text-xs text-slate-400">Stored in this browser · not part of the demo sample</p>
           </div>
           <table className="min-w-full text-left text-sm">
             <thead className="table-head">
@@ -740,7 +844,7 @@ export default function QuotesPage() {
 
       <div className="card overflow-x-auto">
         <div className="border-b border-white/10 px-4 py-3">
-          <h2 className="font-semibold text-white">Harbour &amp; Co sample</h2>
+          <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
             Send quote copies the customer link. View opens the public page. Print sits under More. QU-210 is a mixed GST + GST Free example.
           </p>
@@ -805,6 +909,20 @@ export default function QuotesPage() {
                       View
                     </Link>
                     <PrintDocButton kind="quote" id={q.id} compact />
+                    <button
+                      type="button"
+                      className="btn-secondary !px-2 !py-1 text-xs"
+                      onClick={() =>
+                        openSend({
+                          id: q.id,
+                          contact: q.contact,
+                          amount: q.amount,
+                        })
+                      }
+                    >
+                      <Mail size={12} />
+                      Send quote
+                    </button>
                   </DocRowActions>
                 </td>
               </tr>

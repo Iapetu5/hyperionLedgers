@@ -2,9 +2,10 @@ import { createHash, createHmac, randomBytes, scrypt as scryptCb, timingSafeEqua
 import { promisify } from "util";
 import { cookies } from "next/headers";
 import { db, ensureSchema, isDbConfigured } from "@/lib/db";
-import type { GstAccountingMethod, LedgerMode, OnboardingInput, PublicAccount } from "@/lib/auth";
+import { cookieSecure } from "@/lib/request-guard";
+import type { GstAccountingMethod, LedgerMode, OnboardingInput, ProfilePatch, PublicAccount } from "@/lib/auth";
 import { formatAbn, validateAbnField } from "@/lib/abn";
-import { validateSignup } from "@/lib/auth";
+import { PENDING_ORG_NAME, validateSignup } from "@/lib/auth";
 
 const scrypt = promisify(scryptCb);
 export const SESSION_COOKIE = "hl_session";
@@ -29,6 +30,11 @@ type OrgRow = {
   ledger_mode: string | null;
   onboarding_complete: boolean;
   created_at: string;
+  has_paid_download?: boolean | null;
+  subscription_status?: string | null;
+  entity_type?: string | null;
+  address?: string | null;
+  company_added?: boolean | null;
 };
 
 function sessionSecret(): string | null {
@@ -83,19 +89,24 @@ function toPublic(user: UserRow, org: OrgRow): PublicAccount {
     email: user.email,
     businessName: org.name,
     abn: org.abn || undefined,
+    entityType: org.entity_type || undefined,
+    businessAddress: org.address || undefined,
+    companyAdded: org.company_added ?? undefined,
     createdAt: new Date(user.created_at).toISOString(),
     onboardingComplete: org.onboarding_complete,
     gstRegistered: org.gst_registered ?? undefined,
     gstAccountingMethod: (org.gst_accounting_method as GstAccountingMethod | null) ?? undefined,
     financialYearEnd: org.financial_year_end ?? undefined,
     ledgerMode: (org.ledger_mode as LedgerMode | null) ?? undefined,
+    hasPaidDownload: Boolean(org.has_paid_download),
+    subscriptionStatus: org.subscription_status ?? undefined,
   };
 }
 
 export function setSessionCookie(token: string) {
   cookies().set(SESSION_COOKIE, encodeCookie(token), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_DAYS * 24 * 60 * 60,
@@ -105,7 +116,7 @@ export function setSessionCookie(token: string) {
 export function clearSessionCookie() {
   cookies().set(SESSION_COOKIE, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: 0,
@@ -167,8 +178,6 @@ export async function signUpServer(input: {
   fullName: string;
   email: string;
   password: string;
-  businessName: string;
-  abn?: string;
 }): Promise<{ ok: true; account: PublicAccount } | { ok: false; error: string }> {
   await ensureSchema();
   const errors = validateSignup(input);
@@ -179,14 +188,13 @@ export async function signUpServer(input: {
   const userId = crypto.randomUUID();
   const orgId = crypto.randomUUID();
   const passwordHash = await hashPassword(input.password);
-  const abn = input.abn?.trim() ? formatAbn(input.abn) : null;
   await db()`
     INSERT INTO users (id, email, password_hash, full_name)
     VALUES (${userId}, ${email}, ${passwordHash}, ${input.fullName.trim()})
   `;
   await db()`
-    INSERT INTO organisations (id, user_id, name, abn, onboarding_complete, ledger_mode)
-    VALUES (${orgId}, ${userId}, ${input.businessName.trim()}, ${abn}, false, 'blank')
+    INSERT INTO organisations (id, user_id, name, abn, onboarding_complete, ledger_mode, company_added)
+    VALUES (${orgId}, ${userId}, ${PENDING_ORG_NAME}, ${null}, false, 'blank', ${false})
   `;
   await createSession(userId);
   const account = await getSessionAccount();
@@ -221,6 +229,14 @@ export async function completeOnboardingServer(
   const abnErr = validateAbnField(input.abn ?? "", false);
   if (abnErr) return { ok: false, error: abnErr };
   const abn = input.abn?.trim() ? formatAbn(input.abn) : account.abn ?? null;
+  const name = input.businessName?.trim() || account.businessName;
+  const companyAdded = Boolean(name && name !== PENDING_ORG_NAME);
+  const entityType =
+    input.entityType !== undefined ? input.entityType.trim() || null : account.entityType ?? null;
+  const address =
+    input.businessAddress !== undefined
+      ? input.businessAddress.trim() || null
+      : account.businessAddress ?? null;
   await db()`
     UPDATE organisations
     SET
@@ -229,7 +245,11 @@ export async function completeOnboardingServer(
       gst_accounting_method = ${input.gstRegistered ? input.gstAccountingMethod ?? "accruals" : null},
       financial_year_end = ${input.financialYearEnd.trim() || "30 June"},
       ledger_mode = ${input.ledgerMode},
-      abn = ${abn}
+      abn = ${abn},
+      name = ${name},
+      entity_type = ${entityType},
+      address = ${address},
+      company_added = ${companyAdded}
     WHERE user_id = ${account.id}
   `;
   const next = await getSessionAccount();
@@ -237,13 +257,9 @@ export async function completeOnboardingServer(
   return { ok: true, account: next };
 }
 
-export async function updateProfileServer(patch: {
-  abn?: string;
-  businessName?: string;
-  gstRegistered?: boolean;
-  gstAccountingMethod?: GstAccountingMethod;
-  financialYearEnd?: string;
-}): Promise<{ ok: true; account: PublicAccount } | { ok: false; error: string }> {
+export async function updateProfileServer(
+  patch: ProfilePatch
+): Promise<{ ok: true; account: PublicAccount } | { ok: false; error: string }> {
   await ensureSchema();
   const account = await getSessionAccount();
   if (!account) return { ok: false, error: "You need to be signed in." };
@@ -257,6 +273,13 @@ export async function updateProfileServer(patch: {
   const gstRegistered = patch.gstRegistered ?? account.gstRegistered ?? null;
   const gstMethod = patch.gstAccountingMethod ?? account.gstAccountingMethod ?? null;
   const fy = patch.financialYearEnd ?? account.financialYearEnd ?? null;
+  const entityType =
+    patch.entityType !== undefined ? patch.entityType.trim() || null : account.entityType ?? null;
+  const address =
+    patch.businessAddress !== undefined
+      ? patch.businessAddress.trim() || null
+      : account.businessAddress ?? null;
+  const companyAdded = patch.companyAdded ?? account.companyAdded ?? false;
   await db()`
     UPDATE organisations
     SET
@@ -264,7 +287,10 @@ export async function updateProfileServer(patch: {
       abn = ${abn},
       gst_registered = ${gstRegistered},
       gst_accounting_method = ${gstMethod},
-      financial_year_end = ${fy}
+      financial_year_end = ${fy},
+      entity_type = ${entityType},
+      address = ${address},
+      company_added = ${companyAdded}
     WHERE user_id = ${account.id}
   `;
   const next = await getSessionAccount();

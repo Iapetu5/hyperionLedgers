@@ -14,17 +14,17 @@ export default function AboutPage() {
               <Eye size={12} />
               $69 a month · 14-day free trial
             </div>
-            <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">About HyperionLedgers</h1>
+            <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">About HyperionInvoices</h1>
             <p className="mt-4 text-lg text-white/80">
               Accounting software for Australian small businesses that want clarity first — accurate books and an explanation of what&apos;s going on.
             </p>
             <div className="mt-6 space-y-4 text-white/75">
               <p>
-                HyperionLedgers is built around the realities of Australian small business: GST, BAS, super, cash flow, sales, inventory and payroll —
+                HyperionInvoices is built around the realities of Australian small business: GST, BAS, super, cash flow, sales, inventory and payroll —
                 presented in plain English so you always know what to do next.
               </p>
               <p>
-                Harbour &amp; Co Studio is the sample organisation on this site.
+                The /demo path is a walkthrough with sample data — not a real HyperionInvoices account.
                 ATO lodgements and bank feeds are simulated. We use Australian English and AUD throughout.
               </p>
             </div>
@@ -36,7 +36,7 @@ export default function AboutPage() {
               {[
                 "Full suite UI for Australian SMB bookkeeping",
                 "Your session stays in this browser",
-                "Open Harbour & Co now, or start with your own organisation",
+                "Start with your own organisation, or look around first",
                 "Not a tax agent, BAS agent, or financial adviser",
               ].map((item, i) => (
                 <li key={item} className="flex items-start gap-2">

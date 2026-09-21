@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAppUrl, isStripeConfigured, PLAN } from "@/lib/billing";
+import { CHECKOUT_PAYMENT_METHOD_TYPES, getAppUrl, isStripeConfigured, PLAN } from "@/lib/billing";
+import { checkoutOriginAllowed, clientIp, rateLimit } from "@/lib/request-guard";
+import { getSessionAccount } from "@/lib/server-auth";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 type CheckoutBody = {
   email?: string;
@@ -20,9 +23,17 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!checkoutOriginAllowed(req)) {
+    return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
+  }
+  if (!rateLimit(`checkout:${clientIp(req)}`, 12, 15 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many checkout attempts." }, { status: 429 });
+  }
+
   const appUrl = getAppUrl();
   const body = (await req.json().catch(() => ({}))) as CheckoutBody;
-  const email = typeof body.email === "string" ? body.email.trim() : "";
+  const account = await getSessionAccount();
+  const email = account?.email || (typeof body.email === "string" ? body.email.trim() : "");
 
   if (!isStripeConfigured()) {
     return NextResponse.json({
@@ -40,12 +51,20 @@ export async function POST(req: Request) {
   params.set("line_items[0][price]", priceId);
   params.set("line_items[0][quantity]", "1");
   params.set("subscription_data[trial_period_days]", String(PLAN.trialDays));
-  params.set("success_url", `${appUrl}/checkout?status=success&session_id={CHECKOUT_SESSION_ID}`);
+  params.set("success_url", `${appUrl}/downloads?session_id={CHECKOUT_SESSION_ID}`);
   params.set("cancel_url", `${appUrl}/pricing?checkout=cancelled`);
   params.set("billing_address_collection", "auto");
   params.set("allow_promotion_codes", "true");
   params.set("locale", "en");
+  params.set("payment_method_collection", "always");
+  CHECKOUT_PAYMENT_METHOD_TYPES.forEach((method, i) => {
+    params.set(`payment_method_types[${i}]`, method);
+  });
   if (email) params.set("customer_email", email);
+  if (account?.id) {
+    params.set("client_reference_id", account.id);
+    params.set("metadata[userId]", account.id);
+  }
 
   try {
     const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -62,7 +81,7 @@ export async function POST(req: Request) {
         {
           configured: true,
           url: "/checkout?reason=stripe-error",
-          message: session.error?.message || "Stripe Checkout could not start. Check the test price ID and secret key.",
+          message: "Stripe Checkout could not start. Check the test price ID and secret key.",
         },
         { status: 502 }
       );

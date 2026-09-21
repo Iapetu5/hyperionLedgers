@@ -3,6 +3,7 @@
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatAUD, formatDateAU } from "@/lib/format";
 import { docLineTaxLabel, type PublicInvoice, type PublicQuote } from "@/lib/public-docs";
+import { DEMO_ORG } from "@/lib/sample-data";
 
 type Doc = PublicInvoice | PublicQuote;
 
@@ -17,7 +18,7 @@ export function TaxDocPrintView({ doc }: { doc: Doc }) {
       <div className="doc-header -mx-6 -mt-6 flex flex-wrap items-start justify-between gap-4 print:mx-0 print:mt-0">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">
-            HyperionLedgers
+            HyperionInvoices
           </p>
           <p className="mt-1 text-base font-semibold">{doc.businessName}</p>
           <p className="text-sm text-white/70">
@@ -29,6 +30,11 @@ export function TaxDocPrintView({ doc }: { doc: Doc }) {
             </p>
           ) : doc.fromUser ? (
             <p className="text-sm text-white/50">Demo document · no street address on file</p>
+          ) : null}
+          {!doc.fromUser ? (
+            <p className="mt-1 text-[10px] text-white/35">
+              Fictional sample trading name: {DEMO_ORG.tradingName}
+            </p>
           ) : null}
         </div>
         <div className="text-right">

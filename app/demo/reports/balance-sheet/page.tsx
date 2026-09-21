@@ -52,16 +52,14 @@ export default function BalanceSheetReportPage() {
         </p>
         <h1 className="mt-1 text-2xl font-bold text-white">Balance sheet</h1>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          A point-in-time snapshot of assets, liabilities, and equity. Useful for understanding cash
-          and what is owed — for your records only. This is not an ATO form and HyperionLedgers does
-          not lodge balance sheets with the ATO.
+          What you own and owe at a point in time. Practice preview. Not sent to the tax office.
         </p>
       </div>
 
       {usesSampleData ? (
         <>
           <div className="card border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
-            Harbour &amp; Co sample snapshot · balances rounded · illustrative preview only
+            Demo sample snapshot · balances rounded · illustrative preview only
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -110,7 +108,7 @@ export default function BalanceSheetReportPage() {
             Cash on hand KPI elsewhere may differ slightly from bank account roll-ups depending on
             reconciliation state — treat both as demo guidance. For GST on Income / GST Free and BAS
             due dates, see{" "}
-            <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
+            <Link href="/demo/tax/gst-bas#ytd-gst" className="font-semibold text-brand-300 hover:underline">
               GST &amp; BAS
             </Link>
             .
@@ -164,7 +162,7 @@ export default function BalanceSheetReportPage() {
 
           <p className="text-xs leading-relaxed text-slate-500">
             Simplified demo snapshot from your docs. For GST and BAS due dates, see{" "}
-            <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
+            <Link href="/demo/tax/gst-bas#ytd-gst" className="font-semibold text-brand-300 hover:underline">
               GST &amp; BAS
             </Link>
             .
@@ -174,7 +172,7 @@ export default function BalanceSheetReportPage() {
         <EmptyState
           icon={Scale}
           title="No balance sheet figures yet"
-          description="Create an invoice or bill, or explore Harbour & Co as a guest for a sample preview."
+          description="Make an invoice or bill to see a balance sheet preview."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },

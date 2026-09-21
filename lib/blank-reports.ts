@@ -1,6 +1,7 @@
 /** Report rollups from invoices/bills — blank ledger (local) or Harbour sample list. */
 
 import { bills as sampleBills, invoices as sampleInvoices } from "@/lib/sample-data";
+import { isISODateInRange } from "@/lib/bas-dates";
 import { todayISO } from "@/lib/format";
 
 function round2(n: number) {
@@ -117,22 +118,53 @@ export function rollupBlankReports(invoices: ReportDoc[], bills: ReportDoc[]): B
   return rollupFromDocs(invoices, bills);
 }
 
+function sampleInvoicesAsDocs() {
+  return sampleInvoices.map((i) => ({
+    amount: i.amount,
+    gst: i.gst,
+    status: i.status,
+    dueDate: i.dueDate,
+    issueDate: i.issueDate,
+  }));
+}
+
+function sampleBillsAsDocs() {
+  return sampleBills.map((b) => ({
+    amount: b.amount,
+    gst: b.gst,
+    status: b.status,
+    dueDate: b.dueDate,
+    date: b.date,
+  }));
+}
+
 /** Harbour sample invoices/bills — same formulas as blank so P&L / BAS stay trustworthy. */
 export function rollupSampleReports(): BlankReportRollup {
+  return rollupFromDocs(sampleInvoicesAsDocs(), sampleBillsAsDocs());
+}
+
+export type DatedInvoiceDoc = ReportDoc & { issueDate: string };
+export type DatedBillDoc = ReportDoc & { date: string };
+
+/**
+ * GST / trading roll-up limited to invoice issue dates and bill dates inside
+ * an inclusive ISO window (AU financial year or a quarter).
+ */
+export function rollupDocsInIsoRange(
+  invoices: DatedInvoiceDoc[],
+  bills: DatedBillDoc[],
+  start: string,
+  end: string,
+): BlankReportRollup {
   return rollupFromDocs(
-    sampleInvoices.map((i) => ({
-      amount: i.amount,
-      gst: i.gst,
-      status: i.status,
-      dueDate: i.dueDate,
-    })),
-    sampleBills.map((b) => ({
-      amount: b.amount,
-      gst: b.gst,
-      status: b.status,
-      dueDate: b.dueDate,
-    })),
+    invoices.filter((inv) => isISODateInRange(inv.issueDate, start, end)),
+    bills.filter((bill) => isISODateInRange(bill.date, start, end)),
   );
+}
+
+/** Harbour listed docs dated inside `start`–`end` (Sydney ISO calendar dates). */
+export function rollupSampleReportsInIsoRange(start: string, end: string): BlankReportRollup {
+  return rollupDocsInIsoRange(sampleInvoicesAsDocs(), sampleBillsAsDocs(), start, end);
 }
 
 export const EMPTY_REPORT_ROLLUP: BlankReportRollup = {

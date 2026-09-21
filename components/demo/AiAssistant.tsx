@@ -191,11 +191,11 @@ export function AiAssistant({
           <div className="min-w-0">
             <p className="flex items-center gap-2 font-semibold">
               <Sparkles size={16} className="text-brand-400" />
-              {blankLedger ? <>Ask AI · Blank ledger</> : <>Ask AI · Harbour &amp; Co</>}
+              {blankLedger ? <>Ask AI · Blank ledger</> : <>Ask AI · Demo</>}
             </p>
             <p className="mt-0.5 text-xs text-white/65">
               {blankLedger
-                ? "Blank-ledger tips — create docs here, or explore Harbour sample for full facts"
+                ? "Blank-ledger tips — create docs here, or try a demo for full sample facts"
                 : "Grounded demo copilot — sample ledger facts, not a live tax agent"}
             </p>
           </div>
@@ -365,7 +365,7 @@ export function AiAssistant({
 
           {busy && (
             <div className="max-w-[70%] rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs text-slate-400">
-              {blankLedger ? "Thinking about your blank ledger…" : "Reading Harbour & Co ledger…"}
+              {blankLedger ? "Thinking about your blank ledger…" : "Reading the demo ledger…"}
             </div>
           )}
           <div ref={bottomRef} />

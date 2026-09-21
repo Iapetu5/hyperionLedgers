@@ -106,7 +106,7 @@ export default function ProductsPage() {
 
   function onEdit(p: Product) {
     if (isSampleId(p.id)) {
-      setError("Harbour sample products are read-only — add your own product instead.");
+      setError("Demo sample products are read-only — add your own product instead.");
       setOk(null);
       return;
     }
@@ -123,7 +123,7 @@ export default function ProductsPage() {
 
   function onDelete(id: string) {
     if (!deleteUserProduct(id)) {
-      setError("Could not delete that product (sample rows stay in Harbour demo).");
+      setError("Could not delete that product (sample rows stay in the guest demo).");
       return;
     }
     if (editingId === id) resetForm();
@@ -169,7 +169,7 @@ export default function ProductsPage() {
         <h1 className="text-2xl font-bold text-white">Products</h1>
         <p className="text-sm text-white/70">
           {usesSampleData
-            ? "Harbour & Co sample catalogue below — add your own products for the line-item dropdown. Unit prices are tax-exclusive; line tax uses Xero-style GST on Income / GST Free Income."
+            ? "Demo sample catalogue below — add your own products for the line-item dropdown. Unit prices are tax-exclusive; line tax uses Xero-style GST on Income / GST Free Income."
             : blankEmpty
               ? "Your blank org has an empty catalogue — add a first product below, then pick it on invoice, quote, or bill lines (qty × price fills the amount)."
               : "Blank ledger catalogue — add products here, then pick them on invoice/quote/bill lines (qty × price fills the amount). Prices are tax-exclusive."}
@@ -321,7 +321,7 @@ export default function ProductsPage() {
           <EmptyState
             icon={Package}
             title="Catalogue is empty"
-            description="Add one product above — name, price (ex tax), and GST on Income or GST Free. Then return to the invoice and pick it. Quantity fills the amount, and GST is added only on taxable lines. Harbour sample products stay out of this blank org."
+            description="Add one product above — name, price (ex tax), and GST on Income or GST Free. Then return to the invoice and pick it. Quantity fills the amount, and GST is added only on taxable lines. Demo sample products stay out of this blank org."
             actions={[
               {
                 label: "Add a product",
@@ -337,7 +337,7 @@ export default function ProductsPage() {
           />
           <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-slate-400">
             <span>Want sample figures instead?</span>
-            <ExploreSampleButton primary={false} className="!px-2.5 !py-1 text-xs" label="Open Harbour & Co as guest" />
+            <ExploreSampleButton primary={false} className="!px-2.5 !py-1 text-xs" />
           </div>
         </div>
       ) : (
@@ -349,7 +349,7 @@ export default function ProductsPage() {
                 <p className="text-xs text-slate-400">
                   {usesSampleData ? (
                     <>
-                      {SAMPLE_PRODUCTS.length} Harbour sample
+                      {SAMPLE_PRODUCTS.length} demo sample
                       {userOnly.length ? ` · ${userOnly.length} you added` : ""} · used by
                       invoice/quote/bill line dropdowns
                     </>
