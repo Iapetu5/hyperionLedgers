@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { BrandLogo } from "@/components/marketing/BrandLogo";
+import { SiteHeader } from "@/components/marketing/SiteHeader";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { nextSetupPath } from "@/lib/auth";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { MARKETING_LIMITS } from "@/lib/brand";
 
 export default function LoginPage() {
   const { logIn } = useAuth();
@@ -30,50 +32,84 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
-      <BrandLogo className="mb-8 justify-center" />
-      <div className="card p-6">
-        <h1 className="text-xl font-bold text-white">Log in</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          Use the email and password you created. If you have not added a company or finished
-          setup, HyperionInvoices will take you there first.
-        </p>
-        <p className="mt-2 text-sm text-slate-400">
-          Prefer to look first?{" "}
-          <Link href="/pricing" className="font-semibold text-brand-300 hover:underline">
-            See pricing
-          </Link>
-          <GuestOnly>
-            {" "}or{" "}
-            <TryDemoLink className="font-semibold text-brand-300 hover:underline" />
-          </GuestOnly>
-          .
-        </p>
-        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+    <div>
+      <SiteHeader />
+      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
+        <div className="grid items-start gap-10 lg:grid-cols-[1.4fr_1fr] lg:gap-14">
           <div>
-            <label className="label" htmlFor="email">Email</label>
-            <input id="email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-          </div>
-          <div>
-            <label className="label" htmlFor="password">Password</label>
-            <input id="password" className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-          </div>
-          {error && (
-            <p className="text-sm text-rose-300" role="alert">
-              {error}
+            <p className="marketing-kicker">Australian bookkeeping · log in</p>
+            <h1 className="marketing-title">Log in to HyperionInvoices</h1>
+            <p className="marketing-lead">
+              Use the email and password you created. If you have not added a company or finished
+              setup, HyperionInvoices will take you there first.
             </p>
-          )}
-          <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy ? "Signing in…" : "Log in"}
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm text-slate-300">
-          New here?{" "}
-          <Link href="/signup" className="font-semibold text-brand-300 hover:underline">
-            Sign up
-          </Link>
-        </p>
-      </div>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link href="/signup" className="link-quiet">
+                Sign up
+              </Link>
+              <Link href="/pricing" className="link-quiet">
+                Pricing
+              </Link>
+              <TryDemoLink className="link-quiet" />
+            </div>
+            <GuestOnly>
+              <p className="mt-10 marketing-copy">
+                Prefer to look first? See pricing, or try a demo with sample data — not your real
+                account.
+              </p>
+            </GuestOnly>
+            <p className="mt-10 marketing-copy">{MARKETING_LIMITS}</p>
+            <p className="mt-3 marketing-copy">Your session stays in this browser.</p>
+          </div>
+
+          <div className="card h-fit p-6 sm:p-8">
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">Your account</p>
+            <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="email">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  className="input"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="password">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  className="input"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
+              {error && (
+                <p className="text-sm text-rose-300" role="alert">
+                  {error}
+                </p>
+              )}
+              <button type="submit" className="btn-primary w-full" disabled={busy}>
+                {busy ? "Signing in…" : "Log in"}
+              </button>
+            </form>
+            <p className="mt-4 text-center text-base text-slate-50">
+              New here?{" "}
+              <Link href="/signup" className="link-quiet">
+                Sign up
+              </Link>
+            </p>
+          </div>
+        </div>
+      </main>
+      <MarketingFooter />
     </div>
   );
 }
