@@ -37,6 +37,7 @@ export default function InvoicesPage() {
   const { usesSampleData } = useAuth();
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
+  const [sendNote, setSendNote] = useState<string | null>(null);
   const [showTaxTreatment, setShowTaxTreatment] = useState(true);
   const [userRows, setUserRows] = useState<UserInvoice[]>([]);
   const [contact, setContact] = useState("");
@@ -86,9 +87,13 @@ export default function InvoicesPage() {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(id);
-      setTimeout(() => setCopied(null), 1500);
+      setSendNote("Invoice link copied. Next: View, or More to Print.");
+      setTimeout(() => {
+        setCopied(null);
+        setSendNote(null);
+      }, 4000);
     } catch {
-      setFormError("Could not copy link — use View and copy the URL from the address bar.");
+      setFormError("Could not copy the link — use View and copy the URL from the address bar.");
     }
   }
 
@@ -491,26 +496,36 @@ export default function InvoicesPage() {
 
   function pageHeader(subtitle: ReactNode) {
     return (
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Invoices</h1>
-          <BooksSectionNav />
-          <p className="text-sm text-white/70">{subtitle}</p>
-          <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
-            <input
-              type="checkbox"
-              className="rounded border-white/20 bg-black/30"
-              checked={showTaxTreatment}
-              onChange={(e) => setShowTaxTreatment(e.target.checked)}
-            />
-            Show tax treatment summary
-          </label>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Invoices</h1>
+            <BooksSectionNav />
+            <p className="text-sm text-white/70">{subtitle}</p>
+            <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
+              <input
+                type="checkbox"
+                className="rounded border-white/20 bg-black/30"
+                checked={showTaxTreatment}
+                onChange={(e) => setShowTaxTreatment(e.target.checked)}
+              />
+              Show tax treatment summary
+            </label>
+          </div>
+          {!showComposer && (
+            <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
+              <Plus size={16} />
+              Create invoice
+            </button>
+          )}
         </div>
-        {!showComposer && (
-          <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
-            <Plus size={16} />
-            Create invoice
-          </button>
+        {sendNote && (
+          <p
+            className="rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100"
+            role="status"
+          >
+            {sendNote}
+          </p>
         )}
       </div>
     );
