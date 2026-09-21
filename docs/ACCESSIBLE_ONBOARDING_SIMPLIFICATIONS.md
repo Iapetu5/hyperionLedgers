@@ -16,8 +16,9 @@ Signup collects **name, email, and password only**. Company name and ABN are col
 
 ## Add company (`/add-company`)
 - Step: `Step 2 of 3 · Add company`
-- Dedicated search → pick → confirm page (Nicholas). Simulated ABR is fine.
-- Plain empty / no-results / error copy. Confirm company is the only primary.
+- Search is optional. The confirm form is always visible: **Business name**, optional **ABN**, **Business type**.
+- Confirm company is the only primary. A register match is not required to continue to `/onboarding`.
+- Live ABR only if `ABR_GUID` is set; otherwise the practice register. Never claim the Australian Business Register unless the GUID is set and the payload is live.
 
 ## Organisation wizard (`/onboarding`)
 - Step: `Step 3 of 3 · Organisation setup` plus inner `Step X of Y`
@@ -56,32 +57,9 @@ Do not redo the step labels, one-question wizard, or Confirm company primary. Re
 ### Add company / Account labels
 - Confirm fields: **Business name**, **Business type** (options unchanged).
 - Empty name: `Enter the business name.`
-- ABN help: manual entry requires a valid 11-digit ABN; after a pick, blank is only if you do not have an ABN yet.
+- ABN help: `11 digits. Spaces are fine. You can leave this blank.`
+- Short ABN: `That ABN needs 11 digits. Spaces are fine.`
 - Bad ABN: `That ABN does not look right. Check the 11 digits and try again.`
 - Account Save: **Save changes**, then `Saved your business details.`
 
 GST/FY/blank-vs-sample questions, simulated ABR, Stripe, and tax math stay as they are.
-
-## Follow-on after PR #11 (copy / a11y only)
-
-Do not redo recap, Back to add company, Business name/type, Save changes, or signup inline field errors. Remaining leftover wins:
-
-### Login (`/login`)
-- Same `noValidate` + inline field errors as signup (`Enter your email address.`, `Enter your password.`).
-- Incorrect password stays a form-level alert. Shared marketing header and honesty limits.
-
-### Add company search
-- ABN-like empty results: `No business matches that ABN…` (name searches keep the spelling message).
-- Confirm heading: **Confirm these details**. Cancelled records get a warning.
-- Confirm stays dimmed until there is a business name, with `Enter the business name to confirm.`
-- Search again lives on the selected row; Clear and search again is only for typed-in details.
-
-### Account
-- Business type and address always visible. Empty name uses `Enter the business name.`
-- Save changes shows **Saving…**, then `Saved your business details.` (unchanged success copy).
-- Typeahead empty/error states match Add company. ABN helper/errors match Add company.
-- Typeahead opens only while typing, not on focus of an already-saved name.
-
-### Onboarding
-- Next/Skip show a saving state. Skip copy names sample defaults. After Next, focus moves to the question heading.
-

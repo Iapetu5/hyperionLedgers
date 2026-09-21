@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { digitsOnlyAbn, formatAbn, lookupAbn, validateAbnField, type AbrCompany } from "@/lib/abn";
+import {
+  describeAbrLookup,
+  digitsOnlyAbn,
+  formatAbn,
+  lookupAbn,
+  validateAbnField,
+  type AbrCompany,
+} from "@/lib/abn";
 
 export function AbnField({
   value,
@@ -19,6 +26,7 @@ export function AbnField({
   const [touched, setTouched] = useState(false);
   const [remote, setRemote] = useState<AbrCompany | null>(null);
   const [simulated, setSimulated] = useState(true);
+  const [liveConfigured, setLiveConfigured] = useState(false);
   const onLookupRef = useRef(onLookup);
   onLookupRef.current = onLookup;
   const error = useMemo(() => validateAbnField(value, required), [value, required]);
@@ -44,10 +52,15 @@ export function AbnField({
           signal: controller.signal,
           cache: "no-store",
         });
-        const data = (await res.json()) as { results?: AbrCompany[]; simulated?: boolean };
+        const data = (await res.json()) as {
+          results?: AbrCompany[];
+          simulated?: boolean;
+          liveConfigured?: boolean;
+        };
         const row = data.results?.[0] ?? lookupAbn(value);
         setRemote(row);
         setSimulated(data.simulated !== false);
+        setLiveConfigured(data.liveConfigured === true);
         onLookupRef.current?.(row);
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
@@ -106,9 +119,7 @@ export function AbnField({
           </p>
           {remote.address && <p className="mt-0.5 text-slate-300">{remote.address}</p>}
           <p className="mt-1 text-[11px] text-slate-400">
-            {simulated
-              ? "Practice register result — you can edit the name and details yourself."
-              : "From the live Australian Business Register."}
+            {describeAbrLookup(liveConfigured, simulated).matchFooter}
           </p>
         </div>
       )}

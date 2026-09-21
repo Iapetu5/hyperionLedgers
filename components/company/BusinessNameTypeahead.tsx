@@ -1,12 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
-import type { AbrCompany } from "@/lib/abn";
-import {
-  abrEmptyResultsMessage,
-  enrichAbrCompany,
-  useAbrSearch,
-} from "@/components/company/useAbrSearch";
+import { describeAbrLookup, type AbrCompany } from "@/lib/abn";
+import { enrichAbrCompany, useAbrSearch } from "@/components/company/useAbrSearch";
 
 type Props = {
   id?: string;
@@ -26,14 +22,15 @@ export function BusinessNameTypeahead({
   value,
   onChange,
   onSelect,
-  placeholder = "e.g. Example Cafe Pty Ltd",
+  placeholder = "Sunrise Cafe Pty Ltd",
   invalid = false,
 }: Props) {
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [picked, setPicked] = useState<AbrCompany | null>(null);
-  const { results, busy, error, simulated } = useAbrSearch(value, open);
+  const { results, busy, error, simulated, liveConfigured } = useAbrSearch(value, open);
+  const copy = describeAbrLookup(liveConfigured, simulated);
 
   async function pick(company: AbrCompany) {
     onChange(company.legalName);
@@ -52,9 +49,7 @@ export function BusinessNameTypeahead({
     }
   }
 
-  const longEnough = open && value.trim().length >= 2;
-  const showList = longEnough && results.length > 0;
-  const showEmpty = longEnough && !busy && !error && results.length === 0;
+  const showList = open && value.trim().length >= 2 && (results.length > 0 || busy || error);
 
   return (
     <div>
@@ -71,8 +66,7 @@ export function BusinessNameTypeahead({
         value={value}
         role="combobox"
         aria-autocomplete="list"
-        aria-expanded={showList}
-        aria-busy={busy}
+        aria-expanded={results.length > 0}
         aria-invalid={invalid}
         aria-controls={listId}
         aria-activedescendant={results[activeIndex] ? `${listId}-${activeIndex}` : undefined}
@@ -81,6 +75,9 @@ export function BusinessNameTypeahead({
           setPicked(null);
           setOpen(true);
           setActiveIndex(0);
+        }}
+        onFocus={() => {
+          if (value.trim().length >= 2) setOpen(true);
         }}
         onKeyDown={(e) => {
           if (!results.length || !open) return;
@@ -99,10 +96,7 @@ export function BusinessNameTypeahead({
         }}
       />
       <p className="mt-1 text-xs text-slate-400">
-        {hint ||
-          (simulated
-            ? "Type the name or ABN. Pick a practice-register match, or keep typing it yourself."
-            : "Type the name or ABN. Pick a live Australian Business Register match to fill the company.")}
+        {hint || copy.typeaheadHint}
       </p>
       {picked && picked.legalName === value && (
         <p className="mt-1 text-xs text-slate-300">
@@ -111,22 +105,9 @@ export function BusinessNameTypeahead({
           . You can edit any field.
         </p>
       )}
-      {busy && (
-        <p className="mt-1 text-sm text-slate-300" aria-live="polite">
-          Searching…
-        </p>
-      )}
-      {error && (
-        <p className="mt-1 text-sm text-rose-300" role="alert">
-          {error} You can keep typing the name yourself.
-        </p>
-      )}
-      {showEmpty && (
-        <p className="mt-1 text-sm text-slate-300" role="status">
-          {abrEmptyResultsMessage(value)}
-        </p>
-      )}
-      {showList && (
+      {busy && <p className="mt-1 text-sm text-slate-300">Searching…</p>}
+      {error && <p className="mt-1 text-sm text-rose-300">{error}</p>}
+      {showList && results.length > 0 && (
         <ul
           id={listId}
           role="listbox"

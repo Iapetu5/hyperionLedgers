@@ -2,28 +2,22 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { AbrCompany } from "@/lib/abn";
-import { AbrRegisterNote } from "@/components/company/AbrRegisterNote";
-import {
-  abrEmptyResultsMessage,
-  enrichAbrCompany,
-  useAbrSearch,
-} from "@/components/company/useAbrSearch";
+import { describeAbrLookup } from "@/lib/abn";
+import { enrichAbrCompany, useAbrSearch } from "@/components/company/useAbrSearch";
 
 type Props = {
   selected: AbrCompany | null;
   onSelect: (company: AbrCompany | null) => void;
+  onNeedManual?: (query: string) => void;
 };
 
-export function CompanySearch({ selected, onSelect }: Props) {
+export function CompanySearch({ selected, onSelect, onNeedManual }: Props) {
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-  const { results, busy, error, simulated } = useAbrSearch(query, !selected);
-
-  useEffect(() => {
-    if (!selected) inputRef.current?.focus();
-  }, [selected]);
+  const { results, busy, error, simulated, liveConfigured } = useAbrSearch(query, !selected);
+  const copy = describeAbrLookup(liveConfigured, selected ? selected.simulated : simulated);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -44,11 +38,7 @@ export function CompanySearch({ selected, onSelect }: Props) {
   if (selected) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-slate-300">
-          {selected.simulated
-            ? "Selected from the practice register. Check the details below, then confirm."
-            : "Selected from the live Australian Business Register. Check the details below, then confirm."}
-        </p>
+        <p className="text-sm text-slate-300">{copy.selected}</p>
         <button
           type="button"
           className="text-sm font-semibold text-brand-300 hover:underline"
@@ -62,6 +52,9 @@ export function CompanySearch({ selected, onSelect }: Props) {
       </div>
     );
   }
+
+  const noMatch = !busy && query.trim().length >= 2 && results.length === 0 && !error;
+  const liveUnavailable = liveConfigured && simulated && query.trim().length >= 2;
 
   return (
     <div>
@@ -80,10 +73,8 @@ export function CompanySearch({ selected, onSelect }: Props) {
         spellCheck={false}
         role="combobox"
         aria-autocomplete="list"
-        aria-expanded={query.trim().length >= 2 && (results.length > 0 || busy || Boolean(error))}
-        aria-busy={busy}
+        aria-expanded={results.length > 0}
         aria-controls={listId}
-        aria-describedby="company-search-help"
         aria-activedescendant={results[activeIndex] ? `${listId}-${activeIndex}` : undefined}
         onKeyDown={(e) => {
           if (!results.length) return;
@@ -101,14 +92,11 @@ export function CompanySearch({ selected, onSelect }: Props) {
           }
         }}
       />
-      <AbrRegisterNote searchSimulated={simulated} className="mt-2 text-xs text-slate-400" />
-      <p id="company-search-help" className="mt-1 text-xs text-slate-500">
-        Type at least two letters to search, or use manual entry below.
-      </p>
+      <p className="mt-2 text-xs text-slate-400">{copy.searchHelp}</p>
       {query.trim().length === 0 && (
         <p className="mt-3 text-sm text-slate-300">
-          Start with the name on your invoices, or the 11-digit ABN. Example: type{" "}
-          <span className="text-slate-200">cafe</span> or{" "}
+          Search is optional. You can type the business name, ABN, and type in the form below.
+          Example: type <span className="text-slate-200">cafe</span> or{" "}
           <span className="text-slate-200">51 824 753 556</span>.
         </p>
       )}
@@ -125,9 +113,24 @@ export function CompanySearch({ selected, onSelect }: Props) {
           {error} You can try again, or enter the details yourself below.
         </p>
       )}
-      {!busy && query.trim().length >= 2 && results.length === 0 && !error && (
+      {liveUnavailable && !error && (
+        <p className="mt-2 text-sm text-amber-200" role="status">
+          Live Australian Business Register lookup is not available right now. Showing the
+          practice list — you can still type the details yourself.
+        </p>
+      )}
+      {noMatch && (
         <p className="mt-3 text-sm text-slate-300" role="status">
-          {abrEmptyResultsMessage(query)}
+          We could not find a business matching “{query.trim()}”. Check the spelling, try the
+          ABN, or{" "}
+          <button
+            type="button"
+            className="font-semibold text-brand-300 hover:underline"
+            onClick={() => onNeedManual?.(query)}
+          >
+            enter the details yourself below
+          </button>
+          .
         </p>
       )}
       {results.length > 0 && (

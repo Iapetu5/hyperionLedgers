@@ -32,4 +32,7 @@ for (const abn of invalidAbns) {
   if (isValidAbnChecksum(abn)) throw new Error(`${abn} should fail checksum`);
 }
 
+if (isValidAbnChecksum("51824753557")) throw new Error("near-miss ABN should fail checksum");
+
 console.log("abn checks passed");
+
