@@ -47,7 +47,7 @@ The app creates `users`, `organisations`, `sessions`, and org books tables (`inv
 
 ## Stripe (Phase 1 buy — test mode)
 
-Create a product in the Stripe Dashboard (test mode) with one recurring price: **$69 AUD per month**. Checkout applies a 14-day trial in code. Hosted Checkout collects a payment method every time (`card`): debit, credit, Apple Pay, and Google Pay on the same session.
+Create a product in the Stripe Dashboard (test mode) with one recurring price: **$69 AUD per month**. Checkout applies a 14-day trial in code, forces **AUD** presentment (adaptive pricing off), and collects a payment method every time (`card` + `link`): debit, credit, Apple Pay, Google Pay, and Link. When Postgres is attached, Checkout is created only for a signed-in session — **Start free trial** sends signed-out visitors to signup first.
 
 | Name | Example shape | Where |
 |------|----------------|--------|

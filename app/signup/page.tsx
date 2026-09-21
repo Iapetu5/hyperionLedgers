@@ -1,17 +1,58 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { validateSignup } from "@/lib/auth";
-import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
 import { addCompanyHref, SETUP_STEP } from "@/lib/company-pickup";
+import { validateSignup } from "@/lib/auth";
+import { beginHostedCheckout } from "@/lib/begin-checkout";
+import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { LOGIN_FOR_TRIAL, SIGNUP_FOR_TRIAL, wantsTrialCheckout } from "@/lib/trial-next";
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupShell />}>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupShell({
+  children,
+  loginHref = "/login",
+}: {
+  children?: React.ReactNode;
+  loginHref?: string;
+}) {
+  return (
+    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-4 py-12">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+        <BrandLogo />
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-300">
+          <Link href="/" className="hover:text-white hover:underline">
+            Home
+          </Link>
+          <Link href={loginHref} className="hover:text-white hover:underline">
+            Log in
+          </Link>
+        </nav>
+      </div>
+      {children ?? (
+        <div className="card p-6">
+          <p className="text-sm text-slate-300">Loading…</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SignupForm() {
   const { signUp } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const trialNext = wantsTrialCheckout(searchParams.get("next"));
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,28 +76,25 @@ export default function SignupPage() {
       setError(res.error);
       return;
     }
-    // Books setup first — Stripe trial checkout stays on Pricing / Downloads.
+    if (trialNext) {
+      const checkout = await beginHostedCheckout(email);
+      if (checkout.kind === "stripe") return;
+      router.push(checkout.path === SIGNUP_FOR_TRIAL ? addCompanyHref("/onboarding") : checkout.path);
+      return;
+    }
+    // Books setup first when the visitor did not come from Start free trial.
     router.push(addCompanyHref("/onboarding"));
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-4 py-12">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <BrandLogo />
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-300">
-          <Link href="/" className="hover:text-white hover:underline">
-            Home
-          </Link>
-          <Link href="/login" className="hover:text-white hover:underline">
-            Log in
-          </Link>
-        </nav>
-      </div>
+    <SignupShell loginHref={trialNext ? LOGIN_FOR_TRIAL : "/login"}>
       <div className="card p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">{SETUP_STEP.account}</p>
         <h1 className="mt-1 text-xl font-bold text-white">Create your account</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Enter your name, email, and password. Next you will add your company.
+          {trialNext
+            ? "Enter your name, email, and password. Next you will start the 14-day trial on Stripe ($69 AUD a month after)."
+            : "Enter your name, email, and password. Next you will add your company."}
         </p>
         <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate>
           <div>
@@ -122,14 +160,20 @@ export default function SignupPage() {
             </p>
           )}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy ? "Creating…" : "Next: add your company"}
+            {busy
+              ? trialNext
+                ? "Creating account…"
+                : "Creating…"
+              : trialNext
+                ? "Create account and start trial"
+                : "Next: add your company"}
           </button>
           <p className="text-center text-xs text-slate-400">
             14-day trial on{" "}
             <Link href="/pricing" className="text-brand-300 hover:underline">
               Pricing
             </Link>
-            , then $69 a month.
+            , then $69 AUD a month.
           </p>
           <GuestOnly>
             <p className="text-center text-xs text-slate-400">
@@ -143,11 +187,14 @@ export default function SignupPage() {
         </form>
         <p className="mt-4 text-center text-sm text-slate-300">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-brand-300 hover:underline">
+          <Link
+            href={trialNext ? LOGIN_FOR_TRIAL : "/login"}
+            className="font-semibold text-brand-300 hover:underline"
+          >
             Log in
           </Link>
         </p>
       </div>
-    </div>
+    </SignupShell>
   );
 }
