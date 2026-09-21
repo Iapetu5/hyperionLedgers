@@ -174,7 +174,7 @@ export default function DemoOverviewPage() {
           <EmptyState
             icon={LayoutDashboard}
             title="Nothing here yet"
-            description={`Cash, receivables, and next-action tips appear after your first invoice, quote, or bill for ${user?.businessName ?? "your business"}. Use the shortcuts below.`}
+            description="Cash, receivables, and next-action tips appear after your first invoice, quote, or bill. Use the shortcuts below."
             showExploreSample
             actions={[
               { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
@@ -182,6 +182,7 @@ export default function DemoOverviewPage() {
               { label: "Create bill", href: "/demo/bills?mixed=1" },
               { label: "Account", href: "/demo/account" },
             ]}
+            hint="Guests can try a demo. Documents you create stay in this browser."
           />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {quickLinks.map((item) => (

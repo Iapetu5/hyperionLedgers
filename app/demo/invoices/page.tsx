@@ -589,7 +589,7 @@ export default function InvoicesPage() {
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Demo sample invoices stay in the guest tour — they are not copied into your organisation."
+          hint="Sample demo invoices stay in the guest demo — not copied into your business."
         />
       ) : userRows.length === 0 ? null : (
         <div className="card overflow-x-auto">

@@ -321,7 +321,7 @@ export default function ProductsPage() {
           <EmptyState
             icon={Package}
             title="Catalogue is empty"
-            description="Add one product above — name, price (ex tax), and GST on Income or GST Free. Then return to the invoice and pick it. Quantity fills the amount, and GST is added only on taxable lines. Demo sample products stay out of this blank org."
+            description="Add one product above — name, price before tax, and whether GST applies. Then return to the invoice and pick it. Quantity fills the amount, and GST is added only when GST applies."
             actions={[
               {
                 label: "Add a product",
@@ -333,11 +333,11 @@ export default function ProductsPage() {
               },
               { label: "Back to overview", href: "/demo" },
             ]}
-            hint="Tip: unit prices are tax-exclusive. GST on Income adds 10% on that line only; GST Free lines stay at $0 GST."
+            hint="Price is before tax. Choose whether GST applies on that product."
           />
           <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-slate-400">
             <span>Want sample figures instead?</span>
-            <ExploreSampleButton primary={false} className="!px-2.5 !py-1 text-xs" />
+            <ExploreSampleButton primary={false} label="Try a demo" className="!px-2.5 !py-1 text-xs" />
           </div>
         </div>
       ) : (
