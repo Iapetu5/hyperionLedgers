@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Banknote, Check, Package, Pencil, Plus, Receipt, Undo2, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -60,6 +60,8 @@ export default function BillsPage() {
   const [billDate, setBillDate] = useState(() => todayISO());
   const [dueDate, setDueDate] = useState(() => plusDaysISO(14));
   const [status, setStatus] = useState<UserBill["status"]>("Awaiting approval");
+  const submitLock = useRef(false);
+  const [submitBusy, setSubmitBusy] = useState(false);
 
   const reloadUser = useCallback(async () => {
     try {
@@ -143,9 +145,13 @@ export default function BillsPage() {
   /** One-click: OfficeNest + GST/GST-free expense lines → Approve / Mark paid strip. */
   function createMixedTaxSample() {
     if (!tryBeginMixedOneClick()) return;
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     const draftLines = mixedTaxStarterDrafts("expense");
     const supplierName = "OfficeNest Supplies Pty Ltd";
     void (async () => {
+      try {
       const res = await createBill({ supplier: supplierName, lines: draftsToInputs(draftLines) });
       if ("error" in res) {
         setLines(draftLines);
@@ -163,6 +169,10 @@ export default function BillsPage() {
       window.setTimeout(() => {
         document.getElementById("bill-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 40);
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
+      }
     })();
   }
 
@@ -230,6 +240,9 @@ export default function BillsPage() {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     setFormError(null);
     setFormOk(null);
     void (async () => {
@@ -302,6 +315,9 @@ export default function BillsPage() {
         } catch {
           /* leave the list as last shown */
         }
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
       }
     })();
   }
@@ -596,7 +612,7 @@ export default function BillsPage() {
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="btn-primary" disabled={submitBusy}>
           {editingId ? (
             <>
               <Pencil size={16} />

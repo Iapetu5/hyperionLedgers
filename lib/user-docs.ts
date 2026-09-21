@@ -249,13 +249,43 @@ export function getUserBill(id: string): UserBill | null {
   return loadUserBills().find((b) => b.id === id) ?? null;
 }
 
+function seqKey(prefix: string) {
+  return `hl_demo_doc_seq_v1_${prefix}`;
+}
+
+function rememberAllocated(prefix: string, n: number) {
+  if (!isBrowser() || !Number.isFinite(n) || n < 1) return;
+  try {
+    const raw = localStorage.getItem(seqKey(prefix));
+    const prev = Number(raw);
+    const cur = Number.isFinite(prev) && prev > 0 ? Math.max(Math.floor(prev), n) : n;
+    localStorage.setItem(seqKey(prefix), String(cur));
+  } catch {
+    /* next create still scans live rows */
+  }
+}
+
 function nextId(prefix: string, existing: { id: string }[]) {
   let max = 0;
+  try {
+    const stored = Number(localStorage.getItem(seqKey(prefix)));
+    if (Number.isFinite(stored) && stored > 0) max = Math.floor(stored);
+  } catch {
+    /* scan rows */
+  }
+  const re = new RegExp(`^${prefix}-(\\d+)$`);
   for (const row of existing) {
-    const m = row.id.match(new RegExp(`^${prefix}-(\\d+)$`));
+    const m = row.id.match(re);
     if (m) max = Math.max(max, Number(m[1]));
   }
-  return `${prefix}-${String(max + 1).padStart(3, "0")}`;
+  const n = max + 1;
+  rememberAllocated(prefix, n);
+  return `${prefix}-${String(n).padStart(3, "0")}`;
+}
+
+function rememberDeletedId(prefix: string, id: string) {
+  const m = id.match(new RegExp(`^${prefix}-(\\d+)$`));
+  if (m) rememberAllocated(prefix, Number(m[1]));
 }
 
 function getAuthOrgHint(): { businessName?: string; abn?: string } | null {
@@ -745,6 +775,7 @@ export function deleteUserInvoice(id: string): boolean {
   const next = existing.filter((i) => i.id !== id);
   if (next.length === existing.length) return false;
   saveList(INV_KEY, next, "hl-user-docs-updated");
+  rememberDeletedId("INV-U", id);
   clearPublicDocStatusLocal("invoice", id);
   return true;
 }
@@ -754,6 +785,7 @@ export function deleteUserQuote(id: string): boolean {
   const next = existing.filter((q) => q.id !== id);
   if (next.length === existing.length) return false;
   saveList(QUOTE_KEY, next, "hl-user-docs-updated");
+  rememberDeletedId("QU-U", id);
   clearPublicDocStatusLocal("quote", id);
   return true;
 }
@@ -763,6 +795,7 @@ export function deleteUserBill(id: string): boolean {
   const next = existing.filter((b) => b.id !== id);
   if (next.length === existing.length) return false;
   saveList(BILL_KEY, next, "hl-user-docs-updated");
+  rememberDeletedId("BILL-U", id);
   return true;
 }
 

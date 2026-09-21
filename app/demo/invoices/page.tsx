@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Banknote, ExternalLink, FileText, Package, Pencil, Plus, Send, Undo2, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
@@ -57,6 +57,8 @@ export default function InvoicesPage() {
   const [issueDate, setIssueDate] = useState(() => todayISO());
   const [dueDate, setDueDate] = useState(() => plusDaysISO(14));
   const [status, setStatus] = useState<UserInvoice["status"]>("Awaiting payment");
+  const submitLock = useRef(false);
+  const [submitBusy, setSubmitBusy] = useState(false);
 
   const reloadUser = useCallback(async () => {
     try {
@@ -149,9 +151,13 @@ export default function InvoicesPage() {
   /** One-click: Acme + GST/GST-free lines → pay-link strip (no second Create click). */
   function createMixedTaxSample() {
     if (!tryBeginMixedOneClick()) return;
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     const draftLines = mixedTaxStarterDrafts("income");
     const contactName = "Acme Pty Ltd";
     void (async () => {
+      try {
       const res = await createInvoice({ contact: contactName, lines: draftsToInputs(draftLines) });
       if ("error" in res) {
         setLines(draftLines);
@@ -170,6 +176,10 @@ export default function InvoicesPage() {
       window.setTimeout(() => {
         document.getElementById("inv-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 40);
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
+      }
     })();
   }
 
@@ -237,6 +247,9 @@ export default function InvoicesPage() {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     setFormError(null);
     setFormOk(null);
     void (async () => {
@@ -310,6 +323,9 @@ export default function InvoicesPage() {
         } catch {
           /* leave the list as last shown */
         }
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
       }
     })();
   }
@@ -577,7 +593,7 @@ export default function InvoicesPage() {
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="btn-primary" disabled={submitBusy}>
           {editingId ? (
             <>
               <Pencil size={16} />

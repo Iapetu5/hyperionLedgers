@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { ExternalLink, FileSignature, Mail, Package, Pencil, Plus, Send, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
@@ -60,6 +60,8 @@ export default function QuotesPage() {
   const [issueDate, setIssueDate] = useState(() => todayISO());
   const [expiryDate, setExpiryDate] = useState(() => plusDaysISO(14));
   const [status, setStatus] = useState<UserQuote["status"]>("Sent");
+  const submitLock = useRef(false);
+  const [submitBusy, setSubmitBusy] = useState(false);
 
   const reloadUser = useCallback(async () => {
     try {
@@ -196,9 +198,13 @@ export default function QuotesPage() {
 
   function createMixedTaxSample() {
     if (!tryBeginMixedOneClick()) return;
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     const draftLines = mixedTaxStarterDrafts("income");
     const contactName = "Acme Pty Ltd";
     void (async () => {
+      try {
       const res = await createQuote({ contact: contactName, lines: draftsToInputs(draftLines) });
       if ("error" in res) {
         setLines(draftLines);
@@ -217,6 +223,10 @@ export default function QuotesPage() {
       window.setTimeout(() => {
         document.getElementById("qu-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 40);
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
+      }
     })();
   }
 
@@ -282,6 +292,9 @@ export default function QuotesPage() {
   useComposeQuery(openComposer);
 
   function persistQuote(asDraft: boolean) {
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     setFormError(null);
     setFormOk(null);
     void (async () => {
@@ -366,6 +379,9 @@ export default function QuotesPage() {
         } catch {
           /* leave the list as last shown */
         }
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
       }
     })();
   }
@@ -602,7 +618,7 @@ export default function QuotesPage() {
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="btn-primary" disabled={submitBusy}>
           {editingId ? (
             <>
               <Pencil size={16} />
@@ -619,6 +635,7 @@ export default function QuotesPage() {
           <button
             type="button"
             className="btn-secondary"
+            disabled={submitBusy}
             onClick={() => persistQuote(true)}
           >
             Save as draft
