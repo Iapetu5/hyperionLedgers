@@ -31,19 +31,19 @@ export default function TryPage() {
           <Zap size={14} />
           14 days free · then $69 a month
         </div>
-        <h1 className="marketing-title">How to start</h1>
-        <p className="marketing-lead">
+        <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">How to start</h1>
+        <p className="mt-3 max-w-2xl text-lg text-white/80">
           Start the free trial. Answer a few setup questions. Then make your first invoice.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <StartTrialButton className="btn-marketing-primary" />
-          <Link href="/demo" className="link-quiet">
+          <StartTrialButton className="btn-primary" />
+          <Link href="/demo" className="text-sm font-medium text-white/80 hover:text-white hover:underline">
             Look at a sample first
           </Link>
-          <Link href="/pricing" className="link-quiet">
+          <Link href="/pricing" className="text-sm font-medium text-white/80 hover:text-white hover:underline">
             See the $69 plan
           </Link>
-          <Link href="/signup" className="link-quiet">
+          <Link href="/signup" className="text-sm font-medium text-white/80 hover:text-white hover:underline">
             Sign up
           </Link>
         </div>

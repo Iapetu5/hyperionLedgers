@@ -221,12 +221,12 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               <span className="text-white/50"> — </span>
               {hasUserDocs
                 ? "Invoices, quotes, and bills you create stay in this browser. No live bank feeds, payments, or ATO lodgement."
-                : `${orgName} has no documents yet. Try a demo as a guest anytime.`}
+                : `${orgName} has no documents yet. Look at Harbour & Co sample as a guest anytime.`}
             </p>
             <ExploreSampleButton
               primary={false}
               className="!px-3 !py-1.5 text-xs"
-              label={DEMO_CTA}
+              label={hasUserDocs ? DEMO_CTA : "Look at Harbour & Co sample"}
             />
           </div>
         </div>

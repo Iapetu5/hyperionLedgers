@@ -642,7 +642,7 @@ export default function InvoicesPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Create a basic invoice (saved in this browser), or try a demo for the full sample list. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
+              Make an invoice with an example (saved in this browser), or look at Harbour & Co sample for the full list. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
             </>
           ) : (
             <>

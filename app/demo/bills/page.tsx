@@ -730,7 +730,7 @@ export default function BillsPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Add a supplier bill, edit lines later, Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically. Or try a demo for sample payables.
+              Make a bill with an example, edit lines later, Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically. Or look at Harbour & Co sample for sample payables.
             </>
           ) : (
             <>

@@ -51,7 +51,7 @@ export default function PricingPage() {
               ))}
             </ul>
             <div className="mt-6 flex flex-col gap-3">
-              <Link href="/signup" className="btn-marketing-primary">
+              <Link href="/signup" className="btn-primary">
                 Start free trial
               </Link>
               <Link href="/signup" className="link-quiet text-center">
