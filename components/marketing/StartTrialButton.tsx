@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { needsCompany, nextSetupPath } from "@/lib/auth";
 import { beginHostedCheckout } from "@/lib/begin-checkout";
 import { SIGNUP_FOR_TRIAL } from "@/lib/trial-next";
+import { markTrialIntent } from "@/lib/start-trial";
 
 type Props = {
   className?: string;
@@ -21,13 +23,19 @@ export function StartTrialButton({
   showArrow = true,
 }: Props) {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, needsOnboarding } = useAuth();
   const [busy, setBusy] = useState(false);
 
   async function startTrial() {
     if (loading || busy) return;
     if (!user) {
+      markTrialIntent();
       router.push(SIGNUP_FOR_TRIAL);
+      return;
+    }
+    if (needsCompany(user) || needsOnboarding) {
+      markTrialIntent();
+      router.push(nextSetupPath(user));
       return;
     }
     setBusy(true);
