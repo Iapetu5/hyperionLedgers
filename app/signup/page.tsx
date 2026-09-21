@@ -153,13 +153,7 @@ function SignupForm() {
             </p>
           )}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy
-              ? trialNext
-                ? "Creating account…"
-                : "Creating…"
-              : trialNext
-                ? "Create account and start trial"
-                : "Next: add your company"}
+            {busy ? "Creating…" : "Next: add your company"}
           </button>
           <p className="text-center text-xs text-slate-400">
             14-day trial on{" "}
