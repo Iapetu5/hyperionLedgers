@@ -2,15 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { validateSignup } from "@/lib/auth";
-import { AbnField } from "@/components/abn/AbnField";
-import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahead";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
-import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
-import { addCompanyHref, clearSelectedCompany, readSelectedCompany } from "@/lib/company-pickup";
+import { addCompanyHref } from "@/lib/company-pickup";
 
 export default function SignupPage() {
   const { signUp } = useAuth();
@@ -18,32 +15,13 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [abn, setAbn] = useState("");
-  const [entityType, setEntityType] = useState<AbrEntityType | "">("");
-  const [address, setAddress] = useState("");
-  const [gstRegistered, setGstRegistered] = useState<boolean | undefined>(undefined);
-  const [fromAddCompany, setFromAddCompany] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const picked = readSelectedCompany();
-    if (!picked) return;
-    setBusinessName(picked.legalName);
-    setAbn(picked.abn);
-    setGstRegistered(picked.gstRegistered);
-    if (picked.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(picked.entityType)) {
-      setEntityType(picked.entityType as AbrEntityType);
-    }
-    if (picked.address) setAddress(picked.address);
-    setFromAddCompany(true);
-  }, []);
-
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const local = validateSignup({ fullName, email, password, businessName, abn });
+    const local = validateSignup({ fullName, email, password });
     setFieldErrors(local);
     if (Object.keys(local).length > 0) {
       setError(null);
@@ -51,16 +29,7 @@ export default function SignupPage() {
     }
     setBusy(true);
     setError(null);
-    const res = await signUp({
-      fullName,
-      email,
-      password,
-      businessName,
-      abn,
-      entityType: entityType || undefined,
-      businessAddress: address || undefined,
-      gstRegistered,
-    });
+    const res = await signUp({ fullName, email, password });
     if (!res.ok) {
       setBusy(false);
       setError(res.error);
@@ -81,8 +50,7 @@ export default function SignupPage() {
       // Local sign-up already succeeded — continue without Stripe.
     }
     setBusy(false);
-    clearSelectedCompany();
-    router.push(fromAddCompany ? "/onboarding" : addCompanyHref("/onboarding"));
+    router.push(addCompanyHref("/onboarding"));
   }
 
   return (
@@ -93,9 +61,6 @@ export default function SignupPage() {
           <Link href="/" className="hover:text-white hover:underline">
             Home
           </Link>
-          <Link href={addCompanyHref("/signup")} className="hover:text-white hover:underline">
-            Add company
-          </Link>
           <Link href="/login" className="hover:text-white hover:underline">
             Log in
           </Link>
@@ -105,11 +70,8 @@ export default function SignupPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 1 of 3 · Account</p>
         <h1 className="mt-1 text-xl font-bold text-white">Start your free trial</h1>
         <p className="mt-1 text-sm text-slate-300">
-          You get 14 days free. Then $69 a month.{" "}
-          <Link href={addCompanyHref("/signup")} className="font-semibold text-brand-300 hover:underline">
-            Find your company
-          </Link>{" "}
-          on the Add company page — search, pick a match, then confirm. You can also type the name here.
+          Name, email, and password only. Next you add your company on the HyperionInvoices Add company
+          page. You get 14 days free. Then $69 a month.
           <GuestOnly>
             {" "}
             <TryDemoLink className="font-semibold text-brand-300 hover:underline">
@@ -135,75 +97,16 @@ export default function SignupPage() {
             <p className="mt-1 text-xs text-slate-400">At least 8 characters.</p>
             {fieldErrors.password && <p className="mt-1 text-xs text-rose-300">{fieldErrors.password}</p>}
           </div>
-          <BusinessNameTypeahead
-            value={businessName}
-            onChange={setBusinessName}
-            onSelect={(company: AbrCompany) => {
-              setBusinessName(company.legalName);
-              setAbn(company.abn);
-              setEntityType(company.entityType);
-              setAddress(company.address ?? "");
-              setGstRegistered(company.gstRegistered);
-            }}
-          />
-          {fieldErrors.businessName && <p className="mt-1 text-xs text-rose-300">{fieldErrors.businessName}</p>}
-          <AbnField
-            value={abn}
-            onChange={setAbn}
-            onLookup={(company) => {
-              if (!company) return;
-              if (!businessName.trim()) setBusinessName(company.legalName);
-              if (!entityType) setEntityType(company.entityType);
-              if (!address && company.address) setAddress(company.address);
-              if (gstRegistered === undefined) setGstRegistered(company.gstRegistered);
-            }}
-          />
-          {(entityType || address) && (
-            <div className="space-y-3">
-              <div>
-                <label className="label" htmlFor="entityType">Entity type</label>
-                <select
-                  id="entityType"
-                  className="input"
-                  value={entityType}
-                  onChange={(e) => setEntityType(e.target.value as AbrEntityType)}
-                >
-                  <option value="">Choose if you know it</option>
-                  {ABR_ENTITY_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label" htmlFor="signupAddress">Address</label>
-                <input
-                  id="signupAddress"
-                  className="input"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Street, suburb, state and postcode"
-                  autoComplete="street-address"
-                />
-              </div>
-            </div>
-          )}
-          {fieldErrors.abn && <p className="text-xs text-rose-300">{fieldErrors.abn}</p>}
           {error && <p className="text-sm text-rose-300">{error}</p>}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
             {busy ? "Creating…" : "Continue"}
           </button>
-          <p className="text-center text-xs text-slate-400">Then $69 a month.</p>
+          <p className="text-center text-xs text-slate-400">Then add your company. Then $69 a month.</p>
         </form>
         <p className="mt-4 text-center text-sm text-slate-300">
           Already have an account?{" "}
           <Link href="/login" className="font-semibold text-brand-300 hover:underline">
             Log in
-          </Link>
-          {" · "}
-          <Link href={addCompanyHref("/signup")} className="font-semibold text-brand-300 hover:underline">
-            Add company
           </Link>
         </p>
       </div>

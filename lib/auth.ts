@@ -1,6 +1,7 @@
 /** Browser-local demo auth. Accounts stay in localStorage — never sent to a server. */
 
 import { formatAbn, validateAbnField } from "./abn";
+import { addCompanyHref } from "./company-pickup";
 
 export const AUTH_ACCOUNTS_KEY = "hl_demo_accounts_v1";
 export const AUTH_SESSION_KEY = "hl_demo_session_v1";
@@ -174,7 +175,7 @@ export function needsCompany(account: PublicAccount | null | undefined): boolean
 /** Next signed-in destination after signup, login, or saving a company. */
 export function nextSetupPath(account: PublicAccount | null | undefined): string {
   if (!account) return "/signup";
-  if (needsCompany(account)) return "/add-company";
+  if (needsCompany(account)) return addCompanyHref("/onboarding");
   if (needsOnboarding(account)) return "/onboarding";
   return "/demo";
 }

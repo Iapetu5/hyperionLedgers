@@ -13,7 +13,7 @@ import {
   validateAbnField,
 } from "@/lib/abn";
 import { PENDING_ORG_NAME, nextSetupPath } from "@/lib/auth";
-import { safeAddCompanyReturn, saveSelectedCompany } from "@/lib/company-pickup";
+import { readSelectedCompany, safeAddCompanyReturn, saveSelectedCompany } from "@/lib/company-pickup";
 
 function AddCompanyForm() {
   const { user, loading, updateProfile, needsOnboarding } = useAuth();
@@ -36,9 +36,22 @@ function AddCompanyForm() {
   const [prefilled, setPrefilled] = useState(false);
 
   useEffect(() => {
-    if (!user || prefilled) return;
-    if (!user.businessName || user.businessName === PENDING_ORG_NAME) return;
-    setLegalName(user.businessName);
+    if (prefilled) return;
+    const picked = readSelectedCompany();
+    const named = user && user.businessName !== PENDING_ORG_NAME ? user.businessName : "";
+    if (picked?.legalName) {
+      setLegalName(picked.legalName);
+      setAbn(picked.abn);
+      setAddress(picked.address ?? "");
+      if (picked.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(picked.entityType)) {
+        setEntityType(picked.entityType as (typeof ABR_ENTITY_TYPES)[number]);
+      }
+      setManual(true);
+      setPrefilled(true);
+      return;
+    }
+    if (!user || !named) return;
+    setLegalName(named);
     setAbn(user.abn ?? "");
     setAddress(user.businessAddress ?? "");
     if (user.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(user.entityType)) {
