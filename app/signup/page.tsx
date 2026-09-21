@@ -80,6 +80,9 @@ export default function SignupPage() {
               </Link>
               <TryDemoLink className="link-quiet" />
             </div>
+            <p className="mt-10 marketing-copy">
+              HyperionInvoices does not send forms to the tax office. Mac is coming soon.
+            </p>
 
             <form className="card mt-10 space-y-4 p-6 sm:p-8" onSubmit={onSubmit} noValidate>
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">

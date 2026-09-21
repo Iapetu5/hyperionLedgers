@@ -49,8 +49,8 @@ export default async function DownloadsPage({
         <h1 className="marketing-title max-w-3xl">Download {PRODUCT_NAME} for Windows</h1>
         <p className="marketing-lead">
           {allowed
-            ? `Your ${PLAN.trialDays}-day trial or $69 a month plan is active. Download the Windows app. Mac is coming soon.`
-            : `Start the HyperionInvoices free trial. ${PLAN.trialDays} days free, then $69 a month. When checkout finishes, this page unlocks the Windows app. Mac is coming soon.`}
+            ? `Your ${PLAN.trialDays}-day trial or $69 a month plan is active. This page is the Windows installer download. Mac is coming soon.`
+            : `Start the HyperionInvoices free trial. ${PLAN.trialDays} days free, then $69 a month. After checkout, this page is where the Windows installer download appears. Mac is coming soon.`}
         </p>
         {!allowed ? (
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -106,6 +106,9 @@ export default async function DownloadsPage({
             </div>
           </div>
         )}
+        <p className="mt-14 max-w-2xl text-base leading-7 text-slate-50">
+          HyperionInvoices does not send forms to the tax office. Mac is coming soon.
+        </p>
       </main>
       <MarketingFooter />
     </div>
