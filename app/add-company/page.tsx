@@ -13,7 +13,7 @@ import {
   validateAbnField,
 } from "@/lib/abn";
 import { PENDING_ORG_NAME, nextSetupPath } from "@/lib/auth";
-import { safeAddCompanyReturn, saveSelectedCompany } from "@/lib/add-company";
+import { safeAddCompanyReturn, saveSelectedCompany } from "@/lib/company-pickup";
 
 function AddCompanyForm() {
   const { user, loading, updateProfile, needsOnboarding } = useAuth();
@@ -261,13 +261,7 @@ function AddCompanyForm() {
               {error && <p className="text-sm text-rose-300">{error}</p>}
               <div className="flex flex-wrap gap-2">
                 <button type="submit" className="btn-primary" disabled={busy}>
-                  {busy
-                    ? "Saving…"
-                    : user
-                      ? needsOnboarding
-                        ? "Confirm and continue setup"
-                        : "Confirm company"
-                      : "Confirm and continue to sign up"}
+                  {busy ? "Saving…" : "Confirm company"}
                 </button>
                 <button type="button" className="btn-secondary" onClick={() => applyCompany(null)}>
                   Clear

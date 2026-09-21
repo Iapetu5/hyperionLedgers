@@ -112,8 +112,6 @@ export async function searchAbrLive(query: string, limit = 8): Promise<AbrCompan
   }
 }
 
-export const searchAbrByName = searchAbrLive;
-
 export type AbrSearchPayload = {
   query: string;
   results: AbrCompany[];

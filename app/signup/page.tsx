@@ -10,7 +10,7 @@ import { AbnField } from "@/components/abn/AbnField";
 import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahead";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
 import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
-import { addCompanyHref, clearSelectedCompany, readSelectedCompany } from "@/lib/add-company";
+import { addCompanyHref, clearSelectedCompany, readSelectedCompany } from "@/lib/company-pickup";
 
 export default function SignupPage() {
   const { signUp } = useAuth();

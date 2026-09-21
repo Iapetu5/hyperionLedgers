@@ -10,7 +10,7 @@ import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahea
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
 import { PENDING_ORG_NAME } from "@/lib/auth";
 import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
-import { addCompanyHref, readSelectedCompany } from "@/lib/add-company";
+import { addCompanyHref, readSelectedCompany } from "@/lib/company-pickup";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
 
 type WizardStep = "gst" | "method" | "fy" | "start";

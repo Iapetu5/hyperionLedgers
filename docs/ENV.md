@@ -87,6 +87,6 @@ Name typeahead on signup, onboarding, add-company, and Account calls `GET /api/a
 
 Leave empty in Git and on local machines that should stay on the demo register. When `ABR_GUID` is set, the server calls ABR JSON (`MatchingNames.aspx` / `AbnDetails.aspx`). If that call fails, the route falls back to the same demo matches so people can still pick a company or type details themselves.
 
-Register a GUID at [ABR web services](https://abr.business.gov.au/Tools/WebServices). Do not invent or commit a real GUID.
+Register a GUID at [ABR web services](https://abr.business.gov.au/Tools/WebServices). Do not invent or commit a real GUID. Full hookup: [ABR.md](./ABR.md).
 
 HyperionInvoices does not lodge with the ATO. Do not change DNS.
