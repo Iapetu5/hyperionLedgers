@@ -31,6 +31,7 @@ import {
   SAMPLE_DEBIT_CREDIT_CSV_TEXT,
   BLANK_DEBIT_CREDIT_CSV_PATH,
   BLANK_DEBIT_CREDIT_CSV_TEXT,
+  MAX_BANK_CSV_ROWS,
   type ParsedBankRow,
   type ParseBankCsvSkip,
 } from "@/lib/bank-csv";
@@ -77,7 +78,7 @@ function morePowerHint(hasReset: boolean, hasClear: boolean) {
 
 type BankingConfirm =
   | { action: "reset"; n: number }
-  | { action: "clearCsv"; n: number }
+  | { action: "clearCsv"; n: number; applied: number }
   | { action: "clearOpening"; amount: number };
 
 function bankingConfirmCopy(
@@ -94,13 +95,17 @@ function bankingConfirmCopy(
     };
   }
   if (pending.action === "clearCsv") {
+    const split =
+      pending.applied > 0
+        ? ` ${pending.applied} already Applied, ${pending.n - pending.applied} still Needs category.`
+        : " None have been Applied yet.";
     return {
       title: "Clear CSV imports?",
       confirmLabel: "Clear CSV imports",
       body:
         mode === "blank"
-          ? `Removes ${pending.n} imported CSV line${pending.n === 1 ? "" : "s"} and their categories. Opening is kept. Guest sample lines are not on this ledger.`
-          : `Removes ${pending.n} imported CSV line${pending.n === 1 ? "" : "s"} and their categories. Sample cheque lines stay. Opening is not used on this sample ledger.`,
+          ? `Removes ${pending.n} imported CSV line${pending.n === 1 ? "" : "s"} and their categories.${split} Opening is kept. Guest sample lines are not on this ledger.`
+          : `Removes ${pending.n} imported CSV line${pending.n === 1 ? "" : "s"} and their categories.${split} Sample cheque lines stay. Opening is not used on this sample ledger.`,
     };
   }
   return {
@@ -181,8 +186,11 @@ export default function BankingPage() {
   const [pendingConfirm, setPendingConfirm] = useState<BankingConfirm | null>(null);
   const [importBusy, setImportBusy] = useState(false);
   const [applyAllBusy, setApplyAllBusy] = useState(false);
+  const [parseBusy, setParseBusy] = useState(false);
+  const [truncatedNote, setTruncatedNote] = useState<string | null>(null);
   const importLock = useRef(false);
   const applyAllLock = useRef(false);
+  const unmatchLock = useRef<string | null>(null);
 
   const reload = useCallback(async () => {
     setTxns(await loadBankTransactions(mode));
@@ -297,6 +305,7 @@ export default function BankingPage() {
       setSkipped(result.skipped ?? []);
       setSuccess(null);
       setSuccessSkipped([]);
+      setTruncatedNote(null);
       setFileName(label);
       return;
     }
@@ -305,6 +314,13 @@ export default function BankingPage() {
     setSkipped(result.skipped);
     setError(null);
     setSuccessSkipped([]);
+    setTruncatedNote(
+      result.truncated
+        ? `This demo reads at most ${MAX_BANK_CSV_ROWS} transactions so Banking stays usable. ${result.truncated} row${
+            result.truncated === 1 ? "" : "s"
+          } after that were not previewed. Split the statement by month and import again.`
+        : null,
+    );
     if (result.skipped.length > 0) {
       setSuccess(null);
     }
@@ -332,11 +348,23 @@ export default function BankingPage() {
       return;
     }
     if (file.size > 2_000_000) {
-      setError("File is too large for this demo (max 2 MB).");
+      setError("This CSV is too large for this demo (max 2 MB). Split the statement or export a shorter date range.");
       return;
     }
-    const text = await file.text();
-    applyParsed(text, file.name);
+    setParseBusy(true);
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 0);
+    });
+    try {
+      const text = await file.text();
+      applyParsed(text, file.name);
+    } catch {
+      setError("Could not read this CSV. Try a smaller file (max 2 MB, 500 transactions).");
+      setPreview(null);
+      setTruncatedNote(null);
+    } finally {
+      setParseBusy(false);
+    }
   }
 
   async function loadSampleCsv(kind: "amount" | "debit-credit" = "amount") {
@@ -418,6 +446,7 @@ export default function BankingPage() {
       setPreview(null);
       setSkipped([]);
       setFileName(null);
+      setTruncatedNote(null);
       if (fileRef.current) fileRef.current.value = "";
       requestAnimationFrame(() => {
         reconSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -468,6 +497,7 @@ export default function BankingPage() {
     setSkipped([]);
     setFileName(null);
     setError(null);
+    setTruncatedNote(null);
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -562,16 +592,37 @@ export default function BankingPage() {
   }
 
   function unmatch(t: BankTransaction) {
+    if (unmatchLock.current === t.id) return;
+    unmatchLock.current = t.id;
     void (async () => {
-      const updated = await clearCategoryFromTransaction(t.id);
-      if (!updated) {
-        setError(`Could not undo match for “${t.description}”.`);
+      try {
+        const updated = await clearCategoryFromTransaction(t.id);
+        if (!updated) {
+          setError(`Could not undo match for “${t.description}”. Cash and categories are unchanged.`);
+          setSuccess(null);
+          return;
+        }
+        const fresh = await loadBankTransactions(mode);
+        setTxns(fresh);
+        setError(null);
+        const cashBit =
+          mode === "blank"
+            ? ` Cash is now ${formatAUD(blankChequeBalance(fresh, opening))} (that line is no longer in movements).`
+            : " Sample cheque cash is unchanged — only the category came off.";
+        setSuccess(
+          `Undid match for “${t.description}”.${cashBit} Next: ${steps.applyN} Apply on that line below.`,
+        );
+      } catch {
+        setError(`Could not undo match for “${t.description}”. Check the line below — it may still be categorised.`);
         setSuccess(null);
-        return;
+        try {
+          setTxns(await loadBankTransactions(mode));
+        } catch {
+          /* leave the table as last shown */
+        }
+      } finally {
+        if (unmatchLock.current === t.id) unmatchLock.current = null;
       }
-      setTxns(await loadBankTransactions(mode));
-      setError(null);
-      setSuccess(`Undid match for “${t.description}”. Next: ${steps.applyN} Apply on that line below.`);
     })();
   }
 
@@ -844,8 +895,9 @@ export default function BankingPage() {
             Dates: DD/MM/YYYY. Amounts: −42.50 or ($42.50). Parsed in your browser — nothing is sent to a
             server. No live bank feed. Rows already on this cheque (same date, description and amount), or
             repeated in the file, are skipped — cash does not increase twice; the result says how many were
-            imported vs skipped. If any rows fail to parse, that list stays on this page after import until
-            you Import CSV again.
+            imported vs skipped. This demo reads at most 2 MB and {MAX_BANK_CSV_ROWS} transactions — a larger
+            file gets a clear stop message, not a hung page. If any rows fail to parse, that list stays on this
+            page after import until you Import CSV again.
           </p>
         </div>
 
@@ -860,11 +912,12 @@ export default function BankingPage() {
           <button
             ref={importButtonRef}
             type="button"
-            className="btn-primary"
+            className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
             onClick={() => fileRef.current?.click()}
+            disabled={parseBusy || importBusy}
           >
             <Upload size={16} />
-            Import CSV
+            {parseBusy ? "Reading CSV…" : "Import CSV"}
           </button>
           <button
             type="button"
@@ -915,6 +968,15 @@ export default function BankingPage() {
               Preview — {preview.length} row{preview.length === 1 ? "" : "s"} from {fileName} (before
               import)
             </p>
+            {truncatedNote && (
+              <div
+                className="flex items-start gap-2 rounded-lg border border-amber-300/55 bg-amber-400/20 px-3 py-2.5 text-xs font-medium text-amber-50"
+                role="status"
+              >
+                <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-200" aria-hidden />
+                <span>{truncatedNote}</span>
+              </div>
+            )}
             {skipped.length > 0 && (
               <div
                 className="flex items-start gap-2 rounded-lg border border-amber-300/55 bg-amber-400/20 px-3 py-2.5 text-xs font-medium text-amber-50 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.18)]"
@@ -942,7 +1004,7 @@ export default function BankingPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                  {preview.map((r, i) => (
+                  {preview.slice(0, 25).map((r, i) => (
                     <tr key={i} className="text-slate-100">
                       <td className="whitespace-nowrap px-3 py-2">{formatDateAU(r.date)}</td>
                       <td className="px-3 py-2">{r.description}</td>
@@ -961,6 +1023,12 @@ export default function BankingPage() {
                 </tbody>
               </table>
             </div>
+            {preview.length > 25 && (
+              <p className="text-xs text-slate-400">
+                Showing the first 25 of {preview.length} rows in this preview. Import still uses all{" "}
+                {preview.length} listed above.
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -1067,6 +1135,7 @@ export default function BankingPage() {
                   type="button"
                   className="btn-quiet-danger !px-3 !py-1.5 text-xs"
                   onClick={() => setPendingConfirm({ action: "reset", n: categorised.length })}
+                  disabled={applyAllBusy || importBusy}
                   title="Undo Apply / Ask AI categorisations for this cheque account — asks first (demo sample and blank stay separate)"
                 >
                   <RotateCcw size={14} />
@@ -1081,6 +1150,7 @@ export default function BankingPage() {
                     setPendingConfirm({
                       action: "clearCsv",
                       n: txns.filter((t) => t.source === "import").length,
+                      applied: txns.filter((t) => t.source === "import" && t.matched).length,
                     })
                   }
                   title={
@@ -1088,6 +1158,7 @@ export default function BankingPage() {
                       ? "Remove CSV-imported rows (opening kept) — asks first"
                       : "Remove CSV-imported rows (demo sample lines stay) — asks first"
                   }
+                  disabled={applyAllBusy || importBusy}
                 >
                   <Trash2 size={14} />
                   Clear CSV imports
@@ -1282,7 +1353,7 @@ export default function BankingPage() {
                       type="button"
                       className="btn-secondary !px-2 !py-1 text-xs"
                       onClick={() => unmatch(t)}
-                      title="Return this line to unmatched"
+                      title="Return this line to unmatched — cash movements follow the category on a blank cheque"
                     >
                       <Undo2 size={12} />
                       Undo match

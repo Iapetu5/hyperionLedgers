@@ -42,6 +42,7 @@ export default function InvoicesPage() {
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [showTaxTreatment, setShowTaxTreatment] = useState(true);
   const [userRows, setUserRows] = useState<UserInvoice[]>([]);
   const [contact, setContact] = useState("");
@@ -325,11 +326,35 @@ export default function InvoicesPage() {
 
   function onSetInvStatus(id: string, next: UserInvoice["status"]) {
     void (async () => {
-      setPublicDocStatus("invoice", id, next);
-      await setInvoiceStatus(id, next);
-      await reloadUser();
-      setSendNote(noteInvoiceStatus(id, next));
-      setFormOk(null);
+      try {
+        const isUserRow = userRows.some((r) => r.id === id);
+        if (isUserRow) {
+          const row = await setInvoiceStatus(id, next);
+          if (!row) {
+            setSendNote(null);
+            setFormOk(null);
+            setStatusError(`Could not change ${id}. Status is unchanged — check the list.`);
+            await reloadUser();
+            return;
+          }
+          setPublicDocStatus("invoice", id, row.status);
+        } else {
+          setPublicDocStatus("invoice", id, next);
+        }
+        await reloadUser();
+        setStatusError(null);
+        setSendNote(noteInvoiceStatus(id, next));
+        setFormOk(null);
+      } catch {
+        setSendNote(null);
+        setFormOk(null);
+        setStatusError(`Could not change ${id}. Check the list — status may be unchanged.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
@@ -561,6 +586,14 @@ export default function InvoicesPage() {
             </button>
           )}
         </div>
+        {statusError && (
+          <p
+            className="rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-2 text-sm text-rose-200"
+            role="alert"
+          >
+            {statusError}
+          </p>
+        )}
         {sendNote && (
           <p
             className="rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100"

@@ -50,6 +50,7 @@ export default function BillsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [formOk, setFormOk] = useState<string | null>(null);
   const [statusNote, setStatusNote] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   /** After create — Approve / Mark paid strip so first session does not hunt the table */
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
   /** List-first: create form collapsed until New / Edit / mixed-tax / post-create. */
@@ -314,12 +315,28 @@ export default function BillsPage() {
 
   function onSetStatus(id: string, next: UserBill["status"]) {
     void (async () => {
-      const row = await setBillStatus(id, next);
-      await reloadUser();
-      if (!row) return;
-      const note = noteBillStatus(row.id, next);
-      setStatusNote(note);
-      setFormOk(null);
+      try {
+        const row = await setBillStatus(id, next);
+        await reloadUser();
+        if (!row) {
+          setStatusNote(null);
+          setFormOk(null);
+          setStatusError(`Could not change ${id}. Status is unchanged — check the list.`);
+          return;
+        }
+        setStatusError(null);
+        setStatusNote(noteBillStatus(row.id, next));
+        setFormOk(null);
+      } catch {
+        setStatusNote(null);
+        setFormOk(null);
+        setStatusError(`Could not change ${id}. Check the list — status may be unchanged.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
@@ -575,6 +592,14 @@ export default function BillsPage() {
             </button>
           )}
         </div>
+        {statusError && (
+          <p
+            className="rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-2 text-sm text-rose-200"
+            role="alert"
+          >
+            {statusError}
+          </p>
+        )}
         {statusNote && (
           <p
             className="rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100"

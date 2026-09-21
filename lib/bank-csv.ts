@@ -14,8 +14,11 @@ export type ParseBankCsvSkip = {
 };
 
 export type ParseBankCsvResult =
-  | { ok: true; rows: ParsedBankRow[]; skipped: ParseBankCsvSkip[] }
+  | { ok: true; rows: ParsedBankRow[]; skipped: ParseBankCsvSkip[]; truncated?: number }
   | { ok: false; error: string; skipped?: ParseBankCsvSkip[] };
+
+/** Demo import cap so a huge statement cannot freeze Banking. */
+export const MAX_BANK_CSV_ROWS = 500;
 
 const DATE_ALIASES = [
   "date",
@@ -244,6 +247,7 @@ export function parseBankCsv(text: string): ParseBankCsvResult {
 
   const rows: ParsedBankRow[] = [];
   const skipped: ParseBankCsvSkip[] = [];
+  let truncated = 0;
 
   for (let i = headerIdx + 1; i < lines.length; i++) {
     const cols = splitCsvLine(lines[i]);
@@ -266,6 +270,10 @@ export function parseBankCsv(text: string): ParseBankCsvResult {
       if (b !== null) balance = b;
     }
     rows.push({ date, description: descRaw, amount, balance, rawLine: i + 1 });
+    if (rows.length >= MAX_BANK_CSV_ROWS) {
+      truncated = lines.length - (i + 1);
+      break;
+    }
   }
 
   if (rows.length === 0) {
@@ -283,7 +291,7 @@ export function parseBankCsv(text: string): ParseBankCsvResult {
     };
   }
 
-  return { ok: true, rows, skipped };
+  return { ok: true, rows, skipped, truncated: truncated > 0 ? truncated : undefined };
 }
 
 /** Inline copy of public/sample-bank-statement.csv — used if fetch fails. */

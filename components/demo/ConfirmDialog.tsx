@@ -6,7 +6,8 @@ import { AlertTriangle } from "lucide-react";
 
 /** Compact confirm — same control size as neighbouring buttons. Cancel is the easy way out.
  *  First action wins: Cancel, backdrop, and Escape are the same (no write). Confirm fires
- *  once per open. State is memory-only — refresh is Cancel (no write).
+ *  once per open. Tab stays inside Cancel/Confirm. Cancel is focused on open.
+ *  State is memory-only — refresh is Cancel (no write).
  */
 export function ConfirmDialog({
   open,
@@ -28,6 +29,7 @@ export function ConfirmDialog({
   const titleId = useId();
   const bodyId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
   const lockedRef = useRef(false);
   const [armed, setArmed] = useState(true);
 
@@ -42,6 +44,24 @@ export function ConfirmDialog({
         if (lockedRef.current) return;
         lockedRef.current = true;
         onCancel();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const list = [cancelRef.current, confirmRef.current].filter(
+        (el): el is HTMLButtonElement => el != null && !el.disabled,
+      );
+      if (list.length === 0) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !list.includes(active as HTMLButtonElement)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !list.includes(active as HTMLButtonElement)) {
+        e.preventDefault();
+        first.focus();
       }
     }
     document.addEventListener("keydown", onKey);
@@ -103,6 +123,7 @@ export function ConfirmDialog({
               {cancelLabel}
             </button>
             <button
+              ref={confirmRef}
               type="button"
               className="btn-secondary border-rose-400/45 text-rose-100 hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={handleConfirm}

@@ -815,7 +815,9 @@ export default function QuotesPage() {
         <div className="card overflow-x-auto">
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Your created quotes</h2>
-            <p className="text-xs text-slate-400">{booksStoredHint(serverBooks)}</p>
+            <p className="text-xs text-slate-400">
+              {booksStoredHint(serverBooks)} Quotes are not invoices — Delete quote does not remove any invoice.
+            </p>
           </div>
           <table className="min-w-full text-left text-sm">
             <thead className="table-head">
