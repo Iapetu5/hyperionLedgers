@@ -667,21 +667,20 @@ export default function QuotesPage() {
         <EmptyState
           icon={FileSignature}
           title="No quotes yet"
-          description="Next: Create quote. Create sample quote makes a ready-made example with a customer link."
-          showExploreSample
+          description="Open a blank quote, or start from a ready-made example with a customer link."
           actions={[
             {
-              label: "Create quote",
+              label: "Start from an example",
               primary: true,
-              onClick: () => openComposer(),
+              onClick: () => createMixedTaxSample(),
             },
             {
-              label: "Create sample quote",
-              onClick: () => createMixedTaxSample(),
+              label: "New quote",
+              onClick: () => openComposer(),
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Sample demo quotes stay in the guest demo — not copied into your business."
+          hint="Your quotes stay with this business."
         />
       ) : userRows.length === 0 ? null : (
         <div className="card overflow-x-auto">
@@ -746,7 +745,7 @@ export default function QuotesPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Next: Create quote (saved in this browser). Sent quotes past expiry show Expired automatically.
+              Make a quote for this business. Sent quotes past expiry show Expired automatically.
             </>
           ) : (
             <>

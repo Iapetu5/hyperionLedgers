@@ -655,21 +655,20 @@ export default function InvoicesPage() {
         <EmptyState
           icon={FileText}
           title="No invoices yet"
-          description="Next: Create invoice. Create sample invoice makes a ready-made example with a pay link."
-          showExploreSample
+          description="Open a blank invoice, or start from a ready-made example with a customer pay link."
           actions={[
             {
-              label: "Create invoice",
+              label: "Start from an example",
               primary: true,
-              onClick: () => openComposer(),
+              onClick: () => createMixedTaxSample(),
             },
             {
-              label: "Create sample invoice",
-              onClick: () => createMixedTaxSample(),
+              label: "New invoice",
+              onClick: () => openComposer(),
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Sample demo invoices stay in the guest demo — not copied into your business."
+          hint="Your invoices stay with this business."
         />
       ) : userRows.length === 0 ? null : (
         <div className="card overflow-x-auto">
@@ -723,7 +722,7 @@ export default function InvoicesPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Next: Create invoice (saved in this browser). Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
+              Make an invoice for this business. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
             </>
           ) : (
             <>
