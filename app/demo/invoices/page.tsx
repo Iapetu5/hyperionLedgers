@@ -93,6 +93,7 @@ export default function InvoicesPage() {
         setSendNote(null);
       }, 4000);
     } catch {
+      setSendNote("Could not copy the link. Next: View and copy the address bar, or More to Print.");
       setFormError("Could not copy the link — use View and copy the URL from the address bar.");
     }
   }
