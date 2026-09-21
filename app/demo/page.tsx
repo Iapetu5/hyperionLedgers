@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, LayoutDashboard, FileText, FileSignature, Receipt, Settings, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
@@ -23,6 +23,7 @@ import {
   type UserQuote,
 } from "@/lib/user-docs";
 import { loadBills, loadInvoices, loadQuotes } from "@/lib/books-client";
+import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
 
 export default function DemoOverviewPage() {
   const { usesSampleData, user } = useAuth();
@@ -75,25 +76,15 @@ export default function DemoOverviewPage() {
     bills: UserBill[];
   }>({ invoices: [], quotes: [], bills: [] });
 
-  useEffect(() => {
-    if (usesSampleData) return;
-    const reload = async () =>
-      setBlankDocs({
-        invoices: await loadInvoices(),
-        quotes: await loadQuotes(),
-        bills: await loadBills(),
-      });
-    void reload();
-    const onUpdate = () => void reload();
-    window.addEventListener("hl-user-docs-updated", onUpdate);
-    window.addEventListener("hl-doc-status", onUpdate);
-    window.addEventListener("focus", onUpdate);
-    return () => {
-      window.removeEventListener("hl-user-docs-updated", onUpdate);
-      window.removeEventListener("hl-doc-status", onUpdate);
-      window.removeEventListener("focus", onUpdate);
-    };
-  }, [usesSampleData, tick]);
+  const reloadBlank = useCallback(async () => {
+    setBlankDocs({
+      invoices: await loadInvoices(),
+      quotes: await loadQuotes(),
+      bills: await loadBills(),
+    });
+  }, []);
+
+  const { ready } = useBlankBooksReload(reloadBlank);
 
   const blankLive = useMemo(() => {
     const invRows = blankDocs.invoices.map((inv) => ({
@@ -152,6 +143,14 @@ export default function DemoOverviewPage() {
     };
   }, [blankDocs, mounted]);
 
+  if (!ready) {
+    return (
+      <div className="card p-6 text-sm text-white/70">
+        Loading overview…
+      </div>
+    );
+  }
+
   if (!usesSampleData) {
     const quickLinks = [
       { href: "/demo/invoices?mixed=1", label: "Invoices", icon: FileText, blurb: "Make an invoice" },
@@ -180,6 +179,7 @@ export default function DemoOverviewPage() {
               { label: "Create bill", href: "/demo/bills?mixed=1" },
               { label: "Account", href: "/demo/account" },
             ]}
+            hint="Guests can try a demo. Documents you create are saved to your organisation when you are signed in."
           />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {quickLinks.map((item) => (

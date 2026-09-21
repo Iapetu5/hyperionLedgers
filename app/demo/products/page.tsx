@@ -30,7 +30,7 @@ function isSampleId(id: string) {
 }
 
 export default function ProductsPage() {
-  const { usesSampleData, loading: authLoading, persistence } = useAuth();
+  const { usesSampleData, loading, persistence } = useAuth();
   const [rows, setRows] = useState<Product[]>([]);
   /** Avoid SSR/first-paint flash of “no match” before local catalogue loads */
   const [catalogueReady, setCatalogueReady] = useState(false);
@@ -57,16 +57,18 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => {
-    if (authLoading || persistence === "unknown") return;
+    if (loading || persistence === "unknown") return;
     reload();
     const onUpdate = () => reload();
     window.addEventListener("hl-products-updated", onUpdate);
+    window.addEventListener("hl-books-persistence", onUpdate);
     window.addEventListener("storage", onUpdate);
     return () => {
       window.removeEventListener("hl-products-updated", onUpdate);
+      window.removeEventListener("hl-books-persistence", onUpdate);
       window.removeEventListener("storage", onUpdate);
     };
-  }, [reload, authLoading, persistence]);
+  }, [reload, loading, persistence]);
 
   function resetForm() {
     setName("");

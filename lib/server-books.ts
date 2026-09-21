@@ -13,6 +13,7 @@ import {
   type UserInvoice,
   type UserQuote,
 } from "@/lib/user-docs";
+import { isIsoDate, toIsoDate } from "@/lib/iso-date";
 import type { Product, ProductTax } from "@/lib/products";
 import type { BankLedgerMode, BankTransaction } from "@/lib/bank-transactions";
 
@@ -46,32 +47,12 @@ function parseLines(raw: unknown): UserDocLineItem[] | undefined {
   return raw as UserDocLineItem[];
 }
 
-/** Postgres `date` values must round-trip as YYYY-MM-DD — not locale strings like "Mon Sep 21". */
-function dbDateToISO(value: unknown): string {
-  if (value instanceof Date) {
-    const y = value.getUTCFullYear();
-    const m = String(value.getUTCMonth() + 1).padStart(2, "0");
-    const d = String(value.getUTCDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
-  const s = String(value ?? "").trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  const parsed = new Date(s);
-  if (!Number.isNaN(parsed.getTime())) {
-    const y = parsed.getUTCFullYear();
-    const m = String(parsed.getUTCMonth() + 1).padStart(2, "0");
-    const d = String(parsed.getUTCDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
-  return s.slice(0, 10);
-}
-
 function rowToInvoice(row: Record<string, unknown>): UserInvoice {
   return {
     id: String(row.id),
     contact: String(row.contact),
-    issueDate: dbDateToISO(row.issue_date),
-    dueDate: dbDateToISO(row.due_date),
+    issueDate: toIsoDate(row.issue_date, todayISO()),
+    dueDate: toIsoDate(row.due_date, plusDaysISO(14)),
     amount: num(row.amount),
     gst: num(row.gst),
     status: row.status as UserInvoice["status"],
@@ -88,8 +69,8 @@ function rowToQuote(row: Record<string, unknown>): UserQuote {
     id: String(row.id),
     contact: String(row.contact),
     contactEmail: row.contact_email ? String(row.contact_email) : undefined,
-    issueDate: dbDateToISO(row.issue_date),
-    expiryDate: dbDateToISO(row.expiry_date),
+    issueDate: toIsoDate(row.issue_date, todayISO()),
+    expiryDate: toIsoDate(row.expiry_date, plusDaysISO(14)),
     amount: num(row.amount),
     gst: num(row.gst),
     status: row.status as UserQuote["status"],
@@ -104,8 +85,8 @@ function rowToBill(row: Record<string, unknown>): UserBill {
   return {
     id: String(row.id),
     supplier: String(row.supplier),
-    date: dbDateToISO(row.bill_date),
-    dueDate: dbDateToISO(row.due_date),
+    date: toIsoDate(row.bill_date, todayISO()),
+    dueDate: toIsoDate(row.due_date, plusDaysISO(14)),
     amount: num(row.amount),
     gst: num(row.gst),
     status: row.status as UserBill["status"],
@@ -130,10 +111,6 @@ function rowToProduct(row: Record<string, unknown>): Product {
 const INVOICE_STATUSES: UserInvoice["status"][] = ["Draft", "Awaiting payment", "Paid", "Overdue"];
 const QUOTE_STATUSES: UserQuote["status"][] = ["Draft", "Sent", "Accepted", "Declined"];
 const BILL_STATUSES: UserBill["status"][] = ["Awaiting approval", "Approved", "Overdue", "Paid"];
-
-function isISODate(s: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s));
-}
 
 export async function listInvoicesServer(): Promise<UserInvoice[]> {
   const ctx = await requireOrg();
@@ -187,8 +164,8 @@ export async function createInvoiceServer(input: {
       recurring, line_items, business_name, business_abn
     ) VALUES (
       ${id}, ${ctx.orgId}, ${contact},
-      ${input.issueDate && isISODate(input.issueDate) ? input.issueDate : todayISO()},
-      ${input.dueDate && isISODate(input.dueDate) ? input.dueDate : plusDaysISO(14)},
+      ${toIsoDate(input.issueDate, todayISO())},
+      ${toIsoDate(input.dueDate, plusDaysISO(14))},
       ${bundle.amount}, ${bundle.gst}, ${status}, ${bundle.reference},
       false, ${JSON.stringify(bundle.lineItems)}, ${biz.businessName}, ${biz.businessAbn}
     )
@@ -221,10 +198,10 @@ export async function updateInvoiceServer(
     defaultDescription: "Professional services",
   });
   if (!bundle.ok) return { error: bundle.error };
-  if (input.issueDate !== undefined && !isISODate(input.issueDate)) {
+  if (input.issueDate !== undefined && !isIsoDate(toIsoDate(input.issueDate))) {
     return { error: "Issue date must be YYYY-MM-DD." };
   }
-  if (input.dueDate !== undefined && !isISODate(input.dueDate)) {
+  if (input.dueDate !== undefined && !isIsoDate(toIsoDate(input.dueDate))) {
     return { error: "Due date must be YYYY-MM-DD." };
   }
   if (input.status !== undefined && !INVOICE_STATUSES.includes(input.status)) {
@@ -237,8 +214,8 @@ export async function updateInvoiceServer(
       gst = ${bundle.gst},
       reference = ${bundle.reference},
       line_items = ${JSON.stringify(bundle.lineItems)},
-      issue_date = ${input.issueDate ?? existing.issueDate},
-      due_date = ${input.dueDate ?? existing.dueDate},
+      issue_date = ${toIsoDate(input.issueDate ?? existing.issueDate, todayISO())},
+      due_date = ${toIsoDate(input.dueDate ?? existing.dueDate, plusDaysISO(14))},
       status = ${input.status ?? existing.status},
       updated_at = now()
     WHERE id = ${id} AND organisation_id = ${ctx.orgId}
@@ -331,8 +308,8 @@ export async function createQuoteServer(input: {
       line_items, business_name, business_abn
     ) VALUES (
       ${id}, ${ctx.orgId}, ${contact}, ${input.contactEmail?.trim() || null},
-      ${input.issueDate && isISODate(input.issueDate) ? input.issueDate : todayISO()},
-      ${input.expiryDate && isISODate(input.expiryDate) ? input.expiryDate : plusDaysISO(14)},
+      ${toIsoDate(input.issueDate, todayISO())},
+      ${toIsoDate(input.expiryDate, plusDaysISO(14))},
       ${bundle.amount}, ${bundle.gst}, ${status}, ${bundle.reference},
       ${JSON.stringify(bundle.lineItems)}, ${biz.businessName}, ${biz.businessAbn}
     )
@@ -366,10 +343,10 @@ export async function updateQuoteServer(
     defaultDescription: "Professional services",
   });
   if (!bundle.ok) return { error: bundle.error };
-  if (input.issueDate !== undefined && !isISODate(input.issueDate)) {
+  if (input.issueDate !== undefined && !isIsoDate(toIsoDate(input.issueDate))) {
     return { error: "Issue date must be YYYY-MM-DD." };
   }
-  if (input.expiryDate !== undefined && !isISODate(input.expiryDate)) {
+  if (input.expiryDate !== undefined && !isIsoDate(toIsoDate(input.expiryDate))) {
     return { error: "Expiry date must be YYYY-MM-DD." };
   }
   if (input.status !== undefined && !QUOTE_STATUSES.includes(input.status)) {
@@ -383,8 +360,8 @@ export async function updateQuoteServer(
       gst = ${bundle.gst},
       reference = ${bundle.reference},
       line_items = ${JSON.stringify(bundle.lineItems)},
-      issue_date = ${input.issueDate ?? existing.issueDate},
-      expiry_date = ${input.expiryDate ?? existing.expiryDate},
+      issue_date = ${toIsoDate(input.issueDate ?? existing.issueDate, todayISO())},
+      expiry_date = ${toIsoDate(input.expiryDate ?? existing.expiryDate, plusDaysISO(14))},
       status = ${input.status ?? existing.status},
       updated_at = now()
     WHERE id = ${id} AND organisation_id = ${ctx.orgId}
@@ -466,8 +443,8 @@ export async function createBillServer(input: {
       line_items, business_name, business_abn
     ) VALUES (
       ${id}, ${ctx.orgId}, ${supplier},
-      ${input.date && isISODate(input.date) ? input.date : todayISO()},
-      ${input.dueDate && isISODate(input.dueDate) ? input.dueDate : plusDaysISO(14)},
+      ${toIsoDate(input.date, todayISO())},
+      ${toIsoDate(input.dueDate, plusDaysISO(14))},
       ${bundle.amount}, ${bundle.gst},
       ${input.status && BILL_STATUSES.includes(input.status) ? input.status : "Awaiting approval"},
       ${bundle.reference}, ${JSON.stringify(bundle.lineItems)}, ${biz.businessName}, ${biz.businessAbn}
@@ -501,10 +478,10 @@ export async function updateBillServer(
     defaultDescription: "General",
   });
   if (!bundle.ok) return { error: bundle.error };
-  if (input.date !== undefined && !isISODate(input.date)) {
+  if (input.date !== undefined && !isIsoDate(toIsoDate(input.date))) {
     return { error: "Bill date must be YYYY-MM-DD." };
   }
-  if (input.dueDate !== undefined && !isISODate(input.dueDate)) {
+  if (input.dueDate !== undefined && !isIsoDate(toIsoDate(input.dueDate))) {
     return { error: "Due date must be YYYY-MM-DD." };
   }
   if (input.status !== undefined && !BILL_STATUSES.includes(input.status)) {
@@ -517,8 +494,8 @@ export async function updateBillServer(
       gst = ${bundle.gst},
       category = ${bundle.reference},
       line_items = ${JSON.stringify(bundle.lineItems)},
-      bill_date = ${input.date ?? existing.date},
-      due_date = ${input.dueDate ?? existing.dueDate},
+      bill_date = ${toIsoDate(input.date ?? existing.date, todayISO())},
+      due_date = ${toIsoDate(input.dueDate ?? existing.dueDate, plusDaysISO(14))},
       status = ${input.status ?? existing.status},
       updated_at = now()
     WHERE id = ${id} AND organisation_id = ${ctx.orgId}

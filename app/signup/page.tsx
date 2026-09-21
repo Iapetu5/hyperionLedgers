@@ -7,9 +7,9 @@ import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { addCompanyHref, SETUP_STEP } from "@/lib/company-pickup";
 import { validateSignup } from "@/lib/auth";
-import { beginHostedCheckout } from "@/lib/begin-checkout";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
-import { LOGIN_FOR_TRIAL, SIGNUP_FOR_TRIAL, wantsTrialCheckout } from "@/lib/trial-next";
+import { LOGIN_FOR_TRIAL, wantsTrialCheckout } from "@/lib/trial-next";
+import { markTrialIntent } from "@/lib/start-trial";
 
 export default function SignupPage() {
   return (
@@ -76,13 +76,8 @@ function SignupForm() {
       setError(res.error);
       return;
     }
-    if (trialNext) {
-      const checkout = await beginHostedCheckout(email);
-      if (checkout.kind === "stripe") return;
-      router.push(checkout.path === SIGNUP_FOR_TRIAL ? addCompanyHref("/onboarding") : checkout.path);
-      return;
-    }
-    // Books setup first when the visitor did not come from Start free trial.
+    markTrialIntent();
+    setBusy(false);
     router.push(addCompanyHref("/onboarding"));
   }
 
@@ -92,9 +87,7 @@ function SignupForm() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">{SETUP_STEP.account}</p>
         <h1 className="mt-1 text-xl font-bold text-white">Create your account</h1>
         <p className="mt-2 text-sm text-slate-300">
-          {trialNext
-            ? "Enter your name, email, and password. Next you will start the 14-day trial on Stripe ($69 AUD a month after)."
-            : "Enter your name, email, and password. Next you will add your company."}
+          Enter your name, email, and password. Next you will add your company.
         </p>
         <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate>
           <div>
@@ -160,13 +153,7 @@ function SignupForm() {
             </p>
           )}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy
-              ? trialNext
-                ? "Creating account…"
-                : "Creating…"
-              : trialNext
-                ? "Create account and start trial"
-                : "Next: add your company"}
+            {busy ? "Creating…" : "Next: add your company"}
           </button>
           <p className="text-center text-xs text-slate-400">
             14-day trial on{" "}

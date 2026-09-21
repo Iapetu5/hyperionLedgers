@@ -155,7 +155,7 @@ function bankingPathHint(mode: BankLedgerMode, step1Done: boolean) {
 }
 
 export default function BankingPage() {
-  const { usesSampleData, user } = useAuth();
+  const { usesSampleData, user, loading, persistence } = useAuth();
   const mode: BankLedgerMode = usesSampleData ? "sample" : "blank";
   const chequeAccountId = mode === "blank" ? BLANK_CHEQUE_ACCOUNT_ID : CHEQUE_ACCOUNT_ID;
   const fileRef = useRef<HTMLInputElement>(null);
@@ -195,9 +195,10 @@ export default function BankingPage() {
   }, [mode]);
 
   useEffect(() => {
+    if (loading || persistence === "unknown") return;
     void reload();
     setLedgerReady(true);
-  }, [reload]);
+  }, [reload, loading, persistence]);
 
   // Drop in-progress import preview when switching Harbour sample ↔ blank cheque
   useEffect(() => {

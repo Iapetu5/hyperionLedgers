@@ -238,6 +238,7 @@ export async function completeOnboardingServer(
   const abnErr = validateAbnField(input.abn ?? "", false);
   if (abnErr) return { ok: false, error: abnErr };
   const abn = input.abn?.trim() ? formatAbn(input.abn) : account.abn ?? null;
+  const fyEnd = (input.financialYearEnd ?? "30 June").trim() || "30 June";
   const name = input.businessName?.trim() || account.businessName;
   const companyAdded = Boolean(name && name !== PENDING_ORG_NAME);
   const entityType =
@@ -252,7 +253,7 @@ export async function completeOnboardingServer(
       onboarding_complete = true,
       gst_registered = ${input.gstRegistered},
       gst_accounting_method = ${input.gstRegistered ? input.gstAccountingMethod ?? "accruals" : null},
-      financial_year_end = ${input.financialYearEnd.trim() || "30 June"},
+      financial_year_end = ${fyEnd},
       ledger_mode = ${input.ledgerMode},
       abn = ${abn},
       name = ${name},

@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       {
         configured: false,
         error:
-          "Email is not configured. Add EMAIL_* or GMAIL_USER + GMAIL_APP_PASSWORD on Vercel, then redeploy. The quote is still Sent — it is not stuck in Draft.",
+          "Email is not configured. Add GMAIL_USER + GMAIL_APP_PASSWORD, EMAIL_SMTP_* , or EMAIL_API_KEY on Vercel, then redeploy. The quote is still Sent — copy the customer link or print/PDF instead.",
       },
       { status: 503 }
     );
