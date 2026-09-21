@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { validateSignup } from "@/lib/auth";
 import { AbnField } from "@/components/abn/AbnField";
+import { CompanyNameTypeahead } from "@/components/abn/CompanyNameTypeahead";
 import { EasyStepBar } from "@/components/easy/EasyStepBar";
 import { PLAN } from "@/lib/billing";
-import { searchAbrCompanies } from "@/lib/abn";
 import { clearSelectedCompany, readSelectedCompany } from "@/lib/add-company";
 
 export default function SignupPage() {
@@ -31,11 +31,6 @@ export default function SignupPage() {
     setAbn(picked.abn);
     clearSelectedCompany();
   }, []);
-
-  const nameSuggestions = useMemo(
-    () => (businessName.trim().length >= 2 ? searchAbrCompanies(businessName).slice(0, 4) : []),
-    [businessName],
-  );
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -98,37 +93,16 @@ export default function SignupPage() {
             {fieldErrors.password && <p className="mt-1 text-sm text-rose-300">{fieldErrors.password}</p>}
           </div>
           <div>
-            <div className="flex items-baseline justify-between gap-2">
-              <label className="label" htmlFor="businessName">Business name</label>
-              <Link href="/onboarding/add-company?return=/signup" className="text-sm font-semibold text-brand-300 hover:underline">
-                Add company
-              </Link>
-            </div>
-            <input id="businessName" className="input" required autoComplete="organization" placeholder="Harbour Cafe Pty Ltd" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-            {nameSuggestions.length > 0 && (
-              <ul className="mt-1 overflow-hidden rounded-lg border border-white/10 bg-black/40 text-sm">
-                {nameSuggestions.map((row) => (
-                  <li key={row.abn}>
-                    <button
-                      type="button"
-                      className="w-full px-3 py-2 text-left text-slate-200 hover:bg-white/10"
-                      onClick={() => {
-                        setBusinessName(row.legalName);
-                        setAbn(row.abn);
-                      }}
-                    >
-                      <span className="font-semibold text-white">{row.legalName}</span>
-                      <span className="mt-0.5 block text-xs text-slate-400">ABN {row.abn}</span>
-                    </button>
-                  </li>
-                ))}
-                <li className="border-t border-white/10">
-                  <Link href="/onboarding/add-company?return=/signup" className="block px-3 py-2 text-sm font-semibold text-brand-300 hover:bg-white/10">
-                    Open Add company for full ABR search
-                  </Link>
-                </li>
-              </ul>
-            )}
+            <CompanyNameTypeahead
+              value={businessName}
+              required
+              returnTo="/signup"
+              onChange={setBusinessName}
+              onPick={(row) => {
+                setBusinessName(row.legalName);
+                setAbn(row.abn);
+              }}
+            />
             {fieldErrors.businessName && <p className="mt-1 text-sm text-rose-300">{fieldErrors.businessName}</p>}
           </div>
           <AbnField value={abn} onChange={setAbn} />

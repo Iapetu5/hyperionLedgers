@@ -4,8 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
-import Link from "next/link";
 import { AbnField } from "@/components/abn/AbnField";
+import { CompanyNameTypeahead } from "@/components/abn/CompanyNameTypeahead";
 import { EasyStepBar } from "@/components/easy/EasyStepBar";
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
@@ -34,6 +34,7 @@ export default function OnboardingPage() {
   const [fyEnd, setFyEnd] = useState("30 June");
   const [ledgerMode, setLedgerMode] = useState<LedgerMode>("blank");
   const [abn, setAbn] = useState("");
+  const [businessName, setBusinessName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [stepId, setStepId] = useState<StepId>("gst");
 
@@ -51,9 +52,11 @@ export default function OnboardingPage() {
       router.replace("/demo");
       return;
     }
-    if (user.abn) setAbn(user.abn);
+    setBusinessName((current) => current || user.businessName);
+    if (user.abn) setAbn((current) => current || user.abn || "");
     const picked = readSelectedCompany();
     if (!picked) return;
+    setBusinessName(picked.legalName);
     setAbn(picked.abn);
     setGstRegistered(picked.gstRegistered);
     void updateProfile({
@@ -75,6 +78,9 @@ export default function OnboardingPage() {
   }
 
   async function finish() {
+    if (businessName.trim()) {
+      updateProfile({ businessName: businessName.trim(), abn });
+    }
     const res = await completeOnboarding({
       gstRegistered,
       gstAccountingMethod: gstRegistered ? method : undefined,
@@ -140,7 +146,7 @@ export default function OnboardingPage() {
         <EasyStepBar current={stepIndex + 1} total={steps.length} label={STEP_LABEL[current]} />
         <h1 className="mt-4 text-xl font-bold text-white">Set up your HyperionInvoices business</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-          One question at a time for {user.businessName}. You can change these later in Your account.
+          One question at a time for {businessName || user.businessName}. You can change these later in Your account.
         </p>
         <form className="mt-6 space-y-5" onSubmit={onSubmit}>
           {current === "gst" && (
@@ -204,14 +210,23 @@ export default function OnboardingPage() {
                   ))}
                 </div>
               </fieldset>
-              <div>
-                <div className="mb-2 flex justify-end">
-                  <Link href="/onboarding/add-company?return=/onboarding" className="text-sm font-semibold text-brand-300 hover:underline">
-                    Add company
-                  </Link>
-                </div>
-                <AbnField value={abn} onChange={setAbn} />
-              </div>
+              <CompanyNameTypeahead
+                id="onboardingBusiness"
+                value={businessName}
+                returnTo="/onboarding"
+                onChange={setBusinessName}
+                onPick={(row) => {
+                  setBusinessName(row.legalName);
+                  setAbn(row.abn);
+                  setGstRegistered(row.gstRegistered);
+                  void updateProfile({
+                    businessName: row.legalName,
+                    abn: row.abn,
+                    gstRegistered: row.gstRegistered,
+                  });
+                }}
+              />
+              <AbnField value={abn} onChange={setAbn} />
             </>
           )}
 
