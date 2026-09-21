@@ -30,14 +30,60 @@ ABR_GUID=
 
 ## Persistent accounts (Postgres)
 
-Nicholas: attach Neon from the Vercel dashboard so signups survive across devices.
+Nicholas: Neon store **neon-chestnut-engine** is the production database. Signups and org books survive across devices once `DATABASE_URL` + `SESSION_SECRET` are on the Vercel project and Production has been redeployed.
 
-1. Open the `hyperion-ledgers` project on Vercel → **Storage** → **Create Database** → **Neon**.
-2. Confirm `DATABASE_URL` appears under **Settings → Environment Variables** (Production + Preview).
-3. Add `SESSION_SECRET` (or `NEXTAUTH_SECRET` — either name works) as a long random string (32+ characters). Do not reuse a password. Generate locally with `openssl rand -hex 32` and paste only into Vercel.
-4. Redeploy Production.
+### Attach Neon (first time, or if `persistence.database` is false)
 
-The app creates `users`, `organisations`, `sessions`, and org books tables (`invoices`, `quotes`, `bills`, `products`, `org_bank_data`) on first sign-up (`docs/schema.sql`). Until those vars are set, sign-up still works in this browser only.
+1. Open [Vercel](https://vercel.com) → project **`hyperion-ledgers`** (not a preview comment — the project itself).
+2. **Storage** → **Create Database** → **Neon** (or open the existing **neon-chestnut-engine** store).
+3. **Connect Project** / **Connect** → `hyperion-ledgers`.
+4. Environments: tick **Production** and **Preview**. Confirm.
+5. Vercel writes `DATABASE_URL` (`postgresql://…` or `postgres://…`, usually `sslmode=require`). Check **Settings → Environment Variables** — both Production and Preview must list `DATABASE_URL`. Do not paste the URL into Git.
+
+### SESSION_SECRET (required for cookies + download tokens)
+
+`downloadTokens` is true only when this secret is at least 16 characters (`SESSION_SECRET` or alias `NEXTAUTH_SECRET`).
+
+1. On your laptop (do not commit the output):
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+2. Vercel project **`hyperion-ledgers`** → **Settings → Environment Variables** → **Add**.
+3. Key: `SESSION_SECRET`. Value: the hex string. Environments: **Production** + **Preview**. Sensitive / encrypted.
+4. **Deployments** → latest Production → **⋯ → Redeploy** (or push an empty commit). Env changes do not apply until a new deploy.
+
+### Confirm (no secrets in the JSON)
+
+After the Production deploy is Ready:
+
+```bash
+curl -sS https://www.hyperioninvoices.com.au/api/stripe/status
+curl -sS https://www.hyperioninvoices.com.au/api/auth/me
+```
+
+Expect `persistence.database`, `persistence.sessionSecret`, `persistence.downloadTokens` all `true`, `missing: []`, and `/api/auth/me` → `"persistence":"server"`. Live production already reports those three as `true` with `missing: []` and `persistence:"server"` (unsigned `/api/auth/me` has `account: null` until you log in).
+
+If a dashboard or Preview URL still shows `downloadTokens` / `DATABASE_URL` / `SESSION_SECRET` false:
+
+- Curl **www** Production, not a `*.vercel.app` Preview. Preview is false until those two vars are ticked for the Preview environment and that Preview is redeployed.
+- Env edits do nothing until **Redeploy** (or a new git push). The running Production deployment keeps the old env.
+- `SESSION_SECRET` must be at least 16 characters (`openssl rand -hex 32` is 64 hex chars).
+
+### Schema / migrate
+
+Tables are created automatically (`ensureSchema()` in `lib/db.ts`) on the first `/api/auth/me`, signup, login, books, or download-token request. `GET /api/stripe/status` also applies schema and reports `persistence.schemaApplied`.
+
+`npm run build` (Vercel Production/Preview) runs `npm run migrate` first. When `DATABASE_URL` is present it applies `docs/schema.sql`; when it is missing the script exits 0 and `ensureSchema()` still covers the first request.
+
+Optional local / one-off (uses `DATABASE_URL` from the shell — never commit `.env`):
+
+```bash
+npm run migrate
+```
+
+Until `DATABASE_URL` + `SESSION_SECRET` are set, sign-up still works in this browser only.
 
 | Name | Example shape | Where |
 |------|----------------|--------|

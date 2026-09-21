@@ -54,7 +54,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_WEBHOOK_SECRET=
 ```
 
-**Accounts:** attach Neon on the Vercel project (`Storage → Create Database → Neon`) so `DATABASE_URL` is set, then add `SESSION_SECRET` and redeploy. Schema is in `docs/schema.sql` and is applied on first sign-up.
+**Accounts:** attach Neon on Vercel project `hyperion-ledgers` (`Storage → Neon`, store `neon-chestnut-engine`) so `DATABASE_URL` is set for Production + Preview, then add `SESSION_SECRET` (`openssl rand -hex 32`) and **Redeploy Production**. Schema is `docs/schema.sql` — applied on `npm run build` (`npm run migrate`) and again on first `/api/auth/me` / signup (`ensureSchema`). Confirm with `GET /api/stripe/status` and `GET /api/auth/me` (`persistence:"server"`). See [docs/ENV.md](docs/ENV.md).
 
 **Quote email (optional):** `POST /api/quotes/send` needs one of these on the Vercel project (Production + Preview) — never commit real values:
 
