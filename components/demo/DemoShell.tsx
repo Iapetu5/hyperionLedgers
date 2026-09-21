@@ -22,7 +22,8 @@ import {
 } from "lucide-react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { DEMO_ORG } from "@/lib/sample-data";
+import { DEMO_BANNER, DEMO_CTA, DEMO_ORG_SHORT } from "@/lib/brand";
+import { nextSetupPath } from "@/lib/auth";
 import { AiAssistant } from "@/components/demo/AiAssistant";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import { loadUserBills, loadUserInvoices, loadUserQuotes } from "@/lib/user-docs";
@@ -50,11 +51,11 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   const [hasUserDocs, setHasUserDocs] = useState(false);
 
   // Soft gate: only signed-in users with incomplete onboarding leave the demo.
-  // Guests keep browsing Harbour & Co.
+  // Guests keep browsing the sample.
   useEffect(() => {
     if (loading) return;
     if (user && needsOnboarding) {
-      router.replace("/onboarding");
+      router.replace(nextSetupPath(user));
     }
   }, [user, needsOnboarding, loading, router]);
 
@@ -101,14 +102,30 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
     };
   }, [mobileOpen]);
 
-  const orgName = user?.businessName || DEMO_ORG.name;
+  const orgName = usesSampleData ? DEMO_ORG_SHORT : user?.businessName || "Your organisation";
   const demoBanner = usesSampleData;
 
   const navLinks = (
     <>
-      <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-brand-300/80">
-        {orgName}
-      </p>
+      <div className="px-3 py-2">
+        {usesSampleData ? (
+          <>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-300/80">
+                Demo
+              </p>
+              <span className="rounded-full border border-white/20 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-white/70">
+                Sample data
+              </span>
+            </div>
+            <p className="mt-0.5 text-[10px] font-medium text-white/45">Harbour & Co Studio</p>
+          </>
+        ) : (
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-300/80">
+            {orgName}
+          </p>
+        )}
+      </div>
       {NAV.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || (href !== "/demo" && pathname.startsWith(href));
         return (
@@ -189,9 +206,9 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
         <div data-demo-banner className="demo-banner no-print">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm sm:px-6">
             <p className="text-white/85">
-              <strong className="text-white">Sample data</strong>
+              <strong className="text-white">{DEMO_BANNER}</strong>
               <span className="text-white/50"> — </span>
-              {orgName} is a walkthrough organisation, not your books. No live bank feeds, payments, or ATO lodgement.
+              No live bank feeds, payments, or ATO lodgement.
             </p>
             {!user && (
               <Link
@@ -215,13 +232,15 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               <span className="text-white/50"> — </span>
               {hasUserDocs
                 ? "Invoices, quotes, and bills you create stay in this browser. No live bank feeds, payments, or ATO lodgement."
-                : `${orgName} has no documents yet. Browse Harbour & Co as a guest anytime.`}
+                : `${orgName} has no documents yet. Create an invoice, quote, or bill to get started.`}
             </p>
-            <ExploreSampleButton
-              primary={false}
-              className="!px-3 !py-1.5 text-xs"
-              label="Open Harbour & Co sample"
-            />
+            {!user ? (
+              <ExploreSampleButton
+                primary={false}
+                className="!px-3 !py-1.5 text-xs"
+                label={DEMO_CTA}
+              />
+            ) : null}
           </div>
         </div>
       )}

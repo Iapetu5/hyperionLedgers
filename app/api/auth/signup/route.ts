@@ -19,15 +19,11 @@ export async function POST(req: Request) {
     fullName?: string;
     email?: string;
     password?: string;
-    businessName?: string;
-    abn?: string;
   };
   const result = await signUpServer({
     fullName: body.fullName ?? "",
     email: body.email ?? "",
     password: body.password ?? "",
-    businessName: body.businessName ?? "",
-    abn: body.abn,
   });
   if (!result.ok) return NextResponse.json({ configured: true, error: result.error }, { status: 400 });
   return NextResponse.json({ configured: true, account: result.account });

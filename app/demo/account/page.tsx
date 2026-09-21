@@ -4,13 +4,17 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AbnField } from "@/components/abn/AbnField";
+import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahead";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import type { GstAccountingMethod } from "@/lib/auth";
+import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
 
 export default function AccountPage() {
   const { user, updateProfile, loading, usesSampleData } = useAuth();
   const [businessName, setBusinessName] = useState("");
   const [abn, setAbn] = useState("");
+  const [entityType, setEntityType] = useState<AbrEntityType | "">("");
+  const [address, setAddress] = useState("");
   const [gstRegistered, setGstRegistered] = useState(true);
   const [method, setMethod] = useState<GstAccountingMethod>("accruals");
   const [fyEnd, setFyEnd] = useState("30 June");
@@ -21,6 +25,10 @@ export default function AccountPage() {
     if (!user) return;
     setBusinessName(user.businessName);
     setAbn(user.abn ?? "");
+    if (user.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(user.entityType)) {
+      setEntityType(user.entityType as AbrEntityType);
+    }
+    setAddress(user.businessAddress ?? "");
     setGstRegistered(user.gstRegistered ?? true);
     setMethod(user.gstAccountingMethod ?? "accruals");
     setFyEnd(user.financialYearEnd ?? "30 June");
@@ -31,9 +39,9 @@ export default function AccountPage() {
   if (!user) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-white">Account</h1>
+        <h1 className="text-2xl font-bold text-white">Your account</h1>
         <div className="card p-6 text-sm text-slate-200">
-          You&apos;re browsing as a guest on the Harbour &amp; Co sample organisation.
+          You&apos;re browsing as a guest. This is a demo with sample data — not your real account.
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/signup" className="btn-primary">Sign up to keep an org</Link>
             <Link href="/login" className="btn-secondary">Log in</Link>
@@ -50,9 +58,12 @@ export default function AccountPage() {
     const res = await updateProfile({
       businessName,
       abn,
+      entityType: entityType || undefined,
+      businessAddress: address,
       gstRegistered,
       gstAccountingMethod: gstRegistered ? method : undefined,
       financialYearEnd: fyEnd,
+      companyAdded: Boolean(businessName.trim()),
     });
     if (!res.ok) {
       setError(res.error);
@@ -63,13 +74,13 @@ export default function AccountPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-white">Account</h1>
+      <h1 className="text-2xl font-bold text-white">Your account</h1>
 
       {!usesSampleData && (
         <div className="card border-brand-400/25 bg-brand-500/10 p-5">
-          <p className="text-sm font-semibold text-white">Blank ledger</p>
+          <p className="text-sm font-semibold text-white">Your books</p>
           <p className="mt-1 text-sm text-slate-300">
-            Sample Harbour figures stay out of this organisation. Create an invoice, quote, or bill next — each can start from a ready-made example. Harbour &amp; Co is a separate guest tour and logs you out; log back in anytime.
+            Sample figures stay out of this organisation. Create an invoice next — a quote or bill can wait.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link href="/demo/invoices?mixed=1" className="btn-primary">
@@ -81,17 +92,78 @@ export default function AccountPage() {
             <Link href="/demo/bills?mixed=1" className="btn-secondary">
               Create bill
             </Link>
-            <ExploreSampleButton primary={false} label="Open Harbour & Co sample as guest" />
+            <ExploreSampleButton primary={false} />
           </div>
         </div>
       )}
 
+      <div className="card max-w-xl p-5">
+        <p className="text-sm font-semibold text-white">Company</p>
+        <p className="mt-1 text-sm text-slate-300">
+          {user.businessName}
+          {user.abn ? ` · ABN ${user.abn}` : ""}
+        </p>
+        {user.entityType && <p className="text-sm text-slate-300">{user.entityType}</p>}
+        {user.businessAddress && <p className="text-xs text-slate-400">{user.businessAddress}</p>}
+        <Link href="/add-company?returnTo=/demo/account" className="mt-3 inline-block font-semibold text-brand-300 hover:underline">
+          Add or change company
+        </Link>
+      </div>
+
       <form className="card max-w-xl space-y-4 p-6" onSubmit={onSave}>
-        <div>
-          <label className="label" htmlFor="bn">Business name</label>
-          <input id="bn" className="input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-        </div>
-        <AbnField value={abn} onChange={setAbn} />
+        <BusinessNameTypeahead
+          id="bn"
+          value={businessName}
+          onChange={setBusinessName}
+          onSelect={(company: AbrCompany) => {
+            setBusinessName(company.legalName);
+            setAbn(company.abn);
+            setEntityType(company.entityType);
+            setAddress(company.address ?? "");
+            setGstRegistered(company.gstRegistered);
+          }}
+        />
+        <AbnField
+          value={abn}
+          onChange={setAbn}
+          onLookup={(company) => {
+            if (!company) return;
+            if (!businessName.trim()) setBusinessName(company.legalName);
+            if (!entityType) setEntityType(company.entityType);
+            if (!address && company.address) setAddress(company.address);
+          }}
+        />
+        {(entityType || address) && (
+          <>
+            <div>
+              <label className="label" htmlFor="entityType">Entity type</label>
+              <select
+                id="entityType"
+                className="input"
+                value={entityType}
+                onChange={(e) => setEntityType(e.target.value as AbrEntityType)}
+              >
+                <option value="">Choose if you know it</option>
+                {ABR_ENTITY_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="accountAddress">Address</label>
+              <input
+                id="accountAddress"
+                className="input"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Street, suburb, state and postcode"
+                autoComplete="street-address"
+              />
+            </div>
+          </>
+        )}
         <fieldset>
           <legend className="label">GST registered</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">

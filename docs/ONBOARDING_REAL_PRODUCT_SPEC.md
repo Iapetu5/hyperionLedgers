@@ -63,7 +63,7 @@ Reuse existing ABN field behaviour; do not block continue if empty unless produc
 **Legend:** `How would you like to start?`
 
 - **Start empty** (default) — `Default for a new organisation. Begin under your business name, then create a first invoice, quote, or bill — a ready-made example is one click away.`
-- **Sample data** — `Optional tour of Harbour & Co invoices, banking and BAS. Not your own first document.`
+- **Sample data** — `Optional tour of demo invoices, banking and BAS. Not your own first document.`
 
 When **Start empty** is selected, show callout:  
 `After Continue you'll land on Overview with clear shortcuts to create an invoice, quote, or bill.`
@@ -77,7 +77,7 @@ When **Start empty** is selected, show callout:
 
 ### Footer (real product — replace demo line)
 Replace `Demo setup — preferences stay in this browser only.` with:  
-`Saved to your HyperionLedgers organisation. You can change these later in Account settings.`
+`Saved to your HyperionInvoices organisation. You can change these later in Account settings.`
 
 ---
 

@@ -3,22 +3,24 @@ import { UserPlus, SlidersHorizontal, LayoutDashboard, Zap } from "lucide-react"
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { TryPageDemoLink } from "@/components/marketing/TryDemoCard";
+import { GuestOnly } from "@/components/marketing/TryDemoCta";
 
 const STEPS = [
   {
     icon: UserPlus,
-    title: "1. Create your account",
-    body: "Name, email, and business name. The 14-day trial starts when the account is created.",
+    title: "1. Start free trial",
+    body: "Create your account. The first 14 days are free. Then it is $69 a month.",
   },
   {
     icon: SlidersHorizontal,
-    title: "2. Set up the organisation",
-    body: "GST, financial year, optional ABN, and whether to start empty or look at sample figures.",
+    title: "2. Answer a few setup questions",
+    body: "Add your business, GST, and year end. One question at a time.",
   },
   {
     icon: LayoutDashboard,
-    title: "3. Create the first invoice",
-    body: "Your overview opens with Create invoice as the next step. About two minutes from sign-up.",
+    title: "3. Make your first invoice",
+    body: "Then download the Windows app after you pay if you want it on your computer. Mac is coming soon.",
   },
 ];
 
@@ -27,32 +29,25 @@ export default function TryPage() {
     <div>
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs font-semibold text-fuchsia-200">
-          <Zap size={12} />
-          Next step: start the trial
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/30 px-3 py-1 text-sm font-semibold text-fuchsia-100">
+          <Zap size={14} />
+          14 days free · then $69 a month
         </div>
-        <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">How it works</h1>
-        <p className="mt-3 max-w-2xl text-lg text-white/75">
-          One path: start the 14-day free trial, set up your organisation, then create the first invoice.
-          After the trial it is $69 a month.
+        <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">How to start</h1>
+        <p className="mt-3 max-w-2xl text-lg text-white/80">
+          Start the free trial. Answer a few setup questions. Then make your first invoice.
+          <GuestOnly> Or try a demo first if you want to look around with sample data.</GuestOnly>
         </p>
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
           <StartTrialButton className="btn-primary" />
-        </div>
-        <p className="mt-3 text-sm text-white/60">
-          Or{" "}
-          <Link href="/signup" className="font-medium text-white/80 underline-offset-4 hover:text-white hover:underline">
+          <TryPageDemoLink className="text-sm font-medium text-white/80 hover:text-white hover:underline" />
+          <Link href="/pricing" className="text-sm font-medium text-white/80 hover:text-white hover:underline">
+            See the $69 plan
+          </Link>
+          <Link href="/signup" className="text-sm font-medium text-white/80 hover:text-white hover:underline">
             Sign up
           </Link>
-          {" · "}
-          <Link href="/pricing" className="font-medium text-white/80 underline-offset-4 hover:text-white hover:underline">
-            Pricing
-          </Link>
-          {" · "}
-          <Link href="/demo" className="font-medium text-white/80 underline-offset-4 hover:text-white hover:underline">
-            Open Harbour &amp; Co
-          </Link>
-        </p>
+        </div>
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
           {STEPS.map((s) => {
@@ -60,12 +55,12 @@ export default function TryPage() {
             return (
               <div key={s.title} className="card flex flex-col p-6">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500/20 text-brand-300">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500/20 text-brand-200">
                     <Icon size={20} />
                   </span>
-                  <h2 className="font-bold text-white">{s.title}</h2>
+                  <h2 className="text-xl font-bold text-white">{s.title}</h2>
                 </div>
-                <p className="mt-4 flex-1 text-sm text-slate-300">{s.body}</p>
+                <p className="mt-4 flex-1 marketing-copy">{s.body}</p>
               </div>
             );
           })}

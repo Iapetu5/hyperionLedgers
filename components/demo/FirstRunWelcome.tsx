@@ -73,10 +73,10 @@ export function FirstRunWelcome({
         <X size={14} />
       </button>
       <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">
-        First two minutes
+        Getting started
       </p>
       <h2 className="mt-1 pr-8 text-lg font-semibold text-white sm:text-xl">
-        Create your first document for {label}
+        Make your first invoice{orgName?.trim() ? ` for ${label}` : ""}
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-slate-300">
         Pick one path to get started. Each opens with a ready-made example you can edit — add products and banking later.
@@ -87,7 +87,7 @@ export function FirstRunWelcome({
           className="btn-primary justify-center"
         >
           <FileText size={16} />
-          Invoice
+          Create invoice
           <ArrowRight size={14} />
         </Link>
         <Link
@@ -106,8 +106,7 @@ export function FirstRunWelcome({
         </Link>
       </div>
       <p className="mt-3 text-xs text-slate-500">
-        Prefer a full sample tour first? Use{" "}
-        <span className="text-slate-400">Explore Harbour &amp; Co sample</span> anytime from empty screens.
+        Pick invoice, quote, or bill — you can add the others later.
       </p>
     </div>
   );

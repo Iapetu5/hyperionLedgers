@@ -1,12 +1,17 @@
 /** Commercial plan — one price, 14-day trial. Do not add "excl. GST" to customer copy. */
 
 export const PLAN = {
-  name: "HyperionLedgers",
+  name: "HyperionInvoices",
   amountAud: 69,
   intervalLabel: "a month",
   trialDays: 14,
   currency: "AUD",
 } as const;
+
+/** Hosted Checkout: `card` covers debit, credit, Apple Pay, and Google Pay. */
+export const CHECKOUT_PAYMENT_METHOD_TYPES = ["card"] as const;
+
+export const CHECKOUT_PAY_COPY = "Pay with card or Apple Pay";
 
 export function getAppUrl(): string {
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();

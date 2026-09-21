@@ -29,7 +29,7 @@ export function BrandLogo({
             hideWordmarkOnMobile ? "hidden sm:inline" : ""
           }`}
         >
-          Hyperion<span className="text-brand-400">Ledgers</span>
+          Hyperion<span className="text-brand-400">Invoices</span>
         </span>
       )}
     </Link>

@@ -50,6 +50,7 @@ export type UserInvoice = {
 export type UserQuote = {
   id: string;
   contact: string;
+  contactEmail?: string;
   issueDate: string;
   expiryDate: string;
   amount: number;
@@ -328,9 +329,11 @@ export function createUserInvoice(input: {
 
 export function createUserQuote(input: {
   contact: string;
+  contactEmail?: string;
   amount?: number;
   reference?: string;
   lines?: UserDocLineInput[];
+  status?: UserQuote["status"];
 }): UserQuote | { error: string } {
   const contact = input.contact.trim();
   if (!contact) return { error: "Enter a customer / contact name." };
@@ -348,11 +351,12 @@ export function createUserQuote(input: {
   const row: UserQuote = {
     id: nextId("QU-U", existing),
     contact,
+    contactEmail: input.contactEmail?.trim() || undefined,
     issueDate: todayISO(),
     expiryDate: plusDaysISO(14),
     amount: bundle.amount,
     gst: bundle.gst,
-    status: "Sent",
+    status: input.status === "Draft" ? "Draft" : "Sent",
     reference: bundle.reference,
     lineItems: bundle.lineItems,
     businessName: biz.businessName,
@@ -465,6 +469,7 @@ export function updateUserQuote(
   id: string,
   input: {
     contact: string;
+    contactEmail?: string;
     amount?: number;
     reference?: string;
     lines?: UserDocLineInput[];
@@ -501,6 +506,7 @@ export function updateUserQuote(
   const row: UserQuote = {
     ...prev,
     contact,
+    contactEmail: input.contactEmail !== undefined ? input.contactEmail.trim() || undefined : prev.contactEmail,
     amount: bundle.amount,
     gst: bundle.gst,
     reference: bundle.reference,

@@ -88,7 +88,7 @@ export function BasDueDates({ compact = false }: { compact?: boolean }) {
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-slate-400">
-            This is a preview calendar for planning. HyperionLedgers does not lodge with the ATO — any
+            This is a preview calendar for planning. HyperionInvoices does not lodge with the ATO — any
             &ldquo;prepared&rdquo; status below is a simulated lodgement for your records only.
           </p>
         </div>

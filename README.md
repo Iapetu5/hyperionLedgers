@@ -1,4 +1,4 @@
-# HyperionLedgers
+# HyperionInvoices
 
 Australian bookkeeping for small business. **$69 a month** after a **14-day free trial**. Does not lodge with the ATO.
 
@@ -13,10 +13,27 @@ Production: [https://www.hyperioninvoices.com.au](https://www.hyperioninvoices.c
 | `/signup` or `/try` | Start the trial / create an account |
 | `/login` | Log in |
 | `/product` | Product overview |
-| `/checkout` | Stripe Checkout (test mode) or a stub if keys are missing |
-| `/demo` | Optional Harbour & Co **sample data** (banner: sample data) |
+| `/checkout` | Stripe Checkout stub if keys are missing (success redirects to Downloads) |
+| `/downloads` | After a valid Stripe session or paid account — unlock Windows `.exe` |
+| `/api/checkout` | Creates a Stripe Checkout subscription (`$69` / 14-day trial) |
+| `/api/stripe/webhook` | Verifies `checkout.session.completed` and records entitlement |
+| `/api/downloads/windows` | Gated stream of `HyperionInvoices-Setup.exe` |
+| `/demo` | Optional **Try a demo** walkthrough (banner: sample data — not your real account) |
+| `/api/quotes/send` | Send a quote email (To, subject, optional note). Uses `EMAIL_*` / Gmail placeholders. |
 
 The homepage does **not** dump visitors into the demo.
+
+**Stripe:** Start free trial / Buy posts to `/api/checkout` (server-only). Checkout is `card` so customers can **pay with card or Apple Pay** (Google Pay on the same hosted page when Stripe shows it). Success URL is `/downloads?session_id={CHECKOUT_SESSION_ID}`. The Downloads page **retrieves the session from Stripe** (or a signed `hl_entitlement` cookie / `has_paid_download`). `?success=1` is ignored. The `.exe` is **not** in `public/` — `/api/downloads/windows` streams `private/downloads/HyperionInvoices-Setup.exe` after a 10-minute single-use token or an httpOnly session/entitlement.
+
+Apple Pay domain verification for `www.hyperioninvoices.com.au` and the apex: [docs/STRIPE_APPLE_PAY.md](docs/STRIPE_APPLE_PAY.md).
+
+## Download security
+
+- Checkout sessions are created only in `POST /api/checkout` (origin check + rate limit). Secret key never goes to the browser.
+- Webhook `POST /api/stripe/webhook` verifies `Stripe-Signature` (`whsec_…`), rejects unknown event ids, stores `evt_` ids for idempotency, then **re-fetches** the session from Stripe before granting.
+- Entitlement is written to `organisations.has_paid_download` / `subscription_status`. Cookies are httpOnly, `SameSite=lax`, Secure on Vercel.
+- Unauthenticated `GET /api/downloads/windows` returns **401**. Download links use a short-lived signed token (`SESSION_SECRET`). Rate limited.
+- Placeholders only in `.env.example`. Never commit `.env` or real keys.
 
 ## Environment
 
@@ -30,11 +47,20 @@ NEXTAUTH_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_PRICE_ID=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
 ```
 
 **Accounts:** attach Neon on the Vercel project (`Storage → Create Database → Neon`) so `DATABASE_URL` is set, then add `SESSION_SECRET` and redeploy. Schema is in `docs/schema.sql` and is applied on first sign-up.
 
-**Stripe:** set the three test keys on Vercel project `hyperion-ledgers` to enable Checkout. Without them, the UI buy path still ships.
+**Stripe:** set the test keys on Vercel project `hyperion-ledgers` to enable Checkout. Without them, the UI buy path still ships.
+
+## Windows installer
+
+```bash
+npm run build:windows
+```
+
+Requires Go. Output: `private/downloads/HyperionInvoices-Setup.exe`. See [desktop/README.md](desktop/README.md). Mac is coming soon.
 
 ## Local development
 

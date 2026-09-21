@@ -260,10 +260,8 @@ export default function GstBasPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">GST &amp; BAS</h1>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          Draft GST figures and due dates for your records. Line tax follows Xero-style{" "}
-          <span className="text-white/90">GST on Income</span> /{" "}
-          <span className="text-white/90">GST Free</span> (and expense equivalents). HyperionLedgers
-          does not connect to or lodge with the ATO — lodgement here is always simulated.
+          Practice preview. Not sent to the tax office. GST on Income and GST Free lines still
+          change the boxes below. You can switch quarter and mark a period as prepared.
         </p>
       </div>
 
@@ -349,7 +347,7 @@ export default function GstBasPage() {
                 )}
                 {usesSampleData && (
                   <p className="mt-1 text-xs text-slate-400">
-                    Harbour sample quarter label — GST boxes still roll up from listed invoices &amp;
+                    Demo sample quarter label — GST boxes still roll up from listed invoices &amp;
                     bills.
                   </p>
                 )}
@@ -365,7 +363,7 @@ export default function GstBasPage() {
                 <p className="text-lg font-bold text-white">{formatAUD(netGst)}</p>
                 <p className="text-[11px] text-slate-500">
                   {usesSampleData
-                    ? "From listed Harbour invoices & bills"
+                    ? "From listed demo invoices & bills"
                     : "This quarter only — other dates stay in the ledger"}
                 </p>
               </div>
@@ -416,15 +414,13 @@ export default function GstBasPage() {
               {[
                 ["GST on Income", gstOnIncome, "Sales lines at GST on Income (10%)"],
                 ["GST on Expenses", gstOnExpenses, "Purchase lines at GST on Expenses"],
-                [
-                  "PAYG withheld",
-                  paygWithheld,
-                  usesSampleData ? "Payroll preview (demo)" : "Not calculated",
-                ],
+                ["PAYG withheld", paygWithheld, "Not calculated"] as const,
               ].map(([label, val, hint]) => (
                 <div key={String(label)} className="card-inset p-3">
                   <dt className="text-xs uppercase tracking-wide text-slate-400">{label}</dt>
-                  <dd className="mt-1 font-semibold text-white">{formatAUD(Number(val))}</dd>
+                  <dd className="mt-1 font-semibold text-white">
+                    {label === "PAYG withheld" ? "Not calculated" : formatAUD(Number(val))}
+                  </dd>
                   <p className="mt-1 text-[11px] text-slate-500">{hint}</p>
                 </div>
               ))}
@@ -451,7 +447,7 @@ export default function GstBasPage() {
                 onClick={markSimLodged}
               >
                 <FileCheck2 size={16} />
-                {mounted && simLodged ? "Simulated lodgement recorded" : "Mark as prepared (simulated)"}
+                {mounted && simLodged ? "Prepared (practice only)" : "Mark as prepared"}
               </button>
               <p className="text-xs text-slate-500">
                 {usesSampleData
@@ -499,7 +495,7 @@ export default function GstBasPage() {
               browser. Use View quarter to look at the previous AU quarter and any other quarter that
               has documents. Mark as prepared is stored for the quarter you are viewing — another
               quarter stays unprepared until you mark it. Profit &amp; loss stays year-to-date across all documents, so those GST
-              rows can differ. Harbour guest demo keeps its sample
+              rows can differ. The guest demo keeps its sample
               period list unchanged. Simulated preview — not lodged with the ATO.
             </div>
           )}
@@ -524,7 +520,7 @@ export default function GstBasPage() {
             { label: "View reports", href: "/demo/reports" },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="The due-date calendar above still applies for planning. Harbour guest demo keeps richer sample quarter history."
+          hint="The due-date calendar above still applies for planning. The guest demo keeps richer sample quarter history."
         />
       )}
     </div>

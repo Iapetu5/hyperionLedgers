@@ -29,7 +29,7 @@ const REPORT_LINKS = [
     href: "/demo/tax/gst-bas",
     title: "GST & BAS",
     blurb:
-      "Quarterly BAS due dates and draft GST on Income / GST Free-aware figures. Lodgement is simulated.",
+      "Quarterly BAS due dates and draft GST figures. Practice preview — not sent to the tax office.",
     icon: Calculator,
   },
 ];
@@ -60,8 +60,7 @@ export default function ReportsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Reports</h1>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          Management reports for your records. Figures are previews from demo or ledger activity —
-          they are not ATO-lodged returns and HyperionLedgers does not file with the ATO.
+          Practice preview. Not sent to the tax office.
         </p>
       </div>
 
@@ -87,7 +86,7 @@ export default function ReportsPage() {
           <div className="card p-5">
             <h2 className="font-semibold text-white">Profit &amp; loss (YTD preview)</h2>
             <p className="mt-1 text-xs text-slate-400">
-              Net profit from Harbour &amp; Co listed invoices and bills — illustrative only, not a lodged tax figure.
+              Net profit from demo listed invoices and bills — illustrative only, not a lodged tax figure.
             </p>
             <p className="mt-3 text-3xl font-bold text-white">{formatAUD(rollupSampleReports().netProfit)}</p>
             <p className="mt-1 text-xs text-slate-500">Matches listed invoice/bill roll-up on P&amp;L</p>
@@ -155,7 +154,7 @@ export default function ReportsPage() {
         <EmptyState
           icon={BarChart3}
           title="No report figures yet"
-          description="Create an invoice or bill in your organisation, or open Harbour & Co as a guest to see sample previews."
+          description="Make an invoice or bill in your organisation to see report previews."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { needsOnboarding } from "@/lib/auth";
+import { nextSetupPath } from "@/lib/auth";
+import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
 
 export default function LoginPage() {
   const { logIn } = useAuth();
@@ -25,7 +26,7 @@ export default function LoginPage() {
       setError(res.error);
       return;
     }
-    router.push(needsOnboarding(res.account) ? "/onboarding" : "/demo");
+    router.push(nextSetupPath(res.account));
   }
 
   return (
@@ -38,10 +39,10 @@ export default function LoginPage() {
           <Link href="/pricing" className="font-semibold text-brand-300 hover:underline">
             See pricing
           </Link>
-          {" "}or{" "}
-          <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            Look at a sample first
-          </Link>
+          <GuestOnly>
+            {" "}or{" "}
+            <TryDemoLink className="font-semibold text-brand-300 hover:underline" />
+          </GuestOnly>
           .
         </p>
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>

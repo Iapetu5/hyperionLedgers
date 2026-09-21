@@ -49,14 +49,14 @@ export default function ProfitLossReportPage() {
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
           Shows trading income and expenses for the period. Amounts are tax-exclusive where noted;
           GST on Income / GST Free lines affect GST boxes on BAS, not this operating profit view.
-          This is a management preview for your records — not an ATO-lodged return.
+          Practice preview. Not sent to the tax office.
         </p>
       </div>
 
       {usesSampleData ? (
         <>
           <div className="card border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
-            Harbour &amp; Co sample period · figures rounded for readability · illustrative draft only
+            Demo sample period · figures rounded for readability · illustrative draft only
           </div>
 
           <div className="card overflow-hidden">
@@ -146,7 +146,7 @@ export default function ProfitLossReportPage() {
         <EmptyState
           icon={TrendingUp}
           title="No profit & loss figures yet"
-          description="Create an invoice or bill, or explore Harbour & Co as a guest for a sample preview."
+          description="Make an invoice or bill to see a profit and loss preview."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
