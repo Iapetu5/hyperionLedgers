@@ -155,10 +155,10 @@ export default function DemoOverviewPage() {
 
   if (!usesSampleData) {
     const quickLinks = [
-      { href: "/demo/invoices?mixed=1", label: "Invoices", icon: FileText, blurb: "Create with sample lines + pay link" },
-      { href: "/demo/quotes?mixed=1", label: "Quotes", icon: FileSignature, blurb: "Create with sample lines + customer link" },
-      { href: "/demo/bills?mixed=1", label: "Bills", icon: Receipt, blurb: "Create with sample lines + approve / mark paid" },
-      { href: "/demo/account", label: "Account", icon: Settings, blurb: "GST, FY, ABN" },
+      { href: "/demo/invoices?mixed=1", label: "Invoices", icon: FileText, blurb: "Make an invoice with an example" },
+      { href: "/demo/quotes?mixed=1", label: "Quotes", icon: FileSignature, blurb: "Make a quote with an example" },
+      { href: "/demo/bills?mixed=1", label: "Bills", icon: Receipt, blurb: "Make a bill with an example" },
+      { href: "/demo/account", label: "Account", icon: Settings, blurb: "GST, year end, and ABN" },
     ];
 
     if (!blankLive.hasDocs) {
@@ -173,16 +173,15 @@ export default function DemoOverviewPage() {
           <FirstRunWelcome orgName={user?.businessName} forceShow />
           <EmptyState
             icon={LayoutDashboard}
-            title="Nothing on the overview yet"
-            description={`Cash, receivables, and next-action tips appear after your first invoice, quote, or bill for ${user?.businessName ?? "your business"}. Use the shortcuts below, or open Harbour & Co as a guest for a full sample tour.`}
+            title="Nothing here yet"
+            description={`Cash, receivables, and next-action tips appear after your first invoice, quote, or bill for ${user?.businessName ?? "your business"}. Use the shortcuts below.`}
             showExploreSample
             actions={[
               { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
               { label: "Create quote", href: "/demo/quotes?mixed=1" },
               { label: "Create bill", href: "/demo/bills?mixed=1" },
-              { label: "Account settings", href: "/demo/account" },
+              { label: "Account", href: "/demo/account" },
             ]}
-            hint="Explore sample opens the Harbour & Co guest demo — you can log back into your organisation anytime."
           />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {quickLinks.map((item) => (
@@ -382,7 +381,7 @@ export default function DemoOverviewPage() {
 
       <div>
         <h1 className="text-2xl font-bold text-white">Overview</h1>
-        <p className="text-sm text-white/70">Harbour &amp; Co Studio — sample dashboard</p>
+        <p className="text-sm text-white/70">Demo company — sample dashboard</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

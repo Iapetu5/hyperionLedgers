@@ -1,6 +1,7 @@
 /** Browser-local demo auth. Accounts stay in localStorage — never sent to a server. */
 
 import { formatAbn, validateAbnField } from "./abn";
+import { addCompanyHref, isRealCompanyName } from "./company-pickup";
 
 export const AUTH_ACCOUNTS_KEY = "hl_demo_accounts_v1";
 export const AUTH_SESSION_KEY = "hl_demo_session_v1";
@@ -9,6 +10,20 @@ export const AUTH_SALT = "hyperionledgers-demo-v1";
 export type GstAccountingMethod = "accruals" | "cash";
 export type LedgerMode = "sample" | "blank";
 
+/** Placeholder org name until the user saves a company on /add-company. */
+export const PENDING_ORG_NAME = "Your organisation";
+
+export type ProfilePatch = {
+  abn?: string;
+  businessName?: string;
+  gstRegistered?: boolean;
+  gstAccountingMethod?: GstAccountingMethod;
+  financialYearEnd?: string;
+  entityType?: string;
+  businessAddress?: string;
+  companyAdded?: boolean;
+};
+
 export type DemoAccount = {
   id: string;
   fullName: string;
@@ -16,12 +31,17 @@ export type DemoAccount = {
   passwordHash: string;
   businessName: string;
   abn?: string;
+  entityType?: string;
+  businessAddress?: string;
+  companyAdded?: boolean;
   createdAt: string;
   onboardingComplete?: boolean;
   gstRegistered?: boolean;
   gstAccountingMethod?: GstAccountingMethod;
   financialYearEnd?: string;
   ledgerMode?: LedgerMode;
+  hasPaidDownload?: boolean;
+  subscriptionStatus?: string;
 };
 
 export type DemoSession = {
@@ -42,6 +62,9 @@ export type OnboardingInput = {
   financialYearEnd: string;
   ledgerMode: LedgerMode;
   abn?: string;
+  businessName?: string;
+  entityType?: string;
+  businessAddress?: string;
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -73,8 +96,6 @@ export function validateSignup(input: {
   fullName: string;
   email: string;
   password: string;
-  businessName: string;
-  abn?: string;
 }): Record<string, string> {
   const errors: Record<string, string> = {};
   if (!input.fullName.trim()) errors.fullName = "Enter your full name.";
@@ -82,9 +103,6 @@ export function validateSignup(input: {
   if (emailErr) errors.email = emailErr;
   const pwErr = validatePassword(input.password);
   if (pwErr) errors.password = pwErr;
-  if (!input.businessName.trim()) errors.businessName = "Enter your business name.";
-  const abnErr = validateAbnField(input.abn ?? "", false);
-  if (abnErr) errors.abn = abnErr;
   return errors;
 }
 
@@ -142,6 +160,21 @@ export function needsOnboarding(account: PublicAccount | null | undefined): bool
   return account.onboardingComplete === false;
 }
 
+/** True when a new account has not saved a company on the Add company page yet. */
+export function needsCompany(account: PublicAccount | null | undefined): boolean {
+  if (!account || account.onboardingComplete !== false) return false;
+  if (account.companyAdded === true && isRealCompanyName(account.businessName)) return false;
+  return !isRealCompanyName(account.businessName);
+}
+
+/** Next signed-in destination after signup, login, or saving a company. */
+export function nextSetupPath(account: PublicAccount | null | undefined): string {
+  if (!account) return "/signup";
+  if (needsCompany(account)) return addCompanyHref("/onboarding");
+  if (needsOnboarding(account)) return "/onboarding";
+  return "/demo";
+}
+
 export function usesSampleData(account: PublicAccount | null | undefined): boolean {
   if (!account) return true; // guests see Harbour & Co sample
   return account.ledgerMode !== "blank";
@@ -151,8 +184,6 @@ export async function signUp(input: {
   fullName: string;
   email: string;
   password: string;
-  businessName: string;
-  abn?: string;
 }): Promise<AuthResult> {
   if (!isBrowser()) return { ok: false, error: "Sign-up is only available in the browser." };
   const errors = validateSignup(input);
@@ -168,8 +199,8 @@ export async function signUp(input: {
     fullName: input.fullName.trim(),
     email,
     passwordHash,
-    businessName: input.businessName.trim(),
-    abn: input.abn?.trim() ? formatAbn(input.abn) : undefined,
+    businessName: PENDING_ORG_NAME,
+    companyAdded: false,
     createdAt: new Date().toISOString(),
     onboardingComplete: false,
   };
@@ -219,6 +250,15 @@ export function completeOnboarding(input: OnboardingInput): AuthResult {
     financialYearEnd: input.financialYearEnd.trim() || "30 June",
     ledgerMode: input.ledgerMode,
     abn: input.abn?.trim() ? formatAbn(input.abn) : accounts[idx].abn,
+    ...(input.businessName?.trim()
+      ? { businessName: input.businessName.trim(), companyAdded: true }
+      : {}),
+    ...(input.entityType !== undefined
+      ? { entityType: input.entityType.trim() || undefined }
+      : {}),
+    ...(input.businessAddress !== undefined
+      ? { businessAddress: input.businessAddress.trim() || undefined }
+      : {}),
   };
   accounts[idx] = updated;
   saveAccounts(accounts);
@@ -234,13 +274,7 @@ export function skipOnboarding(): AuthResult {
   });
 }
 
-export function updateAccountProfile(patch: {
-  abn?: string;
-  businessName?: string;
-  gstRegistered?: boolean;
-  gstAccountingMethod?: GstAccountingMethod;
-  financialYearEnd?: string;
-}): AuthResult {
+export function updateAccountProfile(patch: ProfilePatch): AuthResult {
   if (!isBrowser()) return { ok: false, error: "Only available in the browser." };
   const session = getSession();
   if (!session) return { ok: false, error: "You need to be signed in." };
@@ -266,10 +300,15 @@ export function updateAccountProfile(patch: {
     ...(patch.financialYearEnd !== undefined
       ? { financialYearEnd: patch.financialYearEnd }
       : {}),
+    ...(patch.entityType !== undefined ? { entityType: patch.entityType.trim() || undefined } : {}),
+    ...(patch.businessAddress !== undefined
+      ? { businessAddress: patch.businessAddress.trim() || undefined }
+      : {}),
+    ...(patch.companyAdded !== undefined ? { companyAdded: patch.companyAdded } : {}),
   };
   accounts[idx] = updated;
   saveAccounts(accounts);
   return { ok: true, account: toPublic(updated) };
 }
 
-export const DEMO_ORG_LABEL = "Demo organisation — sample data only";
+export const DEMO_ORG_LABEL = "This is a demo with sample data — not your real account.";

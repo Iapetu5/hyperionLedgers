@@ -49,14 +49,14 @@ export default function ProfitLossReportPage() {
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
           Shows trading income and expenses for the period. Amounts are tax-exclusive where noted;
           GST on Income / GST Free lines affect GST boxes on BAS, not this operating profit view.
-          This is a management preview for your records — not an ATO-lodged return.
+          Practice preview. Not sent to the tax office.
         </p>
       </div>
 
       {usesSampleData ? (
         <>
           <div className="card border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
-            Harbour &amp; Co sample period · figures rounded for readability · illustrative draft only
+            Demo sample period · figures rounded for readability · illustrative draft only
           </div>
 
           <div className="card overflow-hidden">
@@ -91,10 +91,14 @@ export default function ProfitLossReportPage() {
             Net profit matches the ex-tax income minus expenses roll-up of listed invoices and bills
             (not a full general ledger). GST Free lines are included in ex-tax income/expense but do
             not appear in the GST rows.{" "}
-            <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
-              Open GST &amp; BAS
+            <Link href="/demo/tax/gst-bas#ytd-gst" className="font-semibold text-brand-300 hover:underline">
+              Open year-to-date GST
             </Link>{" "}
-            for quarterly draft boxes.
+            for the amount you would use when paying the ATO (practice figure), or{" "}
+            <Link href="/demo/tax/gst-bas#quarter-draft" className="font-semibold text-brand-300 hover:underline">
+              this quarter&apos;s BAS draft
+            </Link>
+            . HyperionInvoices does not lodge with the ATO.
           </p>
         </>
       ) : showBlank ? (
@@ -136,17 +140,22 @@ export default function ProfitLossReportPage() {
             lines are included in ex-tax totals but not in the GST rows. These GST rows are
             year-to-date across all documents; GST &amp; BAS draft boxes count only the derived
             quarter, so the two can differ.{" "}
-            <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
-              Open GST &amp; BAS
+            <Link href="/demo/tax/gst-bas#ytd-gst" className="font-semibold text-brand-300 hover:underline">
+              Open year-to-date GST
             </Link>{" "}
-            for the quarter-scoped simulated draft (not lodged with the ATO).
+            for the amount you would use when paying the ATO this Australian financial year (practice
+            figure), or{" "}
+            <Link href="/demo/tax/gst-bas#quarter-draft" className="font-semibold text-brand-300 hover:underline">
+              this quarter&apos;s draft
+            </Link>
+            . HyperionInvoices does not lodge with the ATO.
           </p>
         </>
       ) : (
         <EmptyState
           icon={TrendingUp}
           title="No profit & loss figures yet"
-          description="Create an invoice or bill, or explore Harbour & Co as a guest for a sample preview."
+          description="Make an invoice or bill to see a profit and loss preview."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },

@@ -6,6 +6,7 @@ import { Banknote, Check, Package, Pencil, Plus, Receipt, Trash2, Undo2, X } fro
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { DocRowActions } from "@/components/demo/DocRowActions";
+import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
 import {
   LineItemsEditor,
   draftsToInputs,
@@ -308,10 +309,10 @@ export default function BillsPage() {
     setSampleTick((t) => t + 1);
     if (next === "Paid") {
       setFormOk(
-        `Sample ${id} marked Paid in this browser (Harbour back office). Print stays on the row — internal summary only, no public pay link.`,
+        `Sample ${id} marked Paid in this browser (demo back office). Print stays on the row — internal summary only, no public pay link.`,
       );
     } else {
-      setFormOk(`Sample ${id} marked ${next} in this browser (Harbour back office demo).`);
+      setFormOk(`Sample ${id} marked ${next} in this browser (demo back office).`);
     }
   }
 
@@ -548,6 +549,7 @@ export default function BillsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Bills</h1>
+          <BooksSectionNav />
           <p className="text-sm text-white/70">{subtitle}</p>
         </div>
         {!showComposer && (
@@ -718,7 +720,7 @@ export default function BillsPage() {
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Harbour & Co sample bills stay in the guest demo — they are not copied into your organisation."
+          hint="Demo sample bills stay in the guest tour — they are not copied into your organisation."
         />
       ) : userRows.length === 0 ? null : (
         userTable()
@@ -729,7 +731,7 @@ export default function BillsPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Next: Add bill, then Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically. Or explore Harbour &amp; Co for sample payables.
+              Next: Add bill, then Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically.
             </>
           ) : (
             <>
@@ -784,7 +786,7 @@ export default function BillsPage() {
         <div className="space-y-2">
           <div className="border-b border-white/10 px-1 py-1">
             <h2 className="font-semibold text-white">Your created bills</h2>
-            <p className="text-xs text-slate-400">Stored in this browser · not part of the Harbour sample story</p>
+            <p className="text-xs text-slate-400">Stored in this browser · not part of the demo sample</p>
           </div>
           {userTable()}
         </div>
@@ -792,7 +794,7 @@ export default function BillsPage() {
 
       <div className="card overflow-x-auto">
         <div className="border-b border-white/10 px-4 py-3">
-          <h2 className="font-semibold text-white">Harbour &amp; Co sample</h2>
+          <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
             Line amounts before GST; choose GST or GST-free per line. Approve awaiting rows, then Mark paid (saved in this browser). Undo and Print sit under More. Print is an internal summary only — no public supplier pay link. Past-due unpaid rows show Overdue.
           </p>
@@ -860,7 +862,7 @@ export default function BillsPage() {
                           type="button"
                           className="btn-secondary !px-2 !py-1 text-xs"
                           onClick={() => onSampleStatus(b.id, "Approved")}
-                          title="Approve in Harbour back office (demo)"
+                          title="Approve in demo back office"
                         >
                           <Check size={12} />
                           Approve
@@ -871,7 +873,7 @@ export default function BillsPage() {
                           type="button"
                           className="btn-primary !px-2 !py-1 text-xs"
                           onClick={() => onSampleStatus(b.id, "Paid")}
-                          title="Record payment in Harbour back office (demo)"
+                          title="Record payment in demo back office"
                         >
                           <Banknote size={12} />
                           Mark paid

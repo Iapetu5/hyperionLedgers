@@ -7,6 +7,7 @@ import { PrintDocButton } from "@/components/pay/PrintDocButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { DocRowActions } from "@/components/demo/DocRowActions";
+import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
 import {
   LineItemsEditor,
   draftsToInputs,
@@ -493,6 +494,7 @@ export default function InvoicesPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Invoices</h1>
+          <BooksSectionNav />
           <p className="text-sm text-white/70">{subtitle}</p>
           <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
             <input
@@ -587,7 +589,7 @@ export default function InvoicesPage() {
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Harbour & Co sample invoices stay in the guest demo — they are not copied into your organisation."
+          hint="Demo sample invoices stay in the guest tour — they are not copied into your organisation."
         />
       ) : userRows.length === 0 ? null : (
         <div className="card overflow-x-auto">
@@ -641,7 +643,7 @@ export default function InvoicesPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Next: Create invoice (saved in this browser), or explore Harbour &amp; Co for the full sample list. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
+              Next: Create invoice (saved in this browser). Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
             </>
           ) : (
             <>
@@ -698,7 +700,7 @@ export default function InvoicesPage() {
         <div className="card overflow-x-auto">
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Your created invoices</h2>
-            <p className="text-xs text-slate-400">Stored in this browser · not part of the Harbour sample story</p>
+            <p className="text-xs text-slate-400">Stored in this browser · not part of the demo sample</p>
           </div>
           <table className="min-w-full text-left text-sm">
             <thead className="table-head">
@@ -747,7 +749,7 @@ export default function InvoicesPage() {
 
       <div className="card overflow-x-auto">
         <div className="border-b border-white/10 px-4 py-3">
-          <h2 className="font-semibold text-white">Harbour &amp; Co sample</h2>
+          <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
             Send invoice copies the customer pay link. View opens the public page. Print and other extras sit under More. INV-1042 is a mixed GST + GST Free example.
           </p>

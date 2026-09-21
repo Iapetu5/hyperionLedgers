@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { openAssistant } from "@/components/demo/AiAssistant";
+import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
 import { MoreMenu } from "@/components/demo/MoreMenu";
 import { formatAUD, formatDateAU } from "@/lib/format";
 import { accounts } from "@/lib/sample-data";
@@ -392,7 +393,7 @@ export default function BankingPage() {
         ? "No CSV imports to clear."
         : mode === "blank"
           ? `Cleared ${n} imported row${n === 1 ? "" : "s"}. Opening balance was left as-is — use Clear opening if you want that gone too.`
-          : `Cleared ${n} imported row${n === 1 ? "" : "s"} (Harbour sample lines kept).`,
+          : `Cleared ${n} imported row${n === 1 ? "" : "s"} (demo sample lines kept).`,
     );
   }
 
@@ -408,13 +409,16 @@ export default function BankingPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Banking</h1>
-        <p className="text-sm text-white/70">
-          {mode === "blank"
-            ? `${orgLabel} cheque account — browser-side CSV only. No live bank feeds, and Harbour sample lines stay out of this blank ledger.`
-            : "Sample balances and browser-side CSV import only — no live bank feeds or APIs."}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Banking</h1>
+          <BooksSectionNav />
+          <p className="text-sm text-white/70">
+            {mode === "blank"
+              ? `${orgLabel} cheque account — browser-side CSV only. No live bank feeds, and demo sample lines stay out of this blank ledger.`
+              : "Sample balances and browser-side CSV import only — no live bank feeds or APIs."}
+          </p>
+        </div>
       </div>
 
       {mode === "blank" ? (
@@ -531,7 +535,7 @@ export default function BankingPage() {
               </li>
             </ol>
             <p className="mt-4 border-t border-white/10 pt-3 text-xs text-slate-400">
-              Browser-only demo; no live feed. Generic starter lines stay separate from Harbour &amp; Co. Want the
+              Browser-only demo; no live feed. Generic starter lines stay separate from the guest sample. Want the
               pre-loaded sample story?{" "}
               <Link href="/demo" className="font-semibold text-brand-300 underline-offset-2 hover:underline">
                 Explore sample as guest
@@ -798,7 +802,7 @@ export default function BankingPage() {
                   type="button"
                   className="btn-secondary !px-3 !py-1.5 text-xs"
                   onClick={resetCats}
-                  title="Undo Apply / Ask AI categorisations for this cheque account (Harbour and blank stay separate)"
+                  title="Undo Apply / Ask AI categorisations for this cheque account (demo sample and blank stay separate)"
                 >
                   <RotateCcw size={14} />
                   Reset categorisations
@@ -812,7 +816,7 @@ export default function BankingPage() {
                   title={
                     mode === "blank"
                       ? "Remove CSV-imported rows (opening balance kept)"
-                      : "Remove CSV-imported rows (Harbour sample lines stay)"
+                      : "Remove CSV-imported rows (demo sample lines stay)"
                   }
                 >
                   <Trash2 size={14} />
@@ -869,7 +873,7 @@ export default function BankingPage() {
                     </p>
                     <p className="mx-auto mt-1 max-w-md text-sm text-slate-400">
                       {mode === "blank" && txns.length === 0
-                        ? "Next: Save opening above, then Import CSV. Try starter CSV adds a few generic demo lines. Nothing from Harbour & Co is mixed in."
+                        ? "Next: Save opening above, then Import CSV. Try starter CSV adds a few generic demo lines. Nothing from the guest sample is mixed in."
                         : categorised.length > 0
                           ? "Nothing left to Apply. Use More for Reset or Clear CSV, or Undo match below. Import CSV if you have another statement."
                           : "Nothing left to Apply. Next: Import CSV or Try sample CSV above."}

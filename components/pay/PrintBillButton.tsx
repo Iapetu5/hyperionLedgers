@@ -116,7 +116,7 @@ function BillSummaryView({
       <div className="doc-header -mx-6 -mt-6 flex flex-wrap items-start justify-between gap-4 print:mx-0 print:mt-0">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">
-            HyperionLedgers
+            HyperionInvoices
           </p>
           <p className="mt-1 text-base font-semibold">{biz.businessName}</p>
           <p className="text-sm text-white/70">
@@ -124,7 +124,7 @@ function BillSummaryView({
           </p>
           <p className="mt-1 text-xs text-cyan-200/80">
             Internal bill summary · not a customer pay page
-            {sample ? " · Harbour sample" : ""}
+            {sample ? " · Demo sample" : ""}
           </p>
         </div>
         <div className="text-right">
@@ -266,7 +266,7 @@ export function PrintBillButton({
             <div className="relative my-6 w-full max-w-2xl print:my-0 print:max-w-none">
               <div className="no-print mb-3 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-white">
-                  Bill summary (internal{sample ? " · Harbour sample" : ""})
+                  Bill summary (internal{sample ? " · Demo sample" : ""})
                 </p>
                 <div className="flex gap-2">
                   <button
