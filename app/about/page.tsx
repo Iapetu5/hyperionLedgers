@@ -3,10 +3,10 @@ import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { MARKETING_LIMITS } from "@/lib/brand";
 
 const GLANCE = [
   "Quotes, invoices, bills, and reports in one place",
-  "Your session stays in this browser",
   "Start with your own organisation, or look around first",
   "Not a tax agent, BAS agent, or financial adviser",
 ];
@@ -36,18 +36,19 @@ export default function AboutPage() {
             </div>
             <div className="mt-10 space-y-4">
               <p className="marketing-copy">
-                HyperionInvoices is made for Australian small business: GST, BAS, super, cash flow,
-                sales, stock, and pay — written so you know what to do next.
+                HyperionInvoices is made for Australian small business: GST, BAS, cash flow,
+                sales, and invoices — written so you know what to do next.
               </p>
               <p className="marketing-copy">
-                We use Australian English and Australian dollars. HyperionInvoices does not send
-                forms to the tax office.
+                We use Australian English and Australian dollars. Adding a company does not
+                register you with the tax office.
                 <GuestOnly>
                   {" "}
                   Try a demo first if you want to look around — that path uses sample data, not your
                   real account.
                 </GuestOnly>
               </p>
+              <p className="marketing-copy">{MARKETING_LIMITS}</p>
             </div>
           </div>
 

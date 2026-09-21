@@ -5,28 +5,27 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { TryPageDemoLink } from "@/components/marketing/TryDemoCard";
 import { GuestOnly } from "@/components/marketing/TryDemoCta";
-import { getPlatformStatus, windowsDownloadLabel } from "@/lib/platform-status.server";
+import { MARKETING_LIMITS } from "@/lib/brand";
 
 export default function TryPage() {
-  const { windowsInstallerReady } = getPlatformStatus();
   const steps = [
     {
       icon: UserPlus,
       step: "1",
       title: "Start free trial",
-      body: "Create your account. The first 14 days are free. Then it is $69 a month.",
+      body: "Create your account. The first 14 days are free. Then it is $69 a month. You can stop anytime.",
     },
     {
       icon: SlidersHorizontal,
       step: "2",
       title: "Answer a few setup questions",
-      body: "Add your business, GST, and year end. You can start with a blank set of books.",
+      body: "Add your business, GST, and year end. Adding a company does not register you with the tax office.",
     },
     {
       icon: LayoutDashboard,
       step: "3",
       title: "Make your first invoice",
-      body: `${windowsDownloadLabel(windowsInstallerReady)} Mac is coming soon.`,
+      body: "Open your books and create an invoice. Quotes, bills, bank CSV, and GST sit in the same place.",
     },
   ];
 
@@ -82,9 +81,7 @@ export default function TryPage() {
           </div>
         </section>
 
-        <p className="mt-14 max-w-2xl text-base leading-7 text-slate-50">
-          HyperionInvoices does not send forms to the tax office. Mac is coming soon.
-        </p>
+        <p className="mt-14 max-w-2xl text-base leading-7 text-slate-50">{MARKETING_LIMITS}</p>
       </main>
       <MarketingFooter />
     </div>

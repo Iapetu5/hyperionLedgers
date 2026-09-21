@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { PricingCardDemoLink, PricingFooterDemoLine } from "@/components/marketing/PricingDemoLinks";
+import { MARKETING_LIMITS } from "@/lib/brand";
 import { getPlatformStatus, windowsDownloadLabel } from "@/lib/platform-status.server";
 
 export const dynamic = "force-dynamic";
@@ -14,8 +15,8 @@ export default function PricingPage() {
     "Make quotes, invoices, and bills",
     "See GST on each line, and BAS due dates",
     "See profit and loss, and what you own and owe",
-    "Bring in bank transactions",
-    "Keep contacts and products in one place",
+    "Import a bank CSV. Not a live bank feed.",
+    "Keep products and prices in one list",
     "14 days free. Then $69 a month.",
     windowsDownloadLabel(windowsInstallerReady),
   ];
@@ -72,7 +73,7 @@ export default function PricingPage() {
         <PricingFooterDemoLine />
         <p className="mx-auto mt-5 max-w-2xl text-center text-base leading-7 text-slate-50">
           Price is in Australian dollars. Pay with card or Apple Pay. You can cancel anytime.
-          HyperionInvoices does not send forms to the ATO for you.
+          {` ${MARKETING_LIMITS}`}
         </p>
       </main>
       <MarketingFooter />
