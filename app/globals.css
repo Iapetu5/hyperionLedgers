@@ -104,7 +104,7 @@ body {
 
   /* Sticky marketing chrome — opaque enough to sit over nebula content. */
   .marketing-header {
-    @apply sticky top-0 z-50 border-b border-white/10 bg-slate-950/92 shadow-[0_8px_24px_rgba(0,0,0,0.28)] backdrop-blur-xl;
+    @apply sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 shadow-[0_8px_24px_rgba(0,0,0,0.28)] backdrop-blur-xl;
     padding-top: env(safe-area-inset-top, 0px);
   }
 
