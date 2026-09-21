@@ -8,6 +8,7 @@ import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahea
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import type { GstAccountingMethod } from "@/lib/auth";
 import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
+import { isRealCompanyName } from "@/lib/company-pickup";
 
 export default function AccountPage() {
   const { user, updateProfile, loading, usesSampleData } = useAuth();
@@ -40,10 +41,13 @@ export default function AccountPage() {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-bold text-white">Your account</h1>
+        <p className="text-sm text-slate-300">
+          You are looking at the sample. Create an account to keep your own books.
+        </p>
         <div className="card p-6 text-sm text-slate-200">
-          You&apos;re browsing as a guest. This is a demo with sample data — not your real account.
+          This is a HyperionInvoices demo with sample data — not your real account.
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/signup" className="btn-primary">Sign up to keep an org</Link>
+            <Link href="/signup" className="btn-primary">Create your account</Link>
             <Link href="/login" className="btn-secondary">Log in</Link>
           </div>
         </div>
@@ -75,12 +79,15 @@ export default function AccountPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-white">Your account</h1>
+      <p className="text-sm text-slate-300">
+        Change your business details here. Press Save when you finish.
+      </p>
 
       {!usesSampleData && (
         <div className="card border-brand-400/25 bg-brand-500/10 p-5">
           <p className="text-sm font-semibold text-white">Your books</p>
           <p className="mt-1 text-sm text-slate-300">
-            Sample figures stay out of this organisation. Create an invoice next — a quote or bill can wait.
+            These are your own books — not the sample. Create an invoice next. A quote or bill can wait.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link href="/demo/invoices?mixed=1" className="btn-primary">
@@ -100,7 +107,7 @@ export default function AccountPage() {
       <div className="card max-w-xl p-5">
         <p className="text-sm font-semibold text-white">Company</p>
         <p className="mt-1 text-sm text-slate-300">
-          {user.businessName}
+          {isRealCompanyName(user.businessName) ? user.businessName : "No company added yet"}
           {user.abn ? ` · ABN ${user.abn}` : ""}
         </p>
         {user.entityType && <p className="text-sm text-slate-300">{user.entityType}</p>}
@@ -111,6 +118,12 @@ export default function AccountPage() {
       </div>
 
       <form className="card max-w-xl space-y-4 p-6" onSubmit={onSave}>
+        <div>
+          <p className="text-sm font-semibold text-white">Company name and ABN</p>
+          <p className="mt-1 text-sm text-slate-300">
+            You can also change these from Add company above. Press Save when you finish.
+          </p>
+        </div>
         <BusinessNameTypeahead
           id="bn"
           value={businessName}
@@ -164,8 +177,14 @@ export default function AccountPage() {
             </div>
           </>
         )}
+        <div>
+          <p className="text-sm font-semibold text-white">GST and year end</p>
+          <p className="mt-1 text-sm text-slate-300">
+            These are the same choices you made during setup. Change them if needed, then Save.
+          </p>
+        </div>
         <fieldset>
-          <legend className="label">GST registered</legend>
+          <legend className="label">Are you registered for GST?</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {[true, false].map((v) => (
               <label
@@ -173,22 +192,35 @@ export default function AccountPage() {
                 className={`choice-card ${gstRegistered === v ? "choice-card-active" : ""}`}
               >
                 <input type="radio" name="gstRegistered" checked={gstRegistered === v} onChange={() => setGstRegistered(v)} />
-                <span className="font-semibold text-white">{v ? "Yes" : "No"}</span>
+                <span>
+                  <strong className="text-white">{v ? "Yes" : "No"}</strong>
+                  <span className="mt-0.5 block text-xs text-slate-400">
+                    {v
+                      ? "Show GST on sales and purchases, plus BAS due dates."
+                      : "Hide GST on documents; BAS due dates still shown for planning."}
+                  </span>
+                </span>
               </label>
             ))}
           </div>
         </fieldset>
         {gstRegistered && (
           <fieldset>
-            <legend className="label">GST method</legend>
+            <legend className="label">How do you work out GST?</legend>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {(["accruals", "cash"] as const).map((m) => (
+              {([
+                ["accruals", "Accruals", "GST when you invoice or receive a bill."],
+                ["cash", "Cash", "GST when money hits the bank."],
+              ] as const).map(([val, label, hint]) => (
                 <label
-                  key={m}
-                  className={`choice-card capitalize ${method === m ? "choice-card-active" : ""}`}
+                  key={val}
+                  className={`choice-card ${method === val ? "choice-card-active" : ""}`}
                 >
-                  <input type="radio" name="gstMethod" checked={method === m} onChange={() => setMethod(m)} />
-                  <span className="font-semibold text-white">{m}</span>
+                  <input type="radio" name="gstMethod" checked={method === val} onChange={() => setMethod(val)} />
+                  <span>
+                    <strong className="text-white">{label}</strong>
+                    <span className="mt-0.5 block text-xs text-slate-400">{hint}</span>
+                  </span>
                 </label>
               ))}
             </div>
@@ -202,9 +234,14 @@ export default function AccountPage() {
             <option>31 December</option>
             <option>30 September</option>
           </select>
+          <p className="mt-1 text-xs text-slate-400">
+            30 June is the usual Australian year end. Keep it unless your accountant says otherwise.
+          </p>
         </div>
         <p className="text-xs text-slate-400">
-          Ledger mode: <strong className="text-slate-200">{user.ledgerMode ?? "sample"}</strong> (set during onboarding).
+          {user.ledgerMode === "blank"
+            ? "You started with empty books. Create invoice stays the main action."
+            : "You started with sample data so you can look around. It is not your own filing."}
         </p>
         <p className="text-xs leading-relaxed text-slate-400">
           Year-to-date GST on the{" "}

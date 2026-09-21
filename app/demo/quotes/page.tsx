@@ -680,7 +680,7 @@ export default function QuotesPage() {
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Demo sample quotes stay in the guest tour — they are not copied into your organisation."
+          hint="Sample demo quotes stay in the guest demo — not copied into your business."
         />
       ) : userRows.length === 0 ? null : (
         <div className="card overflow-x-auto">

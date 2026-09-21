@@ -33,7 +33,7 @@ export function addCompanyHref(returnTo = "/onboarding"): string {
 
 /** Signup → Add company → organisation setup. */
 export const SETUP_STEP = {
-  account: "Step 1 of 3 · Account",
+  account: "Step 1 of 3 · Your account",
   addCompany: "Step 2 of 3 · Add company",
   organisation: "Step 3 of 3 · Organisation setup",
 } as const;

@@ -68,17 +68,9 @@ export default function SignupPage() {
       </div>
       <div className="card p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">{SETUP_STEP.account}</p>
-        <h1 className="mt-1 text-xl font-bold text-white">Start your free trial</h1>
-        <p className="mt-1 text-sm text-slate-300">
-          Name, email, and password only. Next you add your company on the HyperionInvoices Add company
-          page. You get 14 days free. Then $69 a month.
-          <GuestOnly>
-            {" "}
-            <TryDemoLink className="font-semibold text-brand-300 hover:underline">
-              Want to try a demo first?
-            </TryDemoLink>
-            .
-          </GuestOnly>
+        <h1 className="mt-1 text-xl font-bold text-white">Create your account</h1>
+        <p className="mt-2 text-sm text-slate-300">
+          Enter your name, email, and password. Next you will add your company.
         </p>
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <div>
@@ -94,14 +86,23 @@ export default function SignupPage() {
           <div>
             <label className="label" htmlFor="password">Password</label>
             <input id="password" className="input" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <p className="mt-1 text-xs text-slate-400">At least 8 characters.</p>
+            <p className="mt-1 text-xs text-slate-400">Use at least 8 characters.</p>
             {fieldErrors.password && <p className="mt-1 text-xs text-rose-300">{fieldErrors.password}</p>}
           </div>
           {error && <p className="text-sm text-rose-300">{error}</p>}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy ? "Creating…" : "Continue"}
+            {busy ? "Creating…" : "Next: add your company"}
           </button>
-          <p className="text-center text-xs text-slate-400">Then add your company. Then $69 a month.</p>
+          <p className="text-center text-xs text-slate-400">14-day trial, then $69 a month.</p>
+          <GuestOnly>
+            <p className="text-center text-xs text-slate-400">
+              Prefer to look first?{" "}
+              <TryDemoLink className="font-semibold text-brand-300 hover:underline">
+                Look at the sample
+              </TryDemoLink>
+              .
+            </p>
+          </GuestOnly>
         </form>
         <p className="mt-4 text-center text-sm text-slate-300">
           Already have an account?{" "}

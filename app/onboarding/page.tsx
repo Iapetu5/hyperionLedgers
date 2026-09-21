@@ -110,12 +110,17 @@ export default function OnboardingPage() {
 
   const hasCompany = isRealCompanyName(user.businessName);
   const savedName = hasCompany ? user.businessName : "";
-  const orgName = savedName || "your business";
   const titles: Record<WizardStep, string> = {
     gst: "Are you registered for GST?",
-    method: "GST accounting method",
-    fy: "Financial year end",
+    method: "How do you work out GST?",
+    fy: "When does your financial year end?",
     start: "How would you like to start?",
+  };
+  const intros: Record<WizardStep, string> = {
+    gst: "Choose Yes or No. You can change this later in Account.",
+    method: "This is only about when GST is counted — not how much tax you pay.",
+    fy: "Most Australian businesses use 30 June. Pick a different date if your accountant uses one.",
+    start: "Start empty for your own books, or look around with sample data first.",
   };
 
   return (
@@ -136,29 +141,50 @@ export default function OnboardingPage() {
       </div>
       <div className="card p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">
-          {SETUP_STEP.organisation} · {orgName}
+          {SETUP_STEP.organisation}
         </p>
-        <h1 className="mt-1 text-xl font-bold text-white">{titles[step]}</h1>
-        <p className="mt-1 text-sm text-slate-300">One choice at a time. You can change this later in Account.</p>
-
-        <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-slate-200">
-          <p className="font-semibold text-white">
-            {savedName || "No company saved yet"}
-          </p>
-          {user.abn && <p className="mt-0.5 text-slate-300">ABN {user.abn}</p>}
-          {user.entityType && <p className="text-slate-300">{user.entityType}</p>}
-          {user.businessAddress && <p className="text-xs text-slate-400">{user.businessAddress}</p>}
-          <p className="mt-1 text-xs text-slate-400">
-            {(user.gstRegistered ?? gstRegistered) ? "GST registered" : "Not GST registered"}
-            {user.abn ? "" : " — add the company on the Add company page"}
-          </p>
-          <Link
-            href={addCompanyHref("/onboarding")}
-            className="mt-2 inline-block font-semibold text-brand-300 hover:underline"
-          >
-            {savedName ? "Find your company" : "Add company"}
-          </Link>
+        <p className="mt-2 text-sm font-semibold text-slate-200" aria-current="step">
+          Step {stepIndex + 1} of {steps.length}
+        </p>
+        <div className="mt-2 flex gap-1" aria-hidden>
+          {steps.map((key, i) => (
+            <span
+              key={key}
+              className={`h-1 flex-1 rounded-full ${
+                i <= stepIndex ? "bg-brand-400" : "bg-white/15"
+              }`}
+            />
+          ))}
         </div>
+        <h1 className="mt-4 text-xl font-bold text-white">{titles[step]}</h1>
+        <p className="mt-1 text-sm text-slate-300">{intros[step]}</p>
+
+        <p className="mt-4 text-sm text-slate-300">
+          {hasCompany ? (
+            <>
+              Setting up{" "}
+              <strong className="text-white">{savedName}</strong>
+              {user.abn ? ` · ABN ${user.abn}` : ""}
+              .{" "}
+              <Link
+                href={addCompanyHref("/onboarding")}
+                className="font-semibold text-brand-300 hover:underline"
+              >
+                Change company
+              </Link>
+            </>
+          ) : (
+            <>
+              Add your company first, then come back to these questions.{" "}
+              <Link
+                href={addCompanyHref("/onboarding")}
+                className="font-semibold text-brand-300 hover:underline"
+              >
+                Add company
+              </Link>
+            </>
+          )}
+        </p>
 
         <form className="mt-6 space-y-5" onSubmit={goNext}>
           {step === "gst" && (
@@ -217,6 +243,9 @@ export default function OnboardingPage() {
                 <option>31 December</option>
                 <option>30 September</option>
               </select>
+              <p className="mt-1 text-xs text-slate-400">
+                30 June is the usual Australian year end. Keep it unless your accountant says otherwise.
+              </p>
             </div>
           )}
 
@@ -255,28 +284,30 @@ export default function OnboardingPage() {
 
           {error && <p className="text-sm text-rose-300">{error}</p>}
 
-          <div className="flex flex-wrap items-center gap-3">
-            {stepIndex > 0 && (
-              <button type="button" className="text-sm font-semibold text-slate-200 hover:underline" onClick={goBack}>
-                Back
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {stepIndex > 0 && (
+                <button type="button" className="text-sm font-semibold text-slate-200 hover:underline" onClick={goBack}>
+                  Back
+                </button>
+              )}
+              <button type="submit" className="btn-primary" disabled={!hasCompany}>
+                {isLast
+                  ? ledgerMode === "blank"
+                    ? "Continue — create your first document"
+                    : "Continue to your organisation"
+                  : "Next"}
               </button>
-            )}
-            <button type="submit" className="btn-primary" disabled={!hasCompany}>
-              {isLast
-                ? ledgerMode === "blank"
-                  ? "Continue — create your first document"
-                  : "Continue to your organisation"
-                : "Next"}
-            </button>
+            </div>
             {!hasCompany && (
-              <p className="w-full text-sm text-slate-300">
-                Continue is off until you add a company.{" "}
+              <p className="text-sm text-slate-300">
+                Next is off until you add a company.{" "}
                 <Link href={addCompanyHref("/onboarding")} className="font-semibold text-brand-300 hover:underline">
                   Add company
                 </Link>
               </p>
             )}
-            <button type="button" className="text-sm font-medium text-slate-400 hover:text-white hover:underline" onClick={onSkip}>
+            <button type="button" className="self-start text-sm font-medium text-slate-400 hover:text-white hover:underline" onClick={onSkip}>
               Skip — use sample data
             </button>
           </div>

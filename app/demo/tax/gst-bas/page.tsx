@@ -551,7 +551,7 @@ export default function GstBasPage() {
         <EmptyState
           icon={Calculator}
           title="No BAS draft figures yet"
-          description="Blank ledger — year-to-date GST above is $0 until you add invoices or bills dated this Australian financial year. Create a document and this page will also show a draft quarter (from your document dates), due date, and GST on Income / GST on Expenses boxes. GST Free lines stay out of the GST boxes. Lodgement stays simulated — never sent to the ATO."
+          description="Create an invoice or bill. Year-to-date GST and a draft quarter will fill in from those documents."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
@@ -559,7 +559,7 @@ export default function GstBasPage() {
             { label: "View reports", href: "/demo/reports" },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="The due-date calendar above still applies for planning. The guest demo keeps richer sample quarter history."
+          hint="Planning only — nothing is sent to the ATO."
         />
         </div>
       )}
