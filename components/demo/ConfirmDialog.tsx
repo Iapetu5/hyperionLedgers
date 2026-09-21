@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 
@@ -70,46 +70,47 @@ export function ConfirmDialog({
     onConfirm();
   }
 
-  function handleBackdrop(e: MouseEvent<HTMLDivElement>) {
-    if (e.target === e.currentTarget) handleCancel();
-  }
-
   return createPortal(
-    <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 p-3 sm:items-center"
-      onMouseDown={handleBackdrop}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={bodyId}
-        className="card w-full max-w-md p-5"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start gap-3">
-          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-200" aria-hidden />
-          <div className="min-w-0">
-            <h2 id={titleId} className="text-lg font-bold text-white">
-              {title}
-            </h2>
-            <p id={bodyId} className="mt-2 text-sm leading-relaxed text-slate-300">
-              {body}
-            </p>
+    <div className="fixed inset-0 z-[80]">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={cancelLabel}
+        className="absolute inset-0 bg-black/60"
+        onClick={handleCancel}
+      />
+      <div className="pointer-events-none relative flex h-full items-end justify-center p-3 sm:items-center">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={bodyId}
+          className="pointer-events-auto card w-full max-w-md p-5"
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-200" aria-hidden />
+            <div className="min-w-0">
+              <h2 id={titleId} className="text-lg font-bold text-white">
+                {title}
+              </h2>
+              <p id={bodyId} className="mt-2 text-sm leading-relaxed text-slate-300">
+                {body}
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button ref={cancelRef} type="button" className="btn-secondary" onClick={handleCancel}>
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary border-rose-400/45 text-rose-100 hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={handleConfirm}
-            disabled={!armed}
-          >
-            {confirmLabel}
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button ref={cancelRef} type="button" className="btn-secondary" onClick={handleCancel}>
+              {cancelLabel}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary border-rose-400/45 text-rose-100 hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={handleConfirm}
+              disabled={!armed}
+            >
+              {confirmLabel}
+            </button>
+          </div>
         </div>
       </div>
     </div>,
