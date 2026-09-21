@@ -10,6 +10,7 @@ import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahea
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
 import { PENDING_ORG_NAME } from "@/lib/auth";
 import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
+import { addCompanyHref, readSelectedCompany } from "@/lib/add-company";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
 
 type WizardStep = "gst" | "method" | "fy" | "start";
@@ -47,6 +48,16 @@ export default function OnboardingPage() {
       setEntityType(user.entityType as AbrEntityType);
     }
     if (user.businessAddress) setAddress(user.businessAddress);
+    const picked = readSelectedCompany();
+    if (picked) {
+      if (!user.businessName || user.businessName === PENDING_ORG_NAME) setBusinessName(picked.legalName);
+      if (!user.abn) setAbn(picked.abn);
+      setGstRegistered(picked.gstRegistered);
+      if (picked.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(picked.entityType)) {
+        setEntityType(picked.entityType as AbrEntityType);
+      }
+      if (picked.address) setAddress(picked.address);
+    }
   }, [user, loading, needsOnboarding, router]);
 
   const steps = useMemo<WizardStep[]>(
@@ -137,7 +148,7 @@ export default function OnboardingPage() {
           <Link href="/" className="hover:text-white hover:underline">
             Home
           </Link>
-          <Link href="/add-company" className="hover:text-white hover:underline">
+          <Link href={addCompanyHref("/onboarding")} className="hover:text-white hover:underline">
             Add company
           </Link>
           <Link href="/demo/account" className="hover:text-white hover:underline">
@@ -165,8 +176,11 @@ export default function OnboardingPage() {
             {gstRegistered ? "GST registered" : "Not GST registered"}
             {abn || user.abn ? "" : " — confirm when you add the company"}
           </p>
-          <Link href="/add-company" className="mt-2 inline-block font-semibold text-brand-300 hover:underline">
-            {savedName ? "Open full company search" : "Add your business"}
+          <Link
+            href={addCompanyHref("/onboarding")}
+            className="mt-2 inline-block font-semibold text-brand-300 hover:underline"
+          >
+            {savedName ? "Find your company" : "Add company"}
           </Link>
         </div>
 

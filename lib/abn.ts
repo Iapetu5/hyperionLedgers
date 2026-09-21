@@ -308,3 +308,6 @@ export function searchAbr(query: string, limit = 8): AbrCompany[] {
 
 /** Alias used by add-company / signup typeahead. Same as searchAbr (simulated). */
 export const searchAbrByName = searchAbr;
+
+/** Iapetus Add company search name. Same as searchAbr (simulated). */
+export const searchAbrCompanies = searchAbr;

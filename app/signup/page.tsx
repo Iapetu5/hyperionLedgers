@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { validateSignup } from "@/lib/auth";
@@ -10,6 +10,7 @@ import { AbnField } from "@/components/abn/AbnField";
 import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahead";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
 import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
+import { addCompanyHref, clearSelectedCompany, readSelectedCompany } from "@/lib/add-company";
 
 export default function SignupPage() {
   const { signUp } = useAuth();
@@ -22,9 +23,23 @@ export default function SignupPage() {
   const [entityType, setEntityType] = useState<AbrEntityType | "">("");
   const [address, setAddress] = useState("");
   const [gstRegistered, setGstRegistered] = useState<boolean | undefined>(undefined);
+  const [fromAddCompany, setFromAddCompany] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const picked = readSelectedCompany();
+    if (!picked) return;
+    setBusinessName(picked.legalName);
+    setAbn(picked.abn);
+    setGstRegistered(picked.gstRegistered);
+    if (picked.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(picked.entityType)) {
+      setEntityType(picked.entityType as AbrEntityType);
+    }
+    if (picked.address) setAddress(picked.address);
+    setFromAddCompany(true);
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -66,7 +81,8 @@ export default function SignupPage() {
       // Local sign-up already succeeded — continue without Stripe.
     }
     setBusy(false);
-    router.push("/add-company");
+    clearSelectedCompany();
+    router.push(fromAddCompany ? "/onboarding" : addCompanyHref("/onboarding"));
   }
 
   return (
@@ -77,7 +93,7 @@ export default function SignupPage() {
           <Link href="/" className="hover:text-white hover:underline">
             Home
           </Link>
-          <Link href="/add-company" className="hover:text-white hover:underline">
+          <Link href={addCompanyHref("/signup")} className="hover:text-white hover:underline">
             Add company
           </Link>
           <Link href="/login" className="hover:text-white hover:underline">
@@ -89,8 +105,11 @@ export default function SignupPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 1 of 3 · Account</p>
         <h1 className="mt-1 text-xl font-bold text-white">Start your free trial</h1>
         <p className="mt-1 text-sm text-slate-300">
-          You get 14 days free. Then $69 a month. Next we ask a few setup questions. Then you can make
-          your first invoice.
+          You get 14 days free. Then $69 a month.{" "}
+          <Link href={addCompanyHref("/signup")} className="font-semibold text-brand-300 hover:underline">
+            Find your company
+          </Link>{" "}
+          on the Add company page — search, pick a match, then confirm. You can also type the name here.
           <GuestOnly>
             {" "}
             <TryDemoLink className="font-semibold text-brand-300 hover:underline">
@@ -183,8 +202,8 @@ export default function SignupPage() {
             Log in
           </Link>
           {" · "}
-          <Link href="/add-company" className="font-semibold text-brand-300 hover:underline">
-            Add a company
+          <Link href={addCompanyHref("/signup")} className="font-semibold text-brand-300 hover:underline">
+            Add company
           </Link>
         </p>
       </div>

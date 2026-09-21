@@ -13,17 +13,15 @@ import {
   validateAbnField,
 } from "@/lib/abn";
 import { PENDING_ORG_NAME, nextSetupPath } from "@/lib/auth";
-
-function safeNext(value: string | null): string | null {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
-}
+import { safeAddCompanyReturn, saveSelectedCompany } from "@/lib/add-company";
 
 function AddCompanyForm() {
   const { user, loading, updateProfile, needsOnboarding } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextUrl = safeNext(searchParams.get("next"));
+  const rawReturn =
+    searchParams.get("returnTo") || searchParams.get("return") || searchParams.get("next");
+  const nextUrl = rawReturn ? safeAddCompanyReturn(rawReturn) : null;
 
   const [selected, setSelected] = useState<AbrCompany | null>(null);
   const [manual, setManual] = useState(false);
@@ -103,6 +101,13 @@ function AddCompanyForm() {
       return;
     }
     if (!user) {
+      saveSelectedCompany({
+        legalName: name,
+        abn: abn.trim() ? formatAbn(abn) : "",
+        gstRegistered: selected?.gstRegistered ?? false,
+        entityType,
+        address: address.trim(),
+      });
       router.push("/signup");
       return;
     }
@@ -122,6 +127,13 @@ function AddCompanyForm() {
       setError(res.error);
       return;
     }
+    saveSelectedCompany({
+      legalName: name,
+      abn: abn.trim() ? formatAbn(abn) : "",
+      gstRegistered: selected?.gstRegistered ?? res.account.gstRegistered ?? false,
+      entityType,
+      address: address.trim(),
+    });
     router.push(nextUrl || nextSetupPath(res.account));
   }
 
@@ -248,15 +260,15 @@ function AddCompanyForm() {
               )}
               {error && <p className="text-sm text-rose-300">{error}</p>}
               <div className="flex flex-wrap gap-2">
-                {user ? (
-                  <button type="submit" className="btn-primary" disabled={busy}>
-                    {busy ? "Saving…" : needsOnboarding ? "Confirm and continue setup" : "Save company"}
-                  </button>
-                ) : (
-                  <Link href="/signup" className="btn-primary">
-                    Sign up to save this company
-                  </Link>
-                )}
+                <button type="submit" className="btn-primary" disabled={busy}>
+                  {busy
+                    ? "Saving…"
+                    : user
+                      ? needsOnboarding
+                        ? "Confirm and continue setup"
+                        : "Confirm company"
+                      : "Confirm and continue to sign up"}
+                </button>
                 <button type="button" className="btn-secondary" onClick={() => applyCompany(null)}>
                   Clear
                 </button>

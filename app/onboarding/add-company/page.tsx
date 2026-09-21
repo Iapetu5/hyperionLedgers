@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-export default function OnboardingCompanyAliasPage({
+export default function OnboardingAddCompanyAliasPage({
   searchParams,
 }: {
   searchParams: { next?: string; returnTo?: string; return?: string };
