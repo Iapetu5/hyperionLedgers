@@ -26,7 +26,7 @@ import { DEMO_BANNER, DEMO_CTA, DEMO_ORG_SHORT } from "@/lib/brand";
 import { nextSetupPath } from "@/lib/auth";
 import { AiAssistant } from "@/components/demo/AiAssistant";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
-import { loadUserBills, loadUserInvoices, loadUserQuotes } from "@/lib/user-docs";
+import { loadBills, loadInvoices, loadQuotes } from "@/lib/books-client";
 
 const NAV = [
   { href: "/demo", label: "Overview", icon: LayoutDashboard },
@@ -75,19 +75,17 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
       setHasUserDocs(false);
       return;
     }
-    const reload = () => {
-      const n =
-        loadUserInvoices().length +
-        loadUserQuotes().length +
-        loadUserBills().length;
-      setHasUserDocs(n > 0);
+    const reload = async () => {
+      const [invoices, quotes, bills] = await Promise.all([loadInvoices(), loadQuotes(), loadBills()]);
+      setHasUserDocs(invoices.length + quotes.length + bills.length > 0);
     };
-    reload();
-    window.addEventListener("hl-user-docs-updated", reload);
-    window.addEventListener("hl-doc-status", reload);
+    void reload();
+    const onUpdate = () => void reload();
+    window.addEventListener("hl-user-docs-updated", onUpdate);
+    window.addEventListener("hl-doc-status", onUpdate);
     return () => {
-      window.removeEventListener("hl-user-docs-updated", reload);
-      window.removeEventListener("hl-doc-status", reload);
+      window.removeEventListener("hl-user-docs-updated", onUpdate);
+      window.removeEventListener("hl-doc-status", onUpdate);
     };
   }, [usesSampleData]);
 

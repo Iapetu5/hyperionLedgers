@@ -8,16 +8,18 @@ import { EmptyState } from "@/components/demo/EmptyState";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import { formatAUD } from "@/lib/format";
 import {
+  createProduct,
+  deleteProduct,
+  loadProducts,
+  loadProductsForMode,
+  updateProduct,
+} from "@/lib/books-client";
+import {
   SAMPLE_PRODUCTS,
-  createUserProduct,
-  deleteUserProduct,
   catalogueReturnComposeHref,
   catalogueReturnMeta,
   filterProducts,
-  loadProductsForMode,
-  loadUserProducts,
   parseCatalogueReturn,
-  updateUserProduct,
   xeroTaxLabel,
   type CatalogueReturnKind,
   type Product,
@@ -46,8 +48,8 @@ export default function ProductsPage() {
   const [returnKind, setReturnKind] = useState<CatalogueReturnKind | null>(null);
   const [savedName, setSavedName] = useState<string | null>(null);
 
-  const reload = useCallback(() => {
-    setRows(loadProductsForMode(usesSampleData));
+  const reload = useCallback(async () => {
+    setRows(await loadProductsForMode(usesSampleData));
     setCatalogueReady(true);
   }, [usesSampleData]);
 
@@ -80,28 +82,30 @@ export default function ProductsPage() {
     e.preventDefault();
     setError(null);
     setOk(null);
-    const unitPriceExGst = Number(price);
-    if (editingId) {
-      const res = updateUserProduct(editingId, { name, description, unitPriceExGst, tax, code });
+    void (async () => {
+      const unitPriceExGst = Number(price);
+      if (editingId) {
+        const res = await updateProduct(editingId, { name, description, unitPriceExGst, tax, code });
+        if ("error" in res) {
+          setError(res.error);
+          return;
+        }
+        resetForm();
+        setSavedName(res.name);
+        setOk(`Updated ${res.name}.`);
+        await reload();
+        return;
+      }
+      const res = await createProduct({ name, description, unitPriceExGst, tax, code });
       if ("error" in res) {
         setError(res.error);
         return;
       }
       resetForm();
       setSavedName(res.name);
-      setOk(`Updated ${res.name}.`);
-      reload();
-      return;
-    }
-    const res = createUserProduct({ name, description, unitPriceExGst, tax, code });
-    if ("error" in res) {
-      setError(res.error);
-      return;
-    }
-    resetForm();
-    setSavedName(res.name);
-    setOk(`Added ${res.name}.`);
-    reload();
+      setOk(`Added ${res.name}.`);
+      await reload();
+    })();
   }
 
   function onEdit(p: Product) {
@@ -122,16 +126,18 @@ export default function ProductsPage() {
   }
 
   function onDelete(id: string) {
-    if (!deleteUserProduct(id)) {
-      setError("Could not delete that product (sample rows stay in the guest demo).");
-      return;
-    }
-    if (editingId === id) resetForm();
-    setOk("Product removed.");
-    reload();
+    void (async () => {
+      if (!(await deleteProduct(id))) {
+        setError("Could not delete that product (sample rows stay in the guest demo).");
+        return;
+      }
+      if (editingId === id) resetForm();
+      setOk("Product removed.");
+      await reload();
+    })();
   }
 
-  const userOnly = useMemo(() => loadUserProducts(), [rows]);
+  const userOnly = useMemo(() => rows.filter((p) => p.id.startsWith("PRD-U-")), [rows]);
   const blankEmpty = !usesSampleData && catalogueReady && rows.length === 0;
   const backKind: CatalogueReturnKind = returnKind ?? "invoice";
   const backMeta = catalogueReturnMeta(backKind);

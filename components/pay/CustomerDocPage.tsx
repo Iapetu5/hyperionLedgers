@@ -40,8 +40,24 @@ export function CustomerDocPage({
   const [clientReady, setClientReady] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
-  const reload = useCallback(() => {
-    setDoc(loadDoc(kind, id));
+  const reload = useCallback(async () => {
+    const local = loadDoc(kind, id);
+    if (local) {
+      setDoc(local);
+      return;
+    }
+    try {
+      const path = kind === "invoice" ? `/api/public/invoice/${encodeURIComponent(id)}` : `/api/public/quote/${encodeURIComponent(id)}`;
+      const res = await fetch(path, { cache: "no-store" });
+      const data = (await res.json().catch(() => ({}))) as { doc?: PublicInvoice | PublicQuote | null };
+      if (data.doc) {
+        setDoc(data.doc);
+        return;
+      }
+    } catch {
+      /* fall through */
+    }
+    setDoc(null);
   }, [kind, id]);
 
   useEffect(() => {
@@ -103,9 +119,32 @@ export function CustomerDocPage({
   const exGst = Math.round((doc.amount - doc.gst) * 100) / 100;
 
   function act(status: string, message: string) {
-    setPublicDocStatus(kind, id, status);
-    setNote(message);
-    reload();
+    void (async () => {
+      if (doc?.fromUser) {
+        try {
+          const path =
+            kind === "invoice"
+              ? `/api/public/invoice/${encodeURIComponent(id)}/status`
+              : `/api/public/quote/${encodeURIComponent(id)}/status`;
+          const res = await fetch(path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          });
+          const data = (await res.json().catch(() => ({}))) as { doc?: PublicInvoice | PublicQuote };
+          if (data.doc) {
+            setDoc(data.doc);
+            setNote(message);
+            return;
+          }
+        } catch {
+          /* local fallback below */
+        }
+      }
+      setPublicDocStatus(kind, id, status);
+      setNote(message);
+      reload();
+    })();
   }
 
   return (

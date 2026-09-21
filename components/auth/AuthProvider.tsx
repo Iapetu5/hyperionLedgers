@@ -22,6 +22,7 @@ import {
   updateAccountProfile as updateProfileLib,
   AuthResult,
 } from "@/lib/auth";
+import { setBooksPersistence } from "@/lib/books-client";
 
 type AuthContextValue = {
   user: PublicAccount | null;
@@ -60,12 +61,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await readJson(res);
       if (data.configured && data.account) {
         setPersistence("server");
+        setBooksPersistence("server");
         setUser(data.account);
         setLoading(false);
         return;
       }
       if (data.configured) {
         setPersistence("server");
+        setBooksPersistence("server");
         setUser(null);
         setLoading(false);
         return;
@@ -74,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fall through to browser-local demo accounts when the API is unavailable.
     }
     setPersistence("local");
+    setBooksPersistence("local");
     setUser(getCurrentAccount());
     setLoading(false);
   }, []);
@@ -103,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = await readJson(res);
           if (res.ok && data.account) {
             setPersistence("server");
+            setBooksPersistence("server");
             setUser(data.account);
             return { ok: true, account: data.account };
           }
@@ -115,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const local = await signUpLib(input);
         if (local.ok) {
           setPersistence("local");
+          setBooksPersistence("local");
           setUser(local.account);
         }
         return local;
@@ -129,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = await readJson(res);
           if (res.ok && data.account) {
             setPersistence("server");
+            setBooksPersistence("server");
             setUser(data.account);
             return { ok: true, account: data.account };
           }
@@ -141,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const local = await logInLib(email, password);
         if (local.ok) {
           setPersistence("local");
+          setBooksPersistence("local");
           setUser(local.account);
         }
         return local;

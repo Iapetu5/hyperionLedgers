@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/demo/EmptyState";
 import { formatAUD } from "@/lib/format";
 import { accounts, kpis } from "@/lib/sample-data";
 import { rollupBlankReports, EMPTY_REPORT_ROLLUP, type BlankReportRollup } from "@/lib/blank-reports";
-import { loadUserBills, loadUserInvoices } from "@/lib/user-docs";
+import { loadBills, loadInvoices } from "@/lib/books-client";
 
 export default function BalanceSheetReportPage() {
   const { usesSampleData } = useAuth();
@@ -19,13 +19,15 @@ export default function BalanceSheetReportPage() {
       setRollup(EMPTY_REPORT_ROLLUP);
       return;
     }
-    const reload = () => setRollup(rollupBlankReports(loadUserInvoices(), loadUserBills()));
-    reload();
-    window.addEventListener("hl-user-docs-updated", reload);
-    window.addEventListener("hl-doc-status", reload);
+    const reload = async () =>
+      setRollup(rollupBlankReports(await loadInvoices(), await loadBills()));
+    void reload();
+    const onUpdate = () => void reload();
+    window.addEventListener("hl-user-docs-updated", onUpdate);
+    window.addEventListener("hl-doc-status", onUpdate);
     return () => {
-      window.removeEventListener("hl-user-docs-updated", reload);
-      window.removeEventListener("hl-doc-status", reload);
+      window.removeEventListener("hl-user-docs-updated", onUpdate);
+      window.removeEventListener("hl-doc-status", onUpdate);
     };
   }, [usesSampleData]);
 

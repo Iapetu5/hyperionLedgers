@@ -130,6 +130,15 @@ async function loadOrg(userId: string): Promise<OrgRow | null> {
   return rows[0] ?? null;
 }
 
+/** Signed-in org row + public account — used by server-backed books APIs. */
+export async function getSessionOrg(): Promise<{ orgId: string; account: PublicAccount } | null> {
+  const account = await getSessionAccount();
+  if (!account) return null;
+  const org = await loadOrg(account.id);
+  if (!org) return null;
+  return { orgId: org.id, account };
+}
+
 export async function getSessionAccount(): Promise<PublicAccount | null> {
   if (!isDbConfigured()) return null;
   await ensureSchema();
