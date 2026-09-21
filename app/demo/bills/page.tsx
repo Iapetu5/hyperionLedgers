@@ -720,7 +720,7 @@ export default function BillsPage() {
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Demo sample bills stay in the guest tour — they are not copied into your organisation."
+          hint="Sample demo bills stay in the guest demo — not copied into your business."
         />
       ) : userRows.length === 0 ? null : (
         userTable()

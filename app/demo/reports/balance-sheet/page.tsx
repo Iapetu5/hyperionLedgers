@@ -172,7 +172,7 @@ export default function BalanceSheetReportPage() {
         <EmptyState
           icon={Scale}
           title="No balance sheet figures yet"
-          description="Make an invoice or bill to see a balance sheet preview."
+          description="Create an invoice or bill. This page will fill in with what you own and owe from those documents."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },

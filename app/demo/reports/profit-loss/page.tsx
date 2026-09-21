@@ -155,7 +155,7 @@ export default function ProfitLossReportPage() {
         <EmptyState
           icon={TrendingUp}
           title="No profit & loss figures yet"
-          description="Make an invoice or bill to see a profit and loss preview."
+          description="Create an invoice or bill. This page will fill in with profit and loss from those documents."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },

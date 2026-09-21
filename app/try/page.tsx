@@ -17,7 +17,7 @@ const STEPS = [
     icon: SlidersHorizontal,
     step: "2",
     title: "Answer a few setup questions",
-    body: "Add your business, GST, and year end. One question at a time.",
+    body: "Add your business, GST, and year end. You can start with a blank set of books.",
   },
   {
     icon: LayoutDashboard,
