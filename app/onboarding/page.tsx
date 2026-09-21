@@ -4,10 +4,12 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
+import Link from "next/link";
 import { AbnField } from "@/components/abn/AbnField";
 import { EasyStepBar } from "@/components/easy/EasyStepBar";
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
+import { clearSelectedCompany, readSelectedCompany } from "@/lib/add-company";
 
 type StepId = "gst" | "method" | "year" | "ledger";
 
@@ -25,7 +27,7 @@ const STEP_LABEL: Record<StepId, string> = {
 };
 
 export default function OnboardingPage() {
-  const { user, loading, completeOnboarding, skipOnboarding, needsOnboarding } = useAuth();
+  const { user, loading, completeOnboarding, skipOnboarding, needsOnboarding, updateProfile } = useAuth();
   const router = useRouter();
   const [gstRegistered, setGstRegistered] = useState(true);
   const [method, setMethod] = useState<GstAccountingMethod>("accruals");
@@ -50,7 +52,17 @@ export default function OnboardingPage() {
       return;
     }
     if (user.abn) setAbn(user.abn);
-  }, [user, loading, needsOnboarding, router]);
+    const picked = readSelectedCompany();
+    if (!picked) return;
+    setAbn(picked.abn);
+    setGstRegistered(picked.gstRegistered);
+    void updateProfile({
+      businessName: picked.legalName,
+      abn: picked.abn,
+      gstRegistered: picked.gstRegistered,
+    });
+    clearSelectedCompany();
+  }, [user, loading, needsOnboarding, router, updateProfile]);
 
   useEffect(() => {
     if (!steps.includes(stepId)) {
@@ -192,7 +204,14 @@ export default function OnboardingPage() {
                   ))}
                 </div>
               </fieldset>
-              <AbnField value={abn} onChange={setAbn} />
+              <div>
+                <div className="mb-2 flex justify-end">
+                  <Link href="/onboarding/add-company?return=/onboarding" className="text-sm font-semibold text-brand-300 hover:underline">
+                    Add company
+                  </Link>
+                </div>
+                <AbnField value={abn} onChange={setAbn} />
+              </div>
             </>
           )}
 

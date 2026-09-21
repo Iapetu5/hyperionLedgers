@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { AbnField } from "@/components/abn/AbnField";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import type { GstAccountingMethod } from "@/lib/auth";
+import { clearSelectedCompany, readSelectedCompany } from "@/lib/add-company";
 
 export default function AccountPage() {
   const { user, updateProfile, loading, usesSampleData } = useAuth();
@@ -19,6 +20,14 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!user) return;
+    const picked = readSelectedCompany();
+    if (picked) {
+      setBusinessName(picked.legalName);
+      setAbn(picked.abn);
+      setGstRegistered(picked.gstRegistered);
+      clearSelectedCompany();
+      return;
+    }
     setBusinessName(user.businessName);
     setAbn(user.abn ?? "");
     setGstRegistered(user.gstRegistered ?? true);
@@ -37,7 +46,7 @@ export default function AccountPage() {
             You are looking at the Harbour &amp; Co sample. Sign up to keep your own HyperionInvoices details.
           </p>
         </div>
-        <div className="card p-6 text-base text-slate-200">
+        <div className="card p-6 text-sm text-slate-200">
           <div className="flex flex-wrap gap-2">
             <Link href="/signup" className="btn-primary">Sign up to keep an org</Link>
             <Link href="/login" className="btn-secondary">Log in</Link>
@@ -97,7 +106,12 @@ export default function AccountPage() {
 
       <form className="card max-w-xl space-y-5 p-6" onSubmit={onSave}>
         <div>
-          <label className="label" htmlFor="bn">Business name</label>
+          <div className="flex items-baseline justify-between gap-2">
+            <label className="label" htmlFor="bn">Business name</label>
+            <Link href="/onboarding/add-company?return=/demo/account" className="text-sm font-semibold text-brand-300 hover:underline">
+              Add company
+            </Link>
+          </div>
           <input id="bn" className="input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
         </div>
         <AbnField value={abn} onChange={setAbn} />

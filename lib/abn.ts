@@ -38,13 +38,51 @@ export function validateAbnField(abn: string, required = false): string | null {
   return null;
 }
 
-const SIMULATED_ABR: Record<string, Omit<AbrLookupResult, "abn" | "simulated">> = {
-  "51824753556": { legalName: "Harbour & Co Studio Pty Ltd", entityStatus: "Active", gstRegistered: true },
-  "53004085616": { legalName: "Sample Retail Holdings Pty Ltd", entityStatus: "Active", gstRegistered: true },
-  "10000000032": { legalName: "Bluegum Dental Practice Pty Ltd", entityStatus: "Active", gstRegistered: true },
-  "10000000064": { legalName: "Northside Café Group Pty Ltd", entityStatus: "Active", gstRegistered: true },
-  "10000000113": { legalName: "Cancelled Demo Entity Pty Ltd", entityStatus: "Cancelled", gstRegistered: false },
+export type AbrCompany = {
+  abn: string;
+  legalName: string;
+  entityStatus: "Active" | "Cancelled";
+  gstRegistered: boolean;
+  state: string;
+  postcode: string;
 };
+
+const SIMULATED_ABR: Record<string, Omit<AbrLookupResult, "abn" | "simulated"> & { state: string; postcode: string }> = {
+  "51824753556": { legalName: "Harbour & Co Studio Pty Ltd", entityStatus: "Active", gstRegistered: true, state: "NSW", postcode: "2010" },
+  "53004085616": { legalName: "Sample Retail Holdings Pty Ltd", entityStatus: "Active", gstRegistered: true, state: "VIC", postcode: "3000" },
+  "10000000032": { legalName: "Bluegum Dental Practice Pty Ltd", entityStatus: "Active", gstRegistered: true, state: "QLD", postcode: "4000" },
+  "10000000064": { legalName: "Northside Café Group Pty Ltd", entityStatus: "Active", gstRegistered: true, state: "NSW", postcode: "2060" },
+  "10000000113": { legalName: "Cancelled Demo Entity Pty Ltd", entityStatus: "Cancelled", gstRegistered: false, state: "SA", postcode: "5000" },
+  "33000000081": { legalName: "Surry Hills Bakery Pty Ltd", entityStatus: "Active", gstRegistered: true, state: "NSW", postcode: "2010" },
+  "33000000130": { legalName: "Elder Cafe Pty Ltd", entityStatus: "Active", gstRegistered: true, state: "VIC", postcode: "3182" },
+  "85000000660": { legalName: "Melbourne Bookkeeping Co Pty Ltd", entityStatus: "Active", gstRegistered: true, state: "VIC", postcode: "3000" },
+  "18000000181": { legalName: "Coastal Plumbing Services Pty Ltd", entityStatus: "Active", gstRegistered: false, state: "QLD", postcode: "4217" },
+};
+
+export function listAbrCompanies(): AbrCompany[] {
+  return Object.entries(SIMULATED_ABR).map(([digits, row]) => ({
+    abn: formatAbn(digits),
+    legalName: row.legalName,
+    entityStatus: row.entityStatus,
+    gstRegistered: row.gstRegistered,
+    state: row.state,
+    postcode: row.postcode,
+  }));
+}
+
+/** Simulated ABR name / ABN search for Add company. Demo only — not a live ABR call. */
+export function searchAbrCompanies(query: string): AbrCompany[] {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const digits = digitsOnlyAbn(q);
+  return listAbrCompanies().filter((c) => {
+    const name = c.legalName.toLowerCase();
+    const abnDigits = digitsOnlyAbn(c.abn);
+    if (name.includes(q)) return true;
+    if (digits.length >= 2 && abnDigits.includes(digits)) return true;
+    return false;
+  });
+}
 
 export function lookupAbn(abn: string): AbrLookupResult | null {
   const digits = digitsOnlyAbn(abn);
