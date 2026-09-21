@@ -79,23 +79,28 @@ body {
   }
 
   .marketing-kicker {
-    @apply text-sm font-semibold uppercase tracking-widest text-brand-200;
+    @apply text-sm font-semibold uppercase tracking-wider text-brand-200;
   }
 
   .marketing-title {
-    @apply mt-3 text-5xl font-bold tracking-tight text-white sm:text-6xl;
+    @apply mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl;
   }
 
   .marketing-lead {
-    @apply mt-4 max-w-2xl text-xl leading-relaxed text-white;
+    @apply mt-5 max-w-2xl text-lg leading-8 text-white sm:text-xl sm:leading-8;
   }
 
   .marketing-copy {
-    @apply text-base leading-relaxed text-slate-100;
+    @apply text-base leading-7 text-slate-50;
   }
 
+  .marketing-section-title {
+    @apply text-2xl font-semibold tracking-tight text-white sm:text-3xl;
+  }
+
+  /* Secondary links stay underlined so they are easy to find. Do not enlarge buttons. */
   .link-quiet {
-    @apply text-base font-medium text-white underline-offset-4 transition hover:underline;
+    @apply text-base font-medium text-white underline decoration-white/45 underline-offset-4 transition hover:decoration-white;
   }
 
   .btn-secondary {

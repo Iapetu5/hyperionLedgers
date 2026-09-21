@@ -6,7 +6,7 @@ import { GoToAppLink, TryDemoLink } from "@/components/marketing/TryDemoCta";
 
 export function HomeHeroActions() {
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+    <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
       <StartTrialButton className="btn-marketing-primary" />
       <Link href="/signup" className="link-quiet">
         Sign up
