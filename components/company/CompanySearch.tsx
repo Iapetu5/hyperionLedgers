@@ -3,7 +3,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { AbrCompany } from "@/lib/abn";
 import { describeAbrLookup } from "@/lib/abn";
-import { AbrRegisterNote } from "@/components/company/AbrRegisterNote";
 import { enrichAbrCompany, useAbrSearch } from "@/components/company/useAbrSearch";
 
 type Props = {
@@ -93,12 +92,7 @@ export function CompanySearch({ selected, onSelect, onNeedManual }: Props) {
           }
         }}
       />
-      <AbrRegisterNote
-        searchSimulated={simulated}
-        liveConfigured={liveConfigured}
-        className="mt-2 text-xs text-slate-400"
-      />
-      <p className="mt-1 text-xs text-slate-500">{copy.searchHelp}</p>
+      <p className="mt-2 text-xs text-slate-400">{copy.searchHelp}</p>
       {query.trim().length === 0 && (
         <p className="mt-3 text-sm text-slate-300">
           Search is optional. You can type the business name, ABN, and type in the form below.
