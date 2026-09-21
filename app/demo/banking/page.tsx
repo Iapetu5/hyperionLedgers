@@ -177,7 +177,12 @@ export default function BankingPage() {
   const [opening, setOpening] = useState(0);
   const [openingSet, setOpeningSet] = useState(false);
   const [ledgerReady, setLedgerReady] = useState(false);
+  /** Memory-only — refresh is Cancel. Never persist this; writes happen only after confirm. */
   const [pendingConfirm, setPendingConfirm] = useState<BankingConfirm | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [applyAllBusy, setApplyAllBusy] = useState(false);
+  const importLock = useRef(false);
+  const applyAllLock = useRef(false);
 
   const reload = useCallback(async () => {
     setTxns(await loadBankTransactions(mode));
@@ -289,7 +294,10 @@ export default function BankingPage() {
     if (!result.ok) {
       setError(result.error);
       setPreview(null);
-      setSkipped([]);
+      setSkipped(result.skipped ?? []);
+      setSuccess(null);
+      setSuccessSkipped([]);
+      setFileName(label);
       return;
     }
     setFileName(label);
@@ -320,7 +328,7 @@ export default function BankingPage() {
       return;
     }
     if (file.size === 0) {
-      setError("This file is empty. Upload a CSV with date, description and amount columns.");
+      setError("Nothing was imported. This file is empty. Upload a CSV with date, description and amount columns.");
       return;
     }
     if (file.size > 2_000_000) {
@@ -362,8 +370,16 @@ export default function BankingPage() {
   }
 
   function confirmImport() {
-    if (!preview?.length) return;
+    if (!preview?.length) {
+      setError("Nothing was imported. The preview is empty — no valid rows to add.");
+      setSuccess(null);
+      return;
+    }
+    if (importLock.current) return;
+    importLock.current = true;
+    setImportBusy(true);
     void (async () => {
+      try {
       const beforeImportCount = txns.filter((x) => x.source === "import").length;
       const skippedSnapshot = skipped;
       let openingNote = "";
@@ -400,6 +416,10 @@ export default function BankingPage() {
       requestAnimationFrame(() => {
         reconSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
+      } finally {
+        importLock.current = false;
+        setImportBusy(false);
+      }
     })();
   }
 
@@ -470,7 +490,11 @@ export default function BankingPage() {
   }
 
   function applyAllHighConfidence() {
+    if (applyAllLock.current) return;
+    applyAllLock.current = true;
+    setApplyAllBusy(true);
     void (async () => {
+      try {
       const lines = unmatchedForAccount(await loadBankTransactions(mode), chequeAccountId);
       let applied = 0;
       for (const t of lines) {
@@ -493,6 +517,10 @@ export default function BankingPage() {
             ? `Applied ${applied} line${applied === 1 ? "" : "s"}. ${left} ${morePowerHint(true, hasImport)}`.trim()
             : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${left} Next: ${steps.applyN} Apply, or Ask AI under More.`,
       );
+      } finally {
+        applyAllLock.current = false;
+        setApplyAllBusy(false);
+      }
     })();
   }
 
@@ -842,7 +870,7 @@ export default function BankingPage() {
           {fileName && !preview && <span className="text-sm text-slate-300">{fileName}</span>}
         </div>
 
-        {preview && (
+        {preview && preview.length > 0 && (
           <div className="space-y-3 rounded-lg border border-brand-400/30 bg-brand-500/10 p-4">
             <p className="text-sm font-semibold text-white">
               Preview — {preview.length} row{preview.length === 1 ? "" : "s"} from {fileName} (before
@@ -895,8 +923,13 @@ export default function BankingPage() {
               </table>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn-primary" onClick={confirmImport}>
-                Import CSV
+              <button
+                type="button"
+                className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={confirmImport}
+                disabled={importBusy}
+              >
+                {importBusy ? "Importing…" : "Import CSV"}
               </button>
               <button type="button" className="btn-secondary" onClick={cancelPreview}>
                 Cancel
@@ -906,20 +939,30 @@ export default function BankingPage() {
         )}
       </div>
 
-      {successSkipped.length > 0 && !preview && (
+      {!preview && (successSkipped.length > 0 || (error && skipped.length > 0)) && (
         <div
           className="flex items-start gap-2 rounded-lg border border-amber-300/55 bg-amber-400/20 px-3 py-2.5 text-sm font-medium text-amber-50 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.18)]"
           role="status"
         >
           <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-200" aria-hidden />
           <span>
-            <span className="font-semibold">
-              Skipped {successSkipped.length} bad row{successSkipped.length === 1 ? "" : "s"}
-            </span>{" "}
-            <span className="font-normal text-amber-100/90">
-              (valid rows were still imported — this note stays until the next Import CSV):{" "}
-              {skippedRowsPhrase(successSkipped)}.
-            </span>
+            {(() => {
+              const rows = successSkipped.length > 0 ? successSkipped : skipped;
+              const imported = successSkipped.length > 0;
+              return (
+                <>
+                  <span className="font-semibold">
+                    Skipped {rows.length} bad row{rows.length === 1 ? "" : "s"}
+                  </span>{" "}
+                  <span className="font-normal text-amber-100/90">
+                    {imported
+                      ? "(valid rows were still imported — this note stays until the next Import CSV): "
+                      : "(nothing was imported — every listed row was skipped): "}
+                    {skippedRowsPhrase(rows)}.
+                  </span>
+                </>
+              );
+            })()}
           </span>
         </div>
       )}
@@ -969,12 +1012,13 @@ export default function BankingPage() {
             {unmatched.length > 0 && (
               <button
                 type="button"
-                className="btn-secondary !px-3 !py-1.5 text-xs"
+                className="btn-secondary !px-3 !py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={applyAllHighConfidence}
+                disabled={applyAllBusy}
                 title="Applies only the high-confidence suggestions"
               >
                 <CheckCircle2 size={14} />
-                Apply all
+                {applyAllBusy ? "Applying…" : "Apply all"}
               </button>
             )}
             <MoreMenu buttonClassName="btn-secondary !px-3 !py-1.5 text-xs" title="More categorise actions">
