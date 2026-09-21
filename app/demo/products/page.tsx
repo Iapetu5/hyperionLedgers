@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Package, Pencil, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
-import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import { formatAUD } from "@/lib/format";
 import {
   createProduct,
@@ -323,29 +322,23 @@ export default function ProductsPage() {
       {!catalogueReady ? (
         <div className="card px-4 py-8 text-center text-sm text-slate-400">Loading catalogue…</div>
       ) : blankEmpty ? (
-        <div className="space-y-3">
-          <EmptyState
-            icon={Package}
-            title="Catalogue is empty"
-            description="Add one product above — name, price before tax, and whether GST applies. Then return to the invoice and pick it. Quantity fills the amount, and GST is added only when GST applies."
-            actions={[
-              {
-                label: "Add a product",
-                primary: true,
-                onClick: () => {
-                  document.getElementById("product-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  (document.getElementById("prd-name") as HTMLInputElement | null)?.focus();
-                },
+        <EmptyState
+          icon={Package}
+          title="Catalogue is empty"
+          description="Add one product above — name, price before tax, and whether GST applies. Then return to the invoice and pick it. Quantity fills the amount, and GST is added only when GST applies."
+          actions={[
+            {
+              label: "Add a product",
+              primary: true,
+              onClick: () => {
+                document.getElementById("product-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                (document.getElementById("prd-name") as HTMLInputElement | null)?.focus();
               },
-              { label: "Back to overview", href: "/demo" },
-            ]}
-            hint="Price is before tax. Choose whether GST applies on that product."
-          />
-          <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-slate-400">
-            <span>Want sample figures instead?</span>
-            <ExploreSampleButton primary={false} label="Try a demo" className="!px-2.5 !py-1 text-xs" />
-          </div>
-        </div>
+            },
+            { label: "Back to overview", href: "/demo" },
+          ]}
+          hint="Price is before tax. Choose whether GST applies on that product."
+        />
       ) : (
         <div className="card overflow-x-auto">
           <div className="space-y-3 border-b border-white/10 px-4 py-3">

@@ -723,21 +723,20 @@ export default function BillsPage() {
         <EmptyState
           icon={Receipt}
           title="No bills yet"
-          description="Next: Add bill. Create sample bill makes a ready-made example you can Approve or Mark paid."
-          showExploreSample
+          description="Open a blank supplier bill, or start from a ready-made example you can approve or mark paid."
           actions={[
             {
-              label: "Add bill",
+              label: "Start from an example",
               primary: true,
-              onClick: () => openComposer(),
+              onClick: () => createMixedTaxSample(),
             },
             {
-              label: "Create sample bill",
-              onClick: () => createMixedTaxSample(),
+              label: "New bill",
+              onClick: () => openComposer(),
             },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Sample demo bills stay in the guest demo — not copied into your business."
+          hint="Your bills stay with this business."
         />
       ) : userRows.length === 0 ? null : (
         userTable()
@@ -748,7 +747,7 @@ export default function BillsPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Next: Add bill, then Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically.
+              Make a bill for this business. Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically.
             </>
           ) : (
             <>

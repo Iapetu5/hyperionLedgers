@@ -157,13 +157,12 @@ export default function ReportsPage() {
           icon={BarChart3}
           title="No report figures yet"
           description="Create an invoice or bill. This page will fill in with figures from your documents."
-          showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
             { label: "Create bill", href: "/demo/bills?mixed=1" },
             { label: "Back to overview", href: "/demo" },
           ]}
-          hint="Reports update from your invoices and bills. Sample figures stay in the guest demo. Nothing here is lodged with the ATO."
+          hint="Reports update from your invoices and bills. Nothing here is lodged with the ATO."
         />
       )}
     </div>

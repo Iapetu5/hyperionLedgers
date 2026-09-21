@@ -554,7 +554,6 @@ export default function GstBasPage() {
           icon={Calculator}
           title="No BAS draft figures yet"
           description="Create an invoice or bill. Year-to-date GST and a draft quarter will fill in from those documents."
-          showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
             { label: "Create bill", href: "/demo/bills?mixed=1" },

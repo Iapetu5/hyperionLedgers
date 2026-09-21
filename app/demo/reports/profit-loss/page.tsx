@@ -158,7 +158,6 @@ export default function ProfitLossReportPage() {
           icon={TrendingUp}
           title="No profit & loss figures yet"
           description="Create an invoice or bill. This page will fill in with profit and loss from those documents."
-          showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
             { label: "Create bill", href: "/demo/bills?mixed=1" },
