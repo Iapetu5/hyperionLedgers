@@ -25,13 +25,13 @@ import { invoices as sampleInvoices } from "@/lib/sample-data";
 import { docTaxTreatmentSummary, publicInvoiceUrl, setPublicDocStatus } from "@/lib/public-docs";
 import { invoiceStatus, useDocStatusTick } from "@/lib/use-doc-statuses";
 import {
-  createUserInvoice,
-  deleteUserInvoice,
-  effectiveInvoiceStatus,
-  loadUserInvoices,
-  updateUserInvoice,
-  type UserInvoice
-} from "@/lib/user-docs";
+  createInvoice,
+  deleteInvoice,
+  loadInvoices,
+  setInvoiceStatus,
+  updateInvoice,
+} from "@/lib/books-client";
+import { effectiveInvoiceStatus, type UserInvoice } from "@/lib/user-docs";
 
 export default function InvoicesPage() {
   const { usesSampleData } = useAuth();
@@ -53,7 +53,9 @@ export default function InvoicesPage() {
   const [dueDate, setDueDate] = useState(() => plusDaysISO(14));
   const [status, setStatus] = useState<UserInvoice["status"]>("Awaiting payment");
 
-  const reloadUser = useCallback(() => setUserRows(loadUserInvoices()), []);
+  const reloadUser = useCallback(async () => {
+    setUserRows(await loadInvoices());
+  }, []);
 
   useEffect(() => {
     reloadUser();
@@ -141,24 +143,26 @@ export default function InvoicesPage() {
     if (!tryBeginMixedOneClick()) return;
     const draftLines = mixedTaxStarterDrafts("income");
     const contactName = "Acme Pty Ltd";
-    const res = createUserInvoice({ contact: contactName, lines: draftsToInputs(draftLines) });
-    if ("error" in res) {
-      setLines(draftLines);
-      setContact(contactName);
-      setFormError(res.error);
-      setFormOk(null);
-      setLastCreatedId(null);
-      return;
-    }
-    setPublicDocStatus("invoice", res.id, res.status);
-    resetForm();
-    setLastCreatedId(res.id);
-    setComposerOpen(true);
-    setFormOk(`Created ${res.id} with mixed GST + GST-free lines — open the pay link below.`);
-    reloadUser();
-    window.setTimeout(() => {
-      document.getElementById("inv-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 40);
+    void (async () => {
+      const res = await createInvoice({ contact: contactName, lines: draftsToInputs(draftLines) });
+      if ("error" in res) {
+        setLines(draftLines);
+        setContact(contactName);
+        setFormError(res.error);
+        setFormOk(null);
+        setLastCreatedId(null);
+        return;
+      }
+      setPublicDocStatus("invoice", res.id, res.status);
+      resetForm();
+      setLastCreatedId(res.id);
+      setComposerOpen(true);
+      setFormOk(`Created ${res.id} with mixed GST + GST-free lines — open the pay link below.`);
+      await reloadUser();
+      window.setTimeout(() => {
+        document.getElementById("inv-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 40);
+    })();
   }
 
   function prefillMixedTaxDraft() {
@@ -227,52 +231,54 @@ export default function InvoicesPage() {
     e.preventDefault();
     setFormError(null);
     setFormOk(null);
-    if (editingId) {
-      const payload = {
-        contact,
+    void (async () => {
+      if (editingId) {
+        const payload = {
+          contact,
+          lines: draftsToInputs(lines),
+          issueDate,
+          dueDate,
+          status,
+        };
+        const res = await updateInvoice(editingId, payload);
+        if ("error" in res) {
+          setFormError(res.error);
+          return;
+        }
+        setPublicDocStatus("invoice", res.id, res.status);
+        resetForm();
+        setLastCreatedId(res.id);
+        setComposerOpen(true);
+        setFormOk(`Updated ${res.id}.`);
+        await reloadUser();
+        return;
+      }
+      const res = await createInvoice({ contact, lines: draftsToInputs(lines) });
+      if ("error" in res) {
+        const nudge =
+          /amount|line/i.test(res.error) && !editingId
+            ? " Tip: use Create sample above for a ready-made invoice with GST and GST-free lines."
+            : "";
+        setFormError(`${res.error}${nudge}`);
+        return;
+      }
+      const updated = await updateInvoice(res.id, {
+        contact: res.contact,
         lines: draftsToInputs(lines),
         issueDate,
         dueDate,
         status,
-      };
-      const res = updateUserInvoice(editingId, payload);
-      if ("error" in res) {
-        setFormError(res.error);
-        return;
+      });
+      if (!("error" in updated)) {
+        setPublicDocStatus("invoice", updated.id, updated.status);
       }
-      setPublicDocStatus("invoice", res.id, res.status);
+      const createdId = "error" in updated ? res.id : updated.id;
       resetForm();
-      setLastCreatedId(res.id);
+      setLastCreatedId(createdId);
       setComposerOpen(true);
-      setFormOk(`Updated ${res.id}.`);
-      reloadUser();
-      return;
-    }
-    const res = createUserInvoice({ contact, lines: draftsToInputs(lines) });
-    if ("error" in res) {
-      const nudge =
-        /amount|line/i.test(res.error) && !editingId
-          ? " Tip: use Create sample above for a ready-made invoice with GST and GST-free lines."
-          : "";
-      setFormError(`${res.error}${nudge}`);
-      return;
-    }
-    const updated = updateUserInvoice(res.id, {
-      contact: res.contact,
-      lines: draftsToInputs(lines),
-      issueDate,
-      dueDate,
-      status,
-    });
-    if (!("error" in updated)) {
-      setPublicDocStatus("invoice", updated.id, updated.status);
-    }
-    const createdId = "error" in updated ? res.id : updated.id;
-    resetForm();
-    setLastCreatedId(createdId);
-    setComposerOpen(true);
-    setFormOk(`Created ${createdId}.`);
-    reloadUser();
+      setFormOk(`Created ${createdId}.`);
+      await reloadUser();
+    })();
   }
 
   function onEdit(inv: UserInvoice) {
@@ -306,12 +312,14 @@ export default function InvoicesPage() {
   }
 
   function onDelete(id: string) {
-    deleteUserInvoice(id);
-    if (editingId === id) resetForm();
-    if (lastCreatedId === id) setLastCreatedId(null);
-    reloadUser();
-    setSendNote(`Removed ${id}. Next: Create invoice.`);
-    setFormOk(null);
+    void (async () => {
+      await deleteInvoice(id);
+      if (editingId === id) resetForm();
+      if (lastCreatedId === id) setLastCreatedId(null);
+      await reloadUser();
+      setSendNote(`Removed ${id}. Next: Create invoice.`);
+      setFormOk(null);
+    })();
   }
 
   function noteInvoiceStatus(id: string, next: UserInvoice["status"]) {
@@ -321,10 +329,13 @@ export default function InvoicesPage() {
   }
 
   function onSetInvStatus(id: string, next: UserInvoice["status"]) {
-    setPublicDocStatus("invoice", id, next);
-    reloadUser();
-    setSendNote(noteInvoiceStatus(id, next));
-    setFormOk(null);
+    void (async () => {
+      setPublicDocStatus("invoice", id, next);
+      await setInvoiceStatus(id, next);
+      await reloadUser();
+      setSendNote(noteInvoiceStatus(id, next));
+      setFormOk(null);
+    })();
   }
 
   function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {

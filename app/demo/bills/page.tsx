@@ -24,16 +24,18 @@ import { formatAUD, formatDateAU, todayISO, plusDaysISO } from "@/lib/format";
 import { docLineTaxLabel, docTaxTreatmentSummary } from "@/lib/public-docs";
 import { bills } from "@/lib/sample-data";
 import {
-  createUserBill,
-  deleteUserBill,
+  createBill,
+  deleteBill,
+  loadBills,
+  setBillStatus,
+  updateBill,
+} from "@/lib/books-client";
+import {
   effectiveBillStatus,
   effectiveSampleBillStatus,
   getSampleBillStatus,
-  loadUserBills,
   setSampleBillStatus,
-  setUserBillStatus,
-  updateUserBill,
-  type UserBill
+  type UserBill,
 } from "@/lib/user-docs";
 
 export default function BillsPage() {
@@ -54,7 +56,9 @@ export default function BillsPage() {
   const [dueDate, setDueDate] = useState(() => plusDaysISO(14));
   const [status, setStatus] = useState<UserBill["status"]>("Awaiting approval");
 
-  const reloadUser = useCallback(() => setUserRows(loadUserBills()), []);
+  const reloadUser = useCallback(async () => {
+    setUserRows(await loadBills());
+  }, []);
 
   useEffect(() => {
     reloadUser();
@@ -126,23 +130,25 @@ export default function BillsPage() {
     if (!tryBeginMixedOneClick()) return;
     const draftLines = mixedTaxStarterDrafts("expense");
     const supplierName = "OfficeNest Supplies Pty Ltd";
-    const res = createUserBill({ supplier: supplierName, lines: draftsToInputs(draftLines) });
-    if ("error" in res) {
-      setLines(draftLines);
-      setSupplier(supplierName);
-      setFormError(res.error);
-      setFormOk(null);
-      setLastCreatedId(null);
-      return;
-    }
-    resetForm();
-    setLastCreatedId(res.id);
-    setComposerOpen(true);
-    setFormOk(`Created ${res.id} with mixed GST on Expenses + GST Free Expenses — Approve / Mark paid below.`);
-    reloadUser();
-    window.setTimeout(() => {
-      document.getElementById("bill-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 40);
+    void (async () => {
+      const res = await createBill({ supplier: supplierName, lines: draftsToInputs(draftLines) });
+      if ("error" in res) {
+        setLines(draftLines);
+        setSupplier(supplierName);
+        setFormError(res.error);
+        setFormOk(null);
+        setLastCreatedId(null);
+        return;
+      }
+      resetForm();
+      setLastCreatedId(res.id);
+      setComposerOpen(true);
+      setFormOk(`Created ${res.id} with mixed GST on Expenses + GST Free Expenses — Approve / Mark paid below.`);
+      await reloadUser();
+      window.setTimeout(() => {
+        document.getElementById("bill-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 40);
+    })();
   }
 
   function prefillMixedTaxDraft() {
@@ -211,50 +217,52 @@ export default function BillsPage() {
     e.preventDefault();
     setFormError(null);
     setFormOk(null);
-    if (editingId) {
-      const res = updateUserBill(editingId, {
+    void (async () => {
+      if (editingId) {
+        const res = await updateBill(editingId, {
+          supplier,
+          lines: draftsToInputs(lines),
+          date: billDate,
+          dueDate,
+          status,
+        });
+        if ("error" in res) {
+          setFormError(res.error);
+          return;
+        }
+        resetForm();
+        setLastCreatedId(res.id);
+        setComposerOpen(true);
+        setFormOk(`Updated ${res.id}.`);
+        await reloadUser();
+        return;
+      }
+      const res = await createBill({
         supplier,
+        lines: draftsToInputs(lines),
+      });
+      if ("error" in res) {
+        const nudge =
+          /amount|line/i.test(res.error) && !editingId
+            ? " Tip: use Create sample above for a ready-made bill with GST and GST-free lines."
+            : "";
+        setFormError(`${res.error}${nudge}`);
+        return;
+      }
+      const updated = await updateBill(res.id, {
+        supplier: res.supplier,
         lines: draftsToInputs(lines),
         date: billDate,
         dueDate,
         status,
       });
-      if ("error" in res) {
-        setFormError(res.error);
-        return;
-      }
+      const createdId = "error" in updated ? res.id : updated.id;
       resetForm();
-      setLastCreatedId(res.id);
+      setLastCreatedId(createdId);
       setComposerOpen(true);
-      setFormOk(`Updated ${res.id}.`);
-      reloadUser();
-      return;
-    }
-    const res = createUserBill({
-      supplier,
-      lines: draftsToInputs(lines),
-    });
-    if ("error" in res) {
-      const nudge =
-        /amount|line/i.test(res.error) && !editingId
-          ? " Tip: use Create sample above for a ready-made bill with GST and GST-free lines."
-          : "";
-      setFormError(`${res.error}${nudge}`);
-      return;
-    }
-    const updated = updateUserBill(res.id, {
-      supplier: res.supplier,
-      lines: draftsToInputs(lines),
-      date: billDate,
-      dueDate,
-      status,
-    });
-    const createdId = "error" in updated ? res.id : updated.id;
-    resetForm();
-    setLastCreatedId(createdId);
-    setComposerOpen(true);
-    setFormOk(`Created ${createdId}.`);
-    reloadUser();
+      setFormOk(`Created ${createdId}.`);
+      await reloadUser();
+    })();
   }
 
   function onEdit(b: UserBill) {
@@ -285,12 +293,14 @@ export default function BillsPage() {
   }
 
   function onDelete(id: string) {
-    deleteUserBill(id);
-    if (editingId === id) resetForm();
-    if (lastCreatedId === id) setLastCreatedId(null);
-    reloadUser();
-    setStatusNote(`Removed ${id}. Next: Add bill.`);
-    setFormOk(null);
+    void (async () => {
+      await deleteBill(id);
+      if (editingId === id) resetForm();
+      if (lastCreatedId === id) setLastCreatedId(null);
+      await reloadUser();
+      setStatusNote(`Removed ${id}. Next: Add bill.`);
+      setFormOk(null);
+    })();
   }
 
   function noteBillStatus(id: string, next: UserBill["status"]) {
@@ -301,12 +311,14 @@ export default function BillsPage() {
   }
 
   function onSetStatus(id: string, next: UserBill["status"]) {
-    const row = setUserBillStatus(id, next);
-    reloadUser();
-    if (!row) return;
-    const note = noteBillStatus(row.id, next);
-    setStatusNote(note);
-    setFormOk(null);
+    void (async () => {
+      const row = await setBillStatus(id, next);
+      await reloadUser();
+      if (!row) return;
+      const note = noteBillStatus(row.id, next);
+      setStatusNote(note);
+      setFormOk(null);
+    })();
   }
 
   function onSampleStatus(id: string, next: UserBill["status"]) {

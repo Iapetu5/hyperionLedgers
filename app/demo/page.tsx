@@ -18,13 +18,11 @@ import {
   effectiveInvoiceStatus,
   effectiveQuoteStatus,
   effectiveSampleBillStatus,
-  loadUserBills,
-  loadUserInvoices,
-  loadUserQuotes,
   type UserBill,
   type UserInvoice,
   type UserQuote,
 } from "@/lib/user-docs";
+import { loadBills, loadInvoices, loadQuotes } from "@/lib/books-client";
 
 export default function DemoOverviewPage() {
   const { usesSampleData, user } = useAuth();
@@ -79,20 +77,21 @@ export default function DemoOverviewPage() {
 
   useEffect(() => {
     if (usesSampleData) return;
-    const reload = () =>
+    const reload = async () =>
       setBlankDocs({
-        invoices: loadUserInvoices(),
-        quotes: loadUserQuotes(),
-        bills: loadUserBills(),
+        invoices: await loadInvoices(),
+        quotes: await loadQuotes(),
+        bills: await loadBills(),
       });
-    reload();
-    window.addEventListener("hl-user-docs-updated", reload);
-    window.addEventListener("hl-doc-status", reload);
-    window.addEventListener("focus", reload);
+    void reload();
+    const onUpdate = () => void reload();
+    window.addEventListener("hl-user-docs-updated", onUpdate);
+    window.addEventListener("hl-doc-status", onUpdate);
+    window.addEventListener("focus", onUpdate);
     return () => {
-      window.removeEventListener("hl-user-docs-updated", reload);
-      window.removeEventListener("hl-doc-status", reload);
-      window.removeEventListener("focus", reload);
+      window.removeEventListener("hl-user-docs-updated", onUpdate);
+      window.removeEventListener("hl-doc-status", onUpdate);
+      window.removeEventListener("focus", onUpdate);
     };
   }, [usesSampleData, tick]);
 

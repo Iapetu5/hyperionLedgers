@@ -27,7 +27,8 @@ import {
   rollupSampleReportsInIsoRange,
   type BlankReportRollup,
 } from "@/lib/blank-reports";
-import { loadUserBills, loadUserInvoices, type UserBill, type UserInvoice } from "@/lib/user-docs";
+import { loadBills, loadInvoices } from "@/lib/books-client";
+import type { UserBill, UserInvoice } from "@/lib/user-docs";
 
 const SIM_LODGE_KEY = "hl_bas_sim_lodged_v1";
 
@@ -114,16 +115,17 @@ export default function GstBasPage() {
 
   useEffect(() => {
     if (usesSampleData) return;
-    const reload = () => {
-      setBlankInvoices(loadUserInvoices());
-      setBlankBills(loadUserBills());
+    const reload = async () => {
+      setBlankInvoices(await loadInvoices());
+      setBlankBills(await loadBills());
     };
-    reload();
-    window.addEventListener("hl-user-docs-updated", reload);
-    window.addEventListener("hl-doc-status", reload);
+    void reload();
+    const onUpdate = () => void reload();
+    window.addEventListener("hl-user-docs-updated", onUpdate);
+    window.addEventListener("hl-doc-status", onUpdate);
     return () => {
-      window.removeEventListener("hl-user-docs-updated", reload);
-      window.removeEventListener("hl-doc-status", reload);
+      window.removeEventListener("hl-user-docs-updated", onUpdate);
+      window.removeEventListener("hl-doc-status", onUpdate);
     };
   }, [usesSampleData]);
 

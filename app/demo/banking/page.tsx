@@ -34,25 +34,27 @@ import {
   type ParseBankCsvSkip,
 } from "@/lib/bank-csv";
 import {
-  appendImportedRows,
-  applyCategoryToTransaction,
   blankChequeBalance,
   blankChequeMovements,
-  clearCategoryFromTransaction,
-  clearBlankOpeningBalance,
-  clearImportedTransactions,
-  getBlankOpeningBalance,
-  hasBlankOpeningBalance,
   inferOpeningFromParsedRows,
-  loadBankTransactions,
-  resetAllCategorisations,
-  setBlankOpeningBalance,
   unmatchedForAccount,
   CHEQUE_ACCOUNT_ID,
   BLANK_CHEQUE_ACCOUNT_ID,
   type BankLedgerMode,
   type BankTransaction,
 } from "@/lib/bank-transactions";
+import {
+  appendImportedRows,
+  applyCategoryToTransaction,
+  clearBlankOpeningBalance,
+  clearCategoryFromTransaction,
+  clearImportedTransactions,
+  getBlankOpeningBalance,
+  hasBlankOpeningBalance,
+  loadBankTransactions,
+  resetAllCategorisations,
+  setBlankOpeningBalance,
+} from "@/lib/books-client";
 
 function linesToApplyLabel(count: number) {
   return count === 1 ? "1 line to Apply" : `${count} lines to Apply`;
@@ -131,11 +133,11 @@ export default function BankingPage() {
   const [openingSet, setOpeningSet] = useState(false);
   const [ledgerReady, setLedgerReady] = useState(false);
 
-  const reload = useCallback(() => {
-    setTxns(loadBankTransactions(mode));
+  const reload = useCallback(async () => {
+    setTxns(await loadBankTransactions(mode));
     if (mode === "blank") {
-      const hasOpening = hasBlankOpeningBalance();
-      const o = getBlankOpeningBalance();
+      const hasOpening = await hasBlankOpeningBalance();
+      const o = await getBlankOpeningBalance();
       setOpeningSet(hasOpening);
       setOpening(o);
       setOpeningDraft(hasOpening ? String(o) : "");
@@ -147,7 +149,7 @@ export default function BankingPage() {
   }, [mode]);
 
   useEffect(() => {
-    reload();
+    void reload();
     setLedgerReady(true);
   }, [reload]);
 
@@ -163,7 +165,7 @@ export default function BankingPage() {
   }, [mode]);
 
   useEffect(() => {
-    const onUpdate = () => reload();
+    const onUpdate = () => void reload();
     window.addEventListener("hl-bank-updated", onUpdate);
     window.addEventListener("storage", onUpdate);
     return () => {
@@ -314,35 +316,37 @@ export default function BankingPage() {
 
   function confirmImport() {
     if (!preview?.length) return;
-    const beforeImportCount = loadBankTransactions(mode).filter((x) => x.source === "import").length;
-    const skippedSnapshot = skipped;
-    let openingNote = "";
-    if (mode === "blank" && !hasBlankOpeningBalance()) {
-      const inferred = inferOpeningFromParsedRows(preview);
-      if (inferred != null) {
-        setBlankOpeningBalance(inferred);
-        setOpening(inferred);
-        setOpeningSet(true);
-        setOpeningDraft(String(inferred));
-        openingNote = ` Opening balance set to ${formatAUD(inferred)} from the CSV running balance (only because none was saved yet).`;
+    void (async () => {
+      const beforeImportCount = txns.filter((x) => x.source === "import").length;
+      const skippedSnapshot = skipped;
+      let openingNote = "";
+      if (mode === "blank" && !(await hasBlankOpeningBalance())) {
+        const inferred = inferOpeningFromParsedRows(preview);
+        if (inferred != null) {
+          const savedOpening = await setBlankOpeningBalance(inferred);
+          setOpening(savedOpening);
+          setOpeningSet(true);
+          setOpeningDraft(String(savedOpening));
+          openingNote = ` Opening balance set to ${formatAUD(inferred)} from the CSV running balance (only because none was saved yet).`;
+        }
       }
-    }
-    const next = appendImportedRows(preview, chequeAccountId, mode);
-    const added = next.filter((x) => x.source === "import").length - beforeImportCount;
-    setTxns(next);
-    setSuccess(
-      added === 0
-        ? `No new rows to import — those transactions are already on this cheque account.${openingNote}`
-        : `Imported ${added} transaction${added === 1 ? "" : "s"}. Next: ${steps.applyN} Apply on a line below.${openingNote}`,
-    );
-    setSuccessSkipped(skippedSnapshot);
-    setPreview(null);
-    setSkipped([]);
-    setFileName(null);
-    if (fileRef.current) fileRef.current.value = "";
-    requestAnimationFrame(() => {
-      reconSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+      const next = await appendImportedRows(preview, chequeAccountId, mode);
+      const added = next.filter((x) => x.source === "import").length - beforeImportCount;
+      setTxns(next);
+      setSuccess(
+        added === 0
+          ? `No new rows to import — those transactions are already on this cheque account.${openingNote}`
+          : `Imported ${added} transaction${added === 1 ? "" : "s"}. Next: ${steps.applyN} Apply on a line below.${openingNote}`,
+      );
+      setSuccessSkipped(skippedSnapshot);
+      setPreview(null);
+      setSkipped([]);
+      setFileName(null);
+      if (fileRef.current) fileRef.current.value = "";
+      requestAnimationFrame(() => {
+        reconSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    })();
   }
 
   function saveOpening() {
@@ -360,13 +364,15 @@ export default function BankingPage() {
       setSuccessSkipped([]);
       return;
     }
-    const saved = setBlankOpeningBalance(n);
-    setOpening(saved);
-    setOpeningSet(true);
-    setOpeningDraft(String(saved));
-    setError(null);
-    setSuccessSkipped([]);
-    setSuccess(`Opening saved as ${formatAUD(saved)}. Next: ${steps.importN} Import CSV below.`);
+    void (async () => {
+      const saved = await setBlankOpeningBalance(n);
+      setOpening(saved);
+      setOpeningSet(true);
+      setOpeningDraft(String(saved));
+      setError(null);
+      setSuccessSkipped([]);
+      setSuccess(`Opening saved as ${formatAUD(saved)}. Next: ${steps.importN} Import CSV below.`);
+    })();
   }
 
   function cancelPreview() {
@@ -383,109 +389,117 @@ export default function BankingPage() {
       openAssistant(`Categorise unmatched bank line: ${t.description}`);
       return;
     }
-    const updated = applyCategoryToTransaction(t.id, suggestion);
-    if (!updated) {
-      setError(`Could not apply a category to “${t.description}”. Try refreshing Banking.`);
-      setSuccess(null);
+    void (async () => {
+      const updated = await applyCategoryToTransaction(t.id, suggestion);
+      if (!updated) {
+        setError(`Could not apply a category to “${t.description}”. Try refreshing Banking.`);
+        setSuccess(null);
+        setSuccessSkipped([]);
+        return;
+      }
+      const fresh = await loadBankTransactions(mode);
+      setTxns(fresh);
+      setError(null);
       setSuccessSkipped([]);
-      return;
-    }
-    setTxns((prev) => {
-      const next = prev.map((row) => (row.id === updated.id ? { ...row, ...updated } : row));
-      return next.some((row) => row.id === updated.id) ? next : loadBankTransactions(mode);
-    });
-    setError(null);
-    setSuccessSkipped([]);
-    const remaining = unmatchedForAccount(
-      loadBankTransactions(mode),
-      chequeAccountId,
-    ).length;
-    setSuccess(
-      `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
-        remaining > 0
-          ? `Next: ${steps.applyN} Apply the next line below (${remaining} left).`
-          : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)} Undo match below.`
-      }`,
-    );
+      const remaining = unmatchedForAccount(fresh, chequeAccountId).length;
+      setSuccess(
+        `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
+          remaining > 0
+            ? `Next: ${steps.applyN} Apply the next line below (${remaining} left).`
+            : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)} Undo match below.`
+        }`,
+      );
+    })();
   }
 
   function applyAllHighConfidence() {
-    const lines = unmatchedForAccount(loadBankTransactions(mode), chequeAccountId);
-    let applied = 0;
-    for (const t of lines) {
-      const suggestion = suggestCategory(t.description, t.amount);
-      if (suggestion.confidence !== "high") continue;
-      if (applyCategoryToTransaction(t.id, suggestion)) applied += 1;
-    }
-    setTxns(loadBankTransactions(mode));
-    setError(null);
-    setSuccessSkipped([]);
-    const remaining = unmatchedForAccount(loadBankTransactions(mode), chequeAccountId).length;
-    setSuccess(
-      applied === 0
-        ? remaining > 0
-          ? `Nothing left to Apply automatically. Next: Ask AI under More, or ${steps.importN} Import CSV.`
-          : `Nothing left to Apply automatically. Next: ${steps.importN} Import CSV.`
-        : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${
-            remaining > 0
-              ? `Next: ${steps.applyN} Apply the rest, or Ask AI under More (${remaining} left).`
-              : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)}`
-          }`,
-    );
+    void (async () => {
+      const lines = unmatchedForAccount(await loadBankTransactions(mode), chequeAccountId);
+      let applied = 0;
+      for (const t of lines) {
+        const suggestion = suggestCategory(t.description, t.amount);
+        if (suggestion.confidence !== "high") continue;
+        if (await applyCategoryToTransaction(t.id, suggestion)) applied += 1;
+      }
+      const fresh = await loadBankTransactions(mode);
+      setTxns(fresh);
+      setError(null);
+      setSuccessSkipped([]);
+      const remaining = unmatchedForAccount(fresh, chequeAccountId).length;
+      setSuccess(
+        applied === 0
+          ? remaining > 0
+            ? `Nothing left to Apply automatically. Next: Ask AI under More, or ${steps.importN} Import CSV.`
+            : `Nothing left to Apply automatically. Next: ${steps.importN} Import CSV.`
+          : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${
+              remaining > 0
+                ? `Next: ${steps.applyN} Apply the rest, or Ask AI under More (${remaining} left).`
+                : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)}`
+            }`,
+      );
+    })();
   }
 
   function unmatch(t: BankTransaction) {
-    const updated = clearCategoryFromTransaction(t.id);
-    if (!updated) {
-      setError(`Could not undo match for “${t.description}”.`);
-      setSuccess(null);
+    void (async () => {
+      const updated = await clearCategoryFromTransaction(t.id);
+      if (!updated) {
+        setError(`Could not undo match for “${t.description}”.`);
+        setSuccess(null);
+        setSuccessSkipped([]);
+        return;
+      }
+      setTxns(await loadBankTransactions(mode));
+      setError(null);
       setSuccessSkipped([]);
-      return;
-    }
-    setTxns(loadBankTransactions(mode));
-    setError(null);
-    setSuccessSkipped([]);
-    setSuccess(`Undid match for “${t.description}”. Next: ${steps.applyN} Apply on that line below.`);
+      setSuccess(`Undid match for “${t.description}”. Next: ${steps.applyN} Apply on that line below.`);
+    })();
   }
 
   function resetCats() {
-    const n = resetAllCategorisations(mode);
-    setTxns(loadBankTransactions(mode));
-    setError(null);
-    setSuccessSkipped([]);
-    setSuccess(
-      n === 0
-        ? `Nothing to reset. Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`
-        : `Reset ${n} categorisation${n === 1 ? "" : "s"}. Next: ${steps.applyN} Apply on a line below.`,
-    );
+    void (async () => {
+      const n = await resetAllCategorisations(mode);
+      setTxns(await loadBankTransactions(mode));
+      setError(null);
+      setSuccessSkipped([]);
+      setSuccess(
+        n === 0
+          ? `Nothing to reset. Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`
+          : `Reset ${n} categorisation${n === 1 ? "" : "s"}. Next: ${steps.applyN} Apply on a line below.`,
+      );
+    })();
   }
 
   function clearImports() {
-    const n = clearImportedTransactions(mode);
-    setTxns(loadBankTransactions(mode));
-    setError(null);
-    setSuccessSkipped([]);
-    setSuccess(
-      n === 0
-        ? `No CSV imports to clear. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply.`
-        : mode === "blank"
-          ? `Cleared ${n} imported row${n === 1 ? "" : "s"}. Opening left as-is. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply on remaining lines.`
-          : `Cleared ${n} imported row${n === 1 ? "" : "s"} (sample lines kept). Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`,
-    );
+    void (async () => {
+      const n = await clearImportedTransactions(mode);
+      setTxns(await loadBankTransactions(mode));
+      setError(null);
+      setSuccessSkipped([]);
+      setSuccess(
+        n === 0
+          ? `No CSV imports to clear. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply.`
+          : mode === "blank"
+            ? `Cleared ${n} imported row${n === 1 ? "" : "s"}. Opening left as-is. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply on remaining lines.`
+            : `Cleared ${n} imported row${n === 1 ? "" : "s"} (sample lines kept). Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`,
+      );
+    })();
   }
 
   function clearOpening() {
-    const cleared = clearBlankOpeningBalance();
-    setOpening(0);
-    setOpeningSet(false);
-    setOpeningDraft("");
-    setError(null);
-    setSuccessSkipped([]);
-    setSuccess(
-      cleared
-        ? "Opening cleared. Next: 1 Save opening."
-        : "Opening was already unset. Next: 1 Save opening, or 2 Import CSV.",
-    );
+    void (async () => {
+      const cleared = await clearBlankOpeningBalance();
+      setOpening(0);
+      setOpeningSet(false);
+      setOpeningDraft("");
+      setError(null);
+      setSuccessSkipped([]);
+      setSuccess(
+        cleared
+          ? "Opening cleared. Next: 1 Save opening."
+          : "Opening was already unset. Next: 1 Save opening, or 2 Import CSV.",
+      );
+    })();
   }
 
   return (

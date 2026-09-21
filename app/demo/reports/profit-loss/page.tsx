@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { formatAUD } from "@/lib/format";
 import { rollupBlankReports, rollupSampleReports, EMPTY_REPORT_ROLLUP, type BlankReportRollup } from "@/lib/blank-reports";
-import { loadUserBills, loadUserInvoices } from "@/lib/user-docs";
+import { loadBills, loadInvoices } from "@/lib/books-client";
 
 export default function ProfitLossReportPage() {
   const { usesSampleData } = useAuth();
@@ -18,13 +18,15 @@ export default function ProfitLossReportPage() {
       setRollup(EMPTY_REPORT_ROLLUP);
       return;
     }
-    const reload = () => setRollup(rollupBlankReports(loadUserInvoices(), loadUserBills()));
-    reload();
-    window.addEventListener("hl-user-docs-updated", reload);
-    window.addEventListener("hl-doc-status", reload);
+    const reload = async () =>
+      setRollup(rollupBlankReports(await loadInvoices(), await loadBills()));
+    void reload();
+    const onUpdate = () => void reload();
+    window.addEventListener("hl-user-docs-updated", onUpdate);
+    window.addEventListener("hl-doc-status", onUpdate);
     return () => {
-      window.removeEventListener("hl-user-docs-updated", reload);
-      window.removeEventListener("hl-doc-status", reload);
+      window.removeEventListener("hl-user-docs-updated", onUpdate);
+      window.removeEventListener("hl-doc-status", onUpdate);
     };
   }, [usesSampleData]);
 

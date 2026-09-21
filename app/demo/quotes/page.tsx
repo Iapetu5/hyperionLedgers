@@ -26,14 +26,13 @@ import { quotes as sampleQuotes } from "@/lib/sample-data";
 import { docTaxTreatmentSummary, publicQuoteUrl, setPublicDocStatus } from "@/lib/public-docs";
 import { quoteStatus, useDocStatusTick } from "@/lib/use-doc-statuses";
 import {
-  createUserQuote,
-  deleteUserQuote,
-  effectiveQuoteStatus,
-  loadUserQuotes,
-  setUserQuoteStatus,
-  updateUserQuote,
-  type UserQuote
-} from "@/lib/user-docs";
+  createQuote,
+  deleteQuote,
+  loadQuotes,
+  setQuoteStatus,
+  updateQuote,
+} from "@/lib/books-client";
+import { effectiveQuoteStatus, type UserQuote } from "@/lib/user-docs";
 
 export default function QuotesPage() {
   const { usesSampleData, user } = useAuth();
@@ -57,7 +56,9 @@ export default function QuotesPage() {
   const [expiryDate, setExpiryDate] = useState(() => plusDaysISO(14));
   const [status, setStatus] = useState<UserQuote["status"]>("Sent");
 
-  const reloadUser = useCallback(() => setUserRows(loadUserQuotes()), []);
+  const reloadUser = useCallback(async () => {
+    setUserRows(await loadQuotes());
+  }, []);
 
   useEffect(() => {
     reloadUser();
@@ -161,24 +162,26 @@ export default function QuotesPage() {
     if (!tryBeginMixedOneClick()) return;
     const draftLines = mixedTaxStarterDrafts("income");
     const contactName = "Acme Pty Ltd";
-    const res = createUserQuote({ contact: contactName, lines: draftsToInputs(draftLines) });
-    if ("error" in res) {
-      setLines(draftLines);
-      setContact(contactName);
-      setFormError(res.error);
-      setFormOk(null);
-      setLastCreatedId(null);
-      return;
-    }
-    setPublicDocStatus("quote", res.id, res.status);
-    resetForm();
-    setLastCreatedId(res.id);
-    setFormOk(`Created ${res.id} as Sent — email it, or open the customer link.`);
-    openSend(res);
-    reloadUser();
-    window.setTimeout(() => {
-      document.getElementById("qu-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 40);
+    void (async () => {
+      const res = await createQuote({ contact: contactName, lines: draftsToInputs(draftLines) });
+      if ("error" in res) {
+        setLines(draftLines);
+        setContact(contactName);
+        setFormError(res.error);
+        setFormOk(null);
+        setLastCreatedId(null);
+        return;
+      }
+      setPublicDocStatus("quote", res.id, res.status);
+      resetForm();
+      setLastCreatedId(res.id);
+      setFormOk(`Created ${res.id} as Sent — email it, or open the customer link.`);
+      openSend(res);
+      await reloadUser();
+      window.setTimeout(() => {
+        document.getElementById("qu-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 40);
+    })();
   }
 
   function prefillMixedTaxDraft() {
@@ -245,64 +248,66 @@ export default function QuotesPage() {
   function persistQuote(asDraft: boolean) {
     setFormError(null);
     setFormOk(null);
-    const nextStatus: UserQuote["status"] = editingId ? status : asDraft ? "Draft" : "Sent";
-    if (editingId) {
-      const res = updateUserQuote(editingId, {
+    void (async () => {
+      const nextStatus: UserQuote["status"] = editingId ? status : asDraft ? "Draft" : "Sent";
+      if (editingId) {
+        const res = await updateQuote(editingId, {
+          contact,
+          contactEmail,
+          lines: draftsToInputs(lines),
+          issueDate,
+          expiryDate,
+          status: nextStatus,
+        });
+        if ("error" in res) {
+          setFormError(res.error);
+          return;
+        }
+        setPublicDocStatus("quote", res.id, res.status);
+        resetForm();
+        setLastCreatedId(res.id);
+        setFormOk(`Updated ${res.id}.`);
+        await reloadUser();
+        return;
+      }
+      const res = await createQuote({
         contact,
+        contactEmail,
+        lines: draftsToInputs(lines),
+        status: nextStatus,
+      });
+      if ("error" in res) {
+        const nudge =
+          /amount|line/i.test(res.error) && !editingId
+            ? " Tip: use Create sample above for a ready-made quote with GST and GST-free lines."
+            : "";
+        setFormError(`${res.error}${nudge}`);
+        return;
+      }
+      const updated = await updateQuote(res.id, {
+        contact: res.contact,
         contactEmail,
         lines: draftsToInputs(lines),
         issueDate,
         expiryDate,
         status: nextStatus,
       });
-      if ("error" in res) {
-        setFormError(res.error);
-        return;
+      if (!("error" in updated)) {
+        setPublicDocStatus("quote", updated.id, updated.status);
       }
-      setPublicDocStatus("quote", res.id, res.status);
+      const created = "error" in updated ? res : updated;
       resetForm();
-      setLastCreatedId(res.id);
-      setFormOk(`Updated ${res.id}.`);
-      reloadUser();
-      return;
-    }
-    const res = createUserQuote({
-      contact,
-      contactEmail,
-      lines: draftsToInputs(lines),
-      status: nextStatus,
-    });
-    if ("error" in res) {
-      const nudge =
-        /amount|line/i.test(res.error) && !editingId
-          ? " Tip: use Create sample above for a ready-made quote with GST and GST-free lines."
-          : "";
-      setFormError(`${res.error}${nudge}`);
-      return;
-    }
-    const updated = updateUserQuote(res.id, {
-      contact: res.contact,
-      contactEmail,
-      lines: draftsToInputs(lines),
-      issueDate,
-      expiryDate,
-      status: nextStatus,
-    });
-    if (!("error" in updated)) {
-      setPublicDocStatus("quote", updated.id, updated.status);
-    }
-    const created = "error" in updated ? res : updated;
-    resetForm();
-    setLastCreatedId(created.id);
-    setFormOk(
-      created.status === "Draft"
-        ? `Saved ${created.id} as a draft.`
-        : `Created ${created.id} as Sent — add a To email and subject to send it.`,
-    );
-    if (created.status !== "Draft") {
-      openSend({ ...created, contactEmail: contactEmail || created.contactEmail });
-    }
-    reloadUser();
+      setLastCreatedId(created.id);
+      setFormOk(
+        created.status === "Draft"
+          ? `Saved ${created.id} as a draft.`
+          : `Created ${created.id} as Sent — add a To email and subject to send it.`,
+      );
+      if (created.status !== "Draft") {
+        openSend({ ...created, contactEmail: contactEmail || created.contactEmail });
+      }
+      await reloadUser();
+    })();
   }
 
   function onSubmit(e: FormEvent) {
@@ -340,12 +345,14 @@ export default function QuotesPage() {
   }
 
   function onDelete(id: string) {
-    deleteUserQuote(id);
-    if (editingId === id) resetForm();
-    if (lastCreatedId === id) setLastCreatedId(null);
-    reloadUser();
-    setSendNote(`Removed ${id}. Next: Create quote.`);
-    setFormOk(null);
+    void (async () => {
+      await deleteQuote(id);
+      if (editingId === id) resetForm();
+      if (lastCreatedId === id) setLastCreatedId(null);
+      await reloadUser();
+      setSendNote(`Removed ${id}. Next: Create quote.`);
+      setFormOk(null);
+    })();
   }
 
   function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {
@@ -469,7 +476,7 @@ export default function QuotesPage() {
             type="button"
             className="btn-primary !px-2.5 !py-1 text-xs"
             onClick={() => {
-              const row = loadUserQuotes().find((q) => q.id === lastCreatedId);
+              const row = userRows.find((q) => q.id === lastCreatedId);
               if (row) openSend(row);
             }}
           >
@@ -737,7 +744,7 @@ export default function QuotesPage() {
             quote={sendTarget}
             onClose={() => setSendTarget(null)}
             onSent={() => {
-              setUserQuoteStatus(sendTarget.id, "Sent");
+              void setQuoteStatus(sendTarget.id, "Sent");
               setPublicDocStatus("quote", sendTarget.id, "Sent");
               reloadUser();
             }}
@@ -790,7 +797,7 @@ export default function QuotesPage() {
           quote={sendTarget}
           onClose={() => setSendTarget(null)}
           onSent={() => {
-            setUserQuoteStatus(sendTarget.id, "Sent");
+            void setQuoteStatus(sendTarget.id, "Sent");
             setPublicDocStatus("quote", sendTarget.id, "Sent");
             reloadUser();
           }}
