@@ -11,9 +11,9 @@ import {
   GUEST_DEMO_BUSINESS_NAME,
   effectiveBillStatus,
   effectiveSampleBillStatus,
-  getUserBill,
   type UserBill,
 } from "@/lib/user-docs";
+import { getBill } from "@/lib/books-client";
 
 function resolveBillBusiness(): { businessName: string; businessAbn: string } {
   if (typeof window === "undefined") {
@@ -45,9 +45,13 @@ function resolveBillBusiness(): { businessName: string; businessAbn: string } {
 }
 
 /** User bill first; else Harbour sample bill (internal print only — no public pay route). */
-function resolveBillForPrint(id: string): { bill: UserBill; sample: boolean } | null {
-  const user = getUserBill(id);
-  if (user) return { bill: user, sample: false };
+async function resolveBillForPrint(id: string): Promise<{ bill: UserBill; sample: boolean } | null> {
+  try {
+    const user = await getBill(id);
+    if (user) return { bill: user, sample: false };
+  } catch {
+    /* fall through to sample */
+  }
 
   const sample = sampleBills.find((b) => b.id === id);
   if (!sample) return null;
@@ -233,10 +237,12 @@ export function PrintBillButton({
   }, [open]);
 
   function openPrint() {
-    const resolved = resolveBillForPrint(id);
-    setBill(resolved?.bill ?? null);
-    setSample(resolved?.sample ?? false);
-    setOpen(true);
+    void (async () => {
+      const resolved = await resolveBillForPrint(id);
+      setBill(resolved?.bill ?? null);
+      setSample(resolved?.sample ?? false);
+      setOpen(true);
+    })();
   }
 
   return (
@@ -298,7 +304,10 @@ export function PrintBillButton({
                     <BillSummaryView bill={bill} sample={sample} />
                   </div>
                 ) : (
-                  <p className="p-6 text-sm text-slate-600">Bill not found in this browser.</p>
+                  <p className="p-6 text-sm text-slate-600">
+                    Bill not found. If you just created it, wait a moment and try Print again — signed-in
+                    bills are saved to your organisation.
+                  </p>
                 )}
               </div>
             </div>

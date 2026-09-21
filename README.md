@@ -25,7 +25,7 @@ Production: [https://www.hyperioninvoices.com.au](https://www.hyperioninvoices.c
 
 The homepage does **not** dump visitors into the demo.
 
-Signed-in `/demo` books (invoices, quotes, bills, products) use `/api/books/*` when `/api/auth/me` returns `persistence: "server"`. Guest demo stays in this browser.
+Signed-in `/demo` books (invoices, quotes, bills, products, bank CSV) use `/api/books/*` when `/api/auth/me` returns `persistence: "server"` **and the account is signed in**. Guest demo stays in this browser. A failed books GET does not paint an empty ledger.
 
 **Stripe:** Start free trial / Buy posts to `/api/stripe/checkout` (server-only; `/api/checkout` remains as an alias). Signed-out visitors are sent to **sign up** (or log in) before Checkout when Postgres is attached. Checkout is `card` + `link` so customers can **pay with card, Apple Pay, or Link** (Google Pay on the same hosted page when Stripe shows it). Amount is **$69 AUD / month** (adaptive pricing off). Success URL is `/downloads?session_id={CHECKOUT_SESSION_ID}`. The Downloads page **retrieves the session from Stripe** (or a signed `hl_entitlement` cookie / `has_paid_download`). It does **not** set cookies during page render. `?success=1` is ignored. The `.exe` is **not** in `public/` — `/api/downloads/windows` streams `private/downloads/HyperionInvoices-Setup.exe` after a 10-minute single-use token, a verified `session_id`, or an httpOnly session/entitlement.
 
@@ -54,7 +54,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_WEBHOOK_SECRET=
 ```
 
-**Accounts:** attach Neon on the Vercel project (`Storage → Create Database → Neon`) so `DATABASE_URL` is set, then add `SESSION_SECRET` and redeploy. Schema is in `docs/schema.sql` and is applied on first sign-up.
+**Accounts:** attach Neon on the Vercel project (`Storage → Create Database → Neon`) so `DATABASE_URL` is set, then add `SESSION_SECRET` and redeploy. Schema is in `docs/schema.sql` — applied on `npm run build` (`npm run migrate`) and again on first `/api/auth/me` / signup (`ensureSchema`). Confirm with `GET /api/stripe/status` (`persistence.schemaApplied`) and `GET /api/auth/me` (`persistence:"server"`). See [docs/ENV.md](docs/ENV.md).
 
 **Quote email (optional):** `POST /api/quotes/send` needs one of these on the Vercel project (Production + Preview) — never commit real values:
 

@@ -69,7 +69,7 @@ export default function DemoOverviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick, mounted]);
 
-  // Blank-ledger user docs (browser-local) — wire overview KPIs once anything exists.
+  // Blank-ledger user docs — KPIs from /api/books when signed in with server persistence.
   const [blankDocs, setBlankDocs] = useState<{
     invoices: UserInvoice[];
     quotes: UserQuote[];
@@ -84,7 +84,7 @@ export default function DemoOverviewPage() {
     });
   }, []);
 
-  const { ready } = useBlankBooksReload(reloadBlank);
+  const { ready, unresolved } = useBlankBooksReload(reloadBlank);
 
   const blankLive = useMemo(() => {
     const invRows = blankDocs.invoices.map((inv) => ({
@@ -146,7 +146,9 @@ export default function DemoOverviewPage() {
   if (!ready) {
     return (
       <div className="card p-6 text-sm text-white/70">
-        Loading overview…
+        {unresolved
+          ? "Could not confirm where books are stored. Refresh — figures were not replaced."
+          : "Loading overview…"}
       </div>
     );
   }

@@ -1,6 +1,7 @@
 /** Browser-local invoices/quotes/bills for blank-ledger demos (not Harbour & Co sample). */
 
 import { formatAUD, todayISO as sydneyTodayISO, plusDaysISO as sydneyPlusDaysISO } from "@/lib/format";
+import { isIsoDate, toIsoDate } from "@/lib/iso-date";
 
 
 /** Clear label when a guest (or no org) creates a pay link — never Harbour suburb. */
@@ -325,6 +326,9 @@ export function createUserInvoice(input: {
   amount?: number;
   reference?: string;
   lines?: UserDocLineInput[];
+  issueDate?: string;
+  dueDate?: string;
+  status?: UserInvoice["status"];
 }): UserInvoice | { error: string } {
   const contact = input.contact.trim();
   if (!contact) return { error: "Enter a customer / contact name." };
@@ -336,17 +340,20 @@ export function createUserInvoice(input: {
     defaultDescription: "Professional services",
   });
   if (!bundle.ok) return { error: bundle.error };
+  if (input.status !== undefined && !INVOICE_STATUSES.includes(input.status)) {
+    return { error: "Invalid invoice status." };
+  }
 
   const existing = loadUserInvoices();
   const biz = resolveBusinessSnapshot();
   const row: UserInvoice = {
     id: nextId("INV-U", existing),
     contact,
-    issueDate: todayISO(),
-    dueDate: plusDaysISO(14),
+    issueDate: input.issueDate && isIsoDate(toIsoDate(input.issueDate)) ? toIsoDate(input.issueDate) : todayISO(),
+    dueDate: input.dueDate && isIsoDate(toIsoDate(input.dueDate)) ? toIsoDate(input.dueDate) : plusDaysISO(14),
     amount: bundle.amount,
     gst: bundle.gst,
-    status: "Awaiting payment",
+    status: input.status && INVOICE_STATUSES.includes(input.status) ? input.status : "Awaiting payment",
     reference: bundle.reference,
     recurring: false,
     lineItems: bundle.lineItems,
@@ -363,6 +370,8 @@ export function createUserQuote(input: {
   amount?: number;
   reference?: string;
   lines?: UserDocLineInput[];
+  issueDate?: string;
+  expiryDate?: string;
   status?: UserQuote["status"];
 }): UserQuote | { error: string } {
   const contact = input.contact.trim();
@@ -382,8 +391,9 @@ export function createUserQuote(input: {
     id: nextId("QU-U", existing),
     contact,
     contactEmail: input.contactEmail?.trim() || undefined,
-    issueDate: todayISO(),
-    expiryDate: plusDaysISO(14),
+    issueDate: input.issueDate && isIsoDate(toIsoDate(input.issueDate)) ? toIsoDate(input.issueDate) : todayISO(),
+    expiryDate:
+      input.expiryDate && isIsoDate(toIsoDate(input.expiryDate)) ? toIsoDate(input.expiryDate) : plusDaysISO(14),
     amount: bundle.amount,
     gst: bundle.gst,
     status: input.status === "Draft" ? "Draft" : "Sent",
@@ -401,6 +411,9 @@ export function createUserBill(input: {
   amount?: number;
   category?: string;
   lines?: UserDocLineInput[];
+  date?: string;
+  dueDate?: string;
+  status?: UserBill["status"];
 }): UserBill | { error: string } {
   const supplier = input.supplier.trim();
   if (!supplier) return { error: "Enter a supplier name." };
@@ -418,11 +431,11 @@ export function createUserBill(input: {
   const row: UserBill = {
     id: nextId("BILL-U", existing),
     supplier,
-    date: todayISO(),
-    dueDate: plusDaysISO(14),
+    date: input.date && isIsoDate(toIsoDate(input.date)) ? toIsoDate(input.date) : todayISO(),
+    dueDate: input.dueDate && isIsoDate(toIsoDate(input.dueDate)) ? toIsoDate(input.dueDate) : plusDaysISO(14),
     amount: bundle.amount,
     gst: bundle.gst,
-    status: "Awaiting approval",
+    status: input.status && BILL_STATUSES.includes(input.status) ? input.status : "Awaiting approval",
     category: bundle.reference,
     lineItems: bundle.lineItems,
     businessName: biz.businessName,

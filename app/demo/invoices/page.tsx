@@ -34,7 +34,7 @@ import {
 } from "@/lib/books-client";
 import { effectiveInvoiceStatus, type UserInvoice } from "@/lib/user-docs";
 import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
-import { booksListHint, booksSampleHint, booksStoredHint, usesServerBooksUi } from "@/lib/books-copy";
+import { booksComposerHint, booksListHint, booksSampleHint, booksStoredHint, usesServerBooksUi } from "@/lib/books-copy";
 
 export default function InvoicesPage() {
   const { usesSampleData, user, persistence } = useAuth();
@@ -76,7 +76,7 @@ export default function InvoicesPage() {
     }
   }, []);
 
-  const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
+  const { ready, unresolved } = useBlankBooksReload(reloadUser, { includeSample: true });
 
 
   const [mounted, setMounted] = useState(false);
@@ -275,7 +275,13 @@ export default function InvoicesPage() {
         await reloadUser();
         return;
       }
-      const res = await createInvoice({ contact, lines: draftsToInputs(lines) });
+      const res = await createInvoice({
+        contact,
+        lines: draftsToInputs(lines),
+        issueDate,
+        dueDate,
+        status,
+      });
       if ("error" in res) {
         const nudge =
           /amount|line/i.test(res.error) && !editingId
@@ -284,32 +290,8 @@ export default function InvoicesPage() {
         setFormError(`${res.error}${nudge}`);
         return;
       }
-      let updated: Awaited<ReturnType<typeof updateInvoice>>;
-      try {
-        updated = await updateInvoice(res.id, {
-          contact: res.contact,
-          lines: draftsToInputs(lines),
-          issueDate,
-          dueDate,
-          status,
-        });
-      } catch (e) {
-        updated = { error: e instanceof Error ? e.message : "save failed" };
-      }
-      if ("error" in updated) {
-        setPublicDocStatus("invoice", res.id, res.status);
-        setEditingId(res.id);
-        setLastCreatedId(res.id);
-        setComposerOpen(true);
-        setFormError(
-          `Created ${res.id}, but dates/status did not save (${updated.error}). Update ${res.id} below to retry — do not create another.`,
-        );
-        setFormOk(null);
-        await reloadUser();
-        return;
-      }
-      setPublicDocStatus("invoice", updated.id, updated.status);
-      const createdId = updated.id;
+      setPublicDocStatus("invoice", res.id, res.status);
+      const createdId = res.id;
       resetForm();
       setLastCreatedId(createdId);
       setComposerOpen(true);
@@ -337,7 +319,7 @@ export default function InvoicesPage() {
     setDueDate(inv.dueDate);
     // Stored workflow status in the form (not auto-Overdue). Past-due rows keep
     // Awaiting payment here; Draft never auto-flips; badge uses effectiveInvoiceStatus.
-    const stored = (invoiceStatus(inv.id, inv.status) as UserInvoice["status"]) || inv.status;
+    const stored = storedInvoiceStatus(inv);
     setStatus(stored === "Overdue" ? "Awaiting payment" : stored);
     setLines(
       inv.lineItems?.length
@@ -450,11 +432,7 @@ export default function InvoicesPage() {
         <h2 className="font-semibold text-white">
           {editingId ? `Edit ${editingId}` : "Create invoice"}
         </h2>
-        <span className="text-xs text-slate-400">
-          {editingId
-            ? "Same id & pay link · edit dates & status · browser only"
-            : "Line amounts before GST · choose GST or GST-free on each line · dates & status · saved in this browser"}
-        </span>
+        <span className="text-xs text-slate-400">{booksComposerHint(serverBooks, Boolean(editingId), "invoice")}</span>
       </div>
       <div>
         <label className="label" htmlFor="inv-contact">
@@ -535,12 +513,7 @@ export default function InvoicesPage() {
           <PrintDocButton kind="invoice" id={lastCreatedId} compact />
           {(() => {
             const row = userRows.find((r) => r.id === lastCreatedId);
-            const st = row
-              ? effectiveInvoiceStatus({
-                  status: invoiceStatus(row.id, row.status) as UserInvoice["status"],
-                  dueDate: row.dueDate,
-                })
-              : status;
+            const st = row ? displayInvoiceStatus(row) : status;
             if (st === "Paid") return null;
             if (st === "Draft") return null;
             return (
@@ -679,11 +652,17 @@ export default function InvoicesPage() {
     );
   }
 
+  function storedInvoiceStatus(inv: UserInvoice): UserInvoice["status"] {
+    if (serverBooks) return inv.status;
+    return (invoiceStatus(inv.id, inv.status) as UserInvoice["status"]) || inv.status;
+  }
+
+  function displayInvoiceStatus(inv: UserInvoice): UserInvoice["status"] {
+    return effectiveInvoiceStatus({ status: storedInvoiceStatus(inv), dueDate: inv.dueDate });
+  }
+
   function userActions(inv: UserInvoice) {
-    const st = effectiveInvoiceStatus({
-      status: invoiceStatus(inv.id, inv.status) as UserInvoice["status"],
-      dueDate: inv.dueDate,
-    });
+    const st = displayInvoiceStatus(inv);
     const paid = st === "Paid";
     const canMarkPaid = !paid && st !== "Draft";
     return (
@@ -738,7 +717,7 @@ export default function InvoicesPage() {
           </button>
         )}
         {!paid && <PrintDocButton kind="invoice" id={inv.id} compact />}
-        <DocDeleteButton key={inv.id} id={inv.id} kind="invoice" onDelete={onDelete} />
+        <DocDeleteButton key={inv.id} id={inv.id} kind="invoice" server={serverBooks} onDelete={onDelete} />
       </DocRowActions>
     );
   }
@@ -746,7 +725,9 @@ export default function InvoicesPage() {
   if (!ready) {
     return (
       <div className="card p-6 text-sm text-white/70">
-        Loading invoices…
+        {unresolved
+          ? "Could not confirm where invoices are stored. Refresh — the list was not replaced."
+          : "Loading invoices…"}
       </div>
     );
   }
@@ -814,12 +795,7 @@ export default function InvoicesPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge
-                      status={effectiveInvoiceStatus({
-                        status: invoiceStatus(inv.id, inv.status) as UserInvoice["status"],
-                        dueDate: inv.dueDate,
-                      })}
-                    />
+                    <StatusBadge status={displayInvoiceStatus(inv)} />
                   </td>
                   <td className="doc-actions-col px-4 py-3">{userActions(inv)}</td>
                 </tr>
@@ -923,12 +899,7 @@ export default function InvoicesPage() {
                       )}
                     </td>
                   <td className="px-4 py-3">
-                    <StatusBadge
-                        status={effectiveInvoiceStatus({
-                          status: invoiceStatus(inv.id, inv.status) as UserInvoice["status"],
-                          dueDate: inv.dueDate,
-                        })}
-                      />
+                    <StatusBadge status={displayInvoiceStatus(inv)} />
                   </td>
                   <td className="doc-actions-col px-4 py-3">{userActions(inv)}</td>
                 </tr>

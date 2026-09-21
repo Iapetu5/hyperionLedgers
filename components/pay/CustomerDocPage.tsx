@@ -41,31 +41,49 @@ export function CustomerDocPage({
   const [note, setNote] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
+    const path =
+      kind === "invoice"
+        ? `/api/public/invoice/${encodeURIComponent(id)}`
+        : `/api/public/quote/${encodeURIComponent(id)}`;
+    const isUserDoc = id.startsWith("INV-U") || id.startsWith("QU-U");
+    if (isUserDoc) {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        try {
+          const res = await fetch(path, { cache: "no-store" });
+          const data = (await res.json().catch(() => ({}))) as { doc?: PublicInvoice | PublicQuote | null };
+          if (data.doc) {
+            setDoc(data.doc);
+            return;
+          }
+        } catch {
+          /* retry */
+        }
+        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+      }
+    }
     const local = loadDoc(kind, id);
     if (local) {
       setDoc(local);
       return;
     }
-    const path =
-      kind === "invoice"
-        ? `/api/public/invoice/${encodeURIComponent(id)}`
-        : `/api/public/quote/${encodeURIComponent(id)}`;
-    for (let attempt = 0; attempt < 6; attempt++) {
-      try {
-        const res = await fetch(path, { cache: "no-store" });
-        const data = (await res.json().catch(() => ({}))) as { doc?: PublicInvoice | PublicQuote | null };
-        if (data.doc) {
-          setDoc(data.doc);
+    if (!isUserDoc) {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        try {
+          const res = await fetch(path, { cache: "no-store" });
+          const data = (await res.json().catch(() => ({}))) as { doc?: PublicInvoice | PublicQuote | null };
+          if (data.doc) {
+            setDoc(data.doc);
+            return;
+          }
+        } catch {
+          /* retry */
+        }
+        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+        const again = loadDoc(kind, id);
+        if (again) {
+          setDoc(again);
           return;
         }
-      } catch {
-        /* retry */
-      }
-      await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
-      const again = loadDoc(kind, id);
-      if (again) {
-        setDoc(again);
-        return;
       }
     }
     setDoc(null);
@@ -100,8 +118,8 @@ export function CustomerDocPage({
           <h1 className="text-xl font-bold text-white">Loading document…</h1>
           <p className="mt-2 text-sm text-slate-300">
             {kind === "invoice"
-              ? "Opening your pay link in this browser."
-              : "Opening your customer quote link in this browser."}
+              ? "Opening your pay link."
+              : "Opening your customer quote link."}
           </p>
         </div>
       </div>

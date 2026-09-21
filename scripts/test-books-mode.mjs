@@ -13,7 +13,6 @@ function booksModeFromMe(data) {
 
 function usesServerBooksUi(persistence, user) {
   if (persistence === "local") return false;
-  if (persistence === "server") return true;
   return Boolean(user);
 }
 
@@ -43,6 +42,37 @@ if (!usesServerBooksUi("server", { id: "u1" })) throw new Error("server + user i
 if (!usesServerBooksUi("unknown", { id: "u1" })) throw new Error("signed-in unknown must not show browser-local banner");
 if (usesServerBooksUi("local", { id: "u1" })) throw new Error("explicit local stays local UI");
 if (usesServerBooksUi("unknown", null)) throw new Error("guest unknown is not server UI");
+if (usesServerBooksUi("server", null)) throw new Error("signed-out production must not claim organisation books");
+
+function requireList(label, rows) {
+  if (!Array.isArray(rows)) throw new Error(`${label} list was incomplete.`);
+  return rows;
+}
+
+function loadFromPayload(data) {
+  if (data && data.error) throw new Error(data.error);
+  return requireList("Invoice", data.invoices);
+}
+
+try {
+  loadFromPayload({ error: "You need to be signed in." });
+  throw new Error("failed GET with error must not become an empty list");
+} catch (e) {
+  if (!(e instanceof Error) || e.message !== "You need to be signed in.") throw e;
+}
+
+try {
+  loadFromPayload({ configured: true });
+  throw new Error("missing invoices array must not become an empty list");
+} catch (e) {
+  if (!(e instanceof Error) || e.message !== "Invoice list was incomplete.") throw e;
+}
+
+const emptyOk = loadFromPayload({ invoices: [] });
+if (emptyOk.length !== 0) throw new Error("true empty list should stay empty");
+
+const rows = loadFromPayload({ invoices: [{ id: "INV-U-1" }] });
+if (rows[0].id !== "INV-U-1") throw new Error("successful GET must keep rows");
 
 console.log("books-mode checks passed");
 

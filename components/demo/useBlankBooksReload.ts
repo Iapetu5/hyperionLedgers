@@ -20,6 +20,7 @@ export function useBlankBooksReload(
 ) {
   const { loading, persistence, usesSampleData, user } = useAuth();
   const ready = !loading && persistence !== "unknown";
+  const unresolved = !loading && persistence === "unknown";
   const skip = !opts?.includeSample && usesSampleData;
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export function useBlankBooksReload(
 
   return {
     ready,
+    unresolved,
     loading: loading || !ready,
     usesSampleData,
     persistence,

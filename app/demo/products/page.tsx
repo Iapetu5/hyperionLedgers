@@ -9,10 +9,10 @@ import { formatAUD } from "@/lib/format";
 import {
   createProduct,
   deleteProduct,
-  loadProducts,
   loadProductsForMode,
   updateProduct,
 } from "@/lib/books-client";
+import { booksCatalogueHint, usesServerBooksUi } from "@/lib/books-copy";
 import {
   SAMPLE_PRODUCTS,
   catalogueReturnComposeHref,
@@ -30,7 +30,8 @@ function isSampleId(id: string) {
 }
 
 export default function ProductsPage() {
-  const { usesSampleData, loading, persistence } = useAuth();
+  const { usesSampleData, loading, persistence, user } = useAuth();
+  const serverBooks = usesServerBooksUi(persistence, user);
   const [rows, setRows] = useState<Product[]>([]);
   /** Avoid SSR/first-paint flash of “no match” before local catalogue loads */
   const [catalogueReady, setCatalogueReady] = useState(false);
@@ -48,8 +49,20 @@ export default function ProductsPage() {
   const [savedName, setSavedName] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    setRows(await loadProductsForMode(usesSampleData));
-    setCatalogueReady(true);
+    try {
+      setRows(await loadProductsForMode(usesSampleData));
+      setError((prev) =>
+        prev === "Could not load products. The catalogue below may be incomplete — do not add or delete until it reloads."
+          ? null
+          : prev,
+      );
+    } catch {
+      setError(
+        "Could not load products. The catalogue below may be incomplete — do not add or delete until it reloads.",
+      );
+    } finally {
+      setCatalogueReady(true);
+    }
   }, [usesSampleData]);
 
   useEffect(() => {
@@ -189,7 +202,7 @@ export default function ProductsPage() {
           <h2 className="font-semibold text-white">
             {editingId ? `Edit ${editingId}` : blankEmpty ? "Add your first product" : "Add product"}
           </h2>
-          <span className="text-xs text-slate-400">AU demo · unit price tax-exclusive · Tax maps to GST on Income / GST Free Income · browser only</span>
+          <span className="text-xs text-slate-400">{booksCatalogueHint(serverBooks)}</span>
         </div>
         {blankEmpty && (
           <div className="flex items-start gap-2 rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100/90">
