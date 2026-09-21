@@ -58,7 +58,20 @@ function linesToApplyLabel(count: number) {
   return count === 1 ? "1 line to Apply" : `${count} lines to Apply`;
 }
 
-/** One numbered path everywhere: 1 Save opening → 2 Import CSV → 3 Apply. */
+/** Sample has no Save opening — path is 1 Import CSV → 2 Apply. Blank is 1 Save opening → 2 Import CSV → 3 Apply. */
+function bankingStepNums(mode: BankLedgerMode) {
+  return mode === "sample"
+    ? { opening: 0 as const, importN: 1, applyN: 2, tryCsv: "Try sample CSV" }
+    : { opening: 1 as const, importN: 2, applyN: 3, tryCsv: "Try starter CSV" };
+}
+
+function morePowerHint(hasReset: boolean, hasClear: boolean) {
+  if (hasReset && hasClear) return "Use More for Reset categorisations or Clear CSV imports.";
+  if (hasReset) return "Use More for Reset categorisations.";
+  if (hasClear) return "Use More for Clear CSV imports.";
+  return "";
+}
+
 function bankingWhereNext(opts: {
   mode: BankLedgerMode;
   openingSet: boolean;
@@ -66,26 +79,32 @@ function bankingWhereNext(opts: {
   unmatchedCount: number;
   categorisedCount: number;
 }) {
+  const n = bankingStepNums(opts.mode);
   const step1Done = opts.mode === "sample" || opts.openingSet;
   if (!step1Done) {
-    return "Next: 1 Save opening. Then 2 Import CSV → 3 Apply.";
+    return `Next: ${n.opening} Save opening. Then ${n.importN} Import CSV → ${n.applyN} Apply.`;
   }
   if (opts.unmatchedCount > 0) {
     if (opts.hasImport || opts.mode === "sample") {
-      return "Next: 3 Apply on a line below. Or 2 Import CSV for more.";
+      return `Next: ${n.applyN} Apply on a line below. Or ${n.importN} Import CSV for more.`;
     }
-    return "Next: 2 Import CSV, then 3 Apply.";
+    return `Next: ${n.importN} Import CSV, then ${n.applyN} Apply.`;
   }
   if (opts.categorisedCount > 0) {
-    return "You’re done. Use More for Reset categorisations or Clear CSV imports.";
+    const more = morePowerHint(true, opts.hasImport);
+    return more ? `You’re done. ${more}` : "You’re done.";
   }
-  return "Next: 2 Import CSV, then 3 Apply.";
+  return `Next: ${n.importN} Import CSV, then ${n.applyN} Apply.`;
 }
 
-function bankingPathHint(step1Done: boolean) {
+function bankingPathHint(mode: BankLedgerMode, step1Done: boolean) {
+  const n = bankingStepNums(mode);
+  if (mode === "sample") {
+    return `Path: ${n.importN} Import CSV → ${n.applyN} Apply. Sample opening is already in. Debit/credit samples live under More. No live bank feed.`;
+  }
   return step1Done
-    ? "Path: 2 Import CSV → 3 Apply. Opening is already saved — skip 1 Save opening. Debit/credit samples, Reset categorisations, and Clear CSV imports live under More. No live bank feed."
-    : "Path: 1 Save opening → 2 Import CSV → 3 Apply. Debit/credit samples, Reset categorisations, and Clear CSV imports live under More. No live bank feed.";
+    ? `Path: ${n.importN} Import CSV → ${n.applyN} Apply. Opening is already saved — skip ${n.opening} Save opening. Debit/credit samples live under More. No live bank feed.`
+    : `Path: ${n.opening} Save opening → ${n.importN} Import CSV → ${n.applyN} Apply. Debit/credit samples live under More. No live bank feed.`;
 }
 
 export default function BankingPage() {
@@ -175,6 +194,8 @@ export default function BankingPage() {
   const importedCount = unmatched.filter((t) => t.source === "import").length;
   const hasImport = txns.some((t) => t.source === "import");
   const canAskAi = unmatched.length > 0;
+  const steps = bankingStepNums(mode);
+  const hasReset = categorised.length > 0;
   const step1Done = mode === "sample" || openingSet;
   const whereNext = bankingWhereNext({
     mode,
@@ -312,7 +333,7 @@ export default function BankingPage() {
     setSuccess(
       added === 0
         ? `No new rows to import — those transactions are already on this cheque account.${openingNote}`
-        : `Imported ${added} transaction${added === 1 ? "" : "s"}. Next: 3 Apply on a line below.${openingNote}`,
+        : `Imported ${added} transaction${added === 1 ? "" : "s"}. Next: ${steps.applyN} Apply on a line below.${openingNote}`,
     );
     setSuccessSkipped(skippedSnapshot);
     setPreview(null);
@@ -345,7 +366,7 @@ export default function BankingPage() {
     setOpeningDraft(String(saved));
     setError(null);
     setSuccessSkipped([]);
-    setSuccess(`Opening saved as ${formatAUD(saved)}. Next: 2 Import CSV below.`);
+    setSuccess(`Opening saved as ${formatAUD(saved)}. Next: ${steps.importN} Import CSV below.`);
   }
 
   function cancelPreview() {
@@ -382,8 +403,8 @@ export default function BankingPage() {
     setSuccess(
       `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
         remaining > 0
-          ? `Next: 3 Apply the next line below (${remaining} left).`
-          : "3 Apply — done. You’re done. Use More for Reset categorisations or Clear CSV imports, or Undo match below."
+          ? `Next: ${steps.applyN} Apply the next line below (${remaining} left).`
+          : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)} Undo match below.`
       }`,
     );
   }
@@ -402,11 +423,13 @@ export default function BankingPage() {
     const remaining = unmatchedForAccount(loadBankTransactions(mode), chequeAccountId).length;
     setSuccess(
       applied === 0
-        ? "Nothing left to Apply automatically. Next: Ask AI under More, or 2 Import CSV."
+        ? remaining > 0
+          ? `Nothing left to Apply automatically. Next: Ask AI under More, or ${steps.importN} Import CSV.`
+          : `Nothing left to Apply automatically. Next: ${steps.importN} Import CSV.`
         : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${
             remaining > 0
-              ? `Next: 3 Apply the rest, or Ask AI under More (${remaining} left).`
-              : "3 Apply — done. You’re done. Use More for Reset categorisations or Clear CSV imports."
+              ? `Next: ${steps.applyN} Apply the rest, or Ask AI under More (${remaining} left).`
+              : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)}`
           }`,
     );
   }
@@ -422,7 +445,7 @@ export default function BankingPage() {
     setTxns(loadBankTransactions(mode));
     setError(null);
     setSuccessSkipped([]);
-    setSuccess(`Undid match for “${t.description}”. Next: 3 Apply on that line below.`);
+    setSuccess(`Undid match for “${t.description}”. Next: ${steps.applyN} Apply on that line below.`);
   }
 
   function resetCats() {
@@ -432,8 +455,8 @@ export default function BankingPage() {
     setSuccessSkipped([]);
     setSuccess(
       n === 0
-        ? "Nothing to reset. Next: 3 Apply, or 2 Import CSV."
-        : `Reset ${n} categorisation${n === 1 ? "" : "s"}. Next: 3 Apply on a line below.`,
+        ? `Nothing to reset. Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`
+        : `Reset ${n} categorisation${n === 1 ? "" : "s"}. Next: ${steps.applyN} Apply on a line below.`,
     );
   }
 
@@ -444,10 +467,10 @@ export default function BankingPage() {
     setSuccessSkipped([]);
     setSuccess(
       n === 0
-        ? "No CSV imports to clear. Next: 2 Import CSV, or 3 Apply."
+        ? `No CSV imports to clear. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply.`
         : mode === "blank"
-          ? `Cleared ${n} imported row${n === 1 ? "" : "s"}. Opening left as-is. Next: 2 Import CSV, or 3 Apply on remaining lines.`
-          : `Cleared ${n} imported row${n === 1 ? "" : "s"} (sample lines kept). Next: 3 Apply, or 2 Import CSV.`,
+          ? `Cleared ${n} imported row${n === 1 ? "" : "s"}. Opening left as-is. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply on remaining lines.`
+          : `Cleared ${n} imported row${n === 1 ? "" : "s"} (sample lines kept). Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`,
     );
   }
 
@@ -630,6 +653,7 @@ export default function BankingPage() {
         </div>
       )}
 
+      {!(error || success) && (
       <div className="rounded-xl border border-brand-400/25 bg-brand-500/10 px-4 py-3 text-sm text-slate-200">
         <p>
           <strong className="text-white">Where next?</strong> {whereNext}
@@ -641,7 +665,7 @@ export default function BankingPage() {
               className="font-semibold text-brand-300 underline-offset-2 hover:underline"
               onClick={() => jumpToStep(1)}
             >
-              Go to 1 Save opening
+              Go to {steps.opening} Save opening
             </button>
           )}
           <button
@@ -649,23 +673,24 @@ export default function BankingPage() {
             className="font-semibold text-brand-300 underline-offset-2 hover:underline"
             onClick={() => jumpToStep(2)}
           >
-            Go to 2 Import CSV
+            Go to {steps.importN} Import CSV
           </button>
           <button
             type="button"
             className="font-semibold text-brand-300 underline-offset-2 hover:underline"
             onClick={() => jumpToStep(3)}
           >
-            Go to 3 Apply
+            Go to {steps.applyN} Apply
           </button>
         </p>
-        <p className="mt-1 text-xs text-slate-400">{bankingPathHint(step1Done)}</p>
+        <p className="mt-1 text-xs text-slate-400">{bankingPathHint(mode, step1Done)}</p>
       </div>
+      )}
 
       <div ref={importSectionRef} id="import" className="card scroll-mt-4 space-y-4 p-5">
         <div>
           <h2 className="font-semibold text-white">
-            2. Import CSV
+            {steps.importN}. Import CSV
           </h2>
           <p className="mt-1 text-sm text-slate-300">
             Upload a CSV with <code className="rounded bg-white/10 px-1 text-brand-200">date</code>,{" "}
@@ -848,20 +873,18 @@ export default function BankingPage() {
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
           <div>
             <h2 className="font-semibold text-white">
-              3. Apply — {mode === "blank" ? `${orgLabel} cheque` : "Business cheque account"}
+              {steps.applyN}. Apply — {mode === "blank" ? `${orgLabel} cheque` : "Business cheque account"}
             </h2>
             <p className="text-xs text-slate-400">
               {ledgerReady ? (
                 unmatched.length > 0 ? (
                   <>
-                    {linesToApplyLabel(unmatched.length)}. Next:{" "}
-                    <strong className="text-slate-300">3 Apply</strong> on a line, or Apply all.
+                    {linesToApplyLabel(unmatched.length)}. Apply on a line, or Apply all.
                   </>
                 ) : (
                   <>
-                    You’re done — nothing left to Apply. Next:{" "}
-                    <strong className="text-slate-300">Import CSV</strong>, or use More for Reset categorisations or
-                    Clear CSV imports.
+                    Nothing left to Apply.
+                    {morePowerHint(hasReset, hasImport) ? ` ${morePowerHint(hasReset, hasImport)}` : ""}
                   </>
                 )
               ) : (
@@ -959,11 +982,11 @@ export default function BankingPage() {
                     <p className="mx-auto mt-1 max-w-md text-sm text-slate-400">
                       {mode === "blank" && txns.length === 0
                         ? openingSet
-                          ? "Opening is already saved. Next: 2 Import CSV. Try starter CSV adds a few generic demo lines. Nothing from the guest sample is mixed in."
-                          : "Next: 1 Save opening above, then 2 Import CSV. Try starter CSV adds a few generic demo lines. Nothing from the guest sample is mixed in."
+                          ? `Opening is already saved. Use ${steps.importN} Import CSV above. ${steps.tryCsv} adds a few generic demo lines. Nothing from the guest sample is mixed in.`
+                          : `Use ${steps.opening} Save opening above, then ${steps.importN} Import CSV. ${steps.tryCsv} adds a few generic demo lines. Nothing from the guest sample is mixed in.`
                         : categorised.length > 0
-                          ? "Nothing left to Apply. Use More for Reset categorisations or Clear CSV imports, or Undo match below. Next: 2 Import CSV if you have another statement."
-                          : "Nothing left to Apply. Next: 2 Import CSV or Try sample CSV above, then 3 Apply."}
+                          ? `Nothing left to Apply. ${morePowerHint(hasReset, hasImport)}${hasReset ? " Undo match below." : ""} Use ${steps.importN} Import CSV if you have another statement.`
+                          : `Nothing left to Apply. Use ${steps.importN} Import CSV or ${steps.tryCsv} above, then ${steps.applyN} Apply.`}
                     </p>
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
                       {mode === "blank" && txns.length === 0 && !openingSet ? (

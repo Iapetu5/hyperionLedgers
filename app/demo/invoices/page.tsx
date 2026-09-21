@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { ExternalLink, FileText, Package, Pencil, Plus, Send, Trash2, X } from "lucide-react";
+import { Banknote, ExternalLink, FileText, Package, Pencil, Plus, Send, Trash2, Undo2, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
@@ -88,13 +88,13 @@ export default function InvoicesPage() {
       await navigator.clipboard.writeText(url);
       setCopied(id);
       setSendNote("Invoice link copied. Next: View, or More to Print.");
+      setFormOk(null);
       setTimeout(() => {
         setCopied(null);
         setSendNote(null);
       }, 4000);
     } catch {
       setSendNote("Could not copy the link. Next: View and copy the address bar, or More to Print.");
-      setFormError("Could not copy the link — use View and copy the URL from the address bar.");
     }
   }
 
@@ -311,7 +311,20 @@ export default function InvoicesPage() {
     if (lastCreatedId === id) setLastCreatedId(null);
     reloadUser();
     setSendNote(`Removed ${id}. Next: Create invoice.`);
-    setFormOk(`Removed ${id}. Next: Create invoice.`);
+    setFormOk(null);
+  }
+
+  function noteInvoiceStatus(id: string, next: UserInvoice["status"]) {
+    if (next === "Paid") return `${id} marked Paid. Next: Print, or More for Undo paid.`;
+    if (next === "Awaiting payment") return `${id} back to Awaiting payment. Next: Mark paid.`;
+    return `${id} updated.`;
+  }
+
+  function onSetInvStatus(id: string, next: UserInvoice["status"]) {
+    setPublicDocStatus("invoice", id, next);
+    reloadUser();
+    setSendNote(noteInvoiceStatus(id, next));
+    setFormOk(null);
   }
 
   function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {
@@ -416,6 +429,27 @@ export default function InvoicesPage() {
             {copied === lastCreatedId ? "Copied" : "Send invoice"}
           </button>
           <PrintDocButton kind="invoice" id={lastCreatedId} compact />
+          {(() => {
+            const row = userRows.find((r) => r.id === lastCreatedId);
+            const st = row
+              ? effectiveInvoiceStatus({
+                  status: invoiceStatus(row.id, row.status) as UserInvoice["status"],
+                  dueDate: row.dueDate,
+                })
+              : status;
+            if (st === "Paid") return null;
+            if (st === "Draft") return null;
+            return (
+              <button
+                type="button"
+                className="btn-secondary !px-2.5 !py-1 text-xs"
+                onClick={() => onSetInvStatus(lastCreatedId, "Paid")}
+              >
+                <Banknote size={12} />
+                Mark paid
+              </button>
+            );
+          })()}
         </div>
       )}
       {!editingId && (
@@ -534,6 +568,12 @@ export default function InvoicesPage() {
   }
 
   function userActions(inv: UserInvoice) {
+    const st = effectiveInvoiceStatus({
+      status: invoiceStatus(inv.id, inv.status) as UserInvoice["status"],
+      dueDate: inv.dueDate,
+    });
+    const paid = st === "Paid";
+    const canMarkPaid = !paid && st !== "Draft";
     return (
       <DocRowActions keep={3}>
         <button
@@ -553,6 +593,18 @@ export default function InvoicesPage() {
           <ExternalLink size={12} />
           View
         </Link>
+        {canMarkPaid && (
+          <button
+            type="button"
+            className="btn-primary !px-2 !py-1 text-xs"
+            onClick={() => onSetInvStatus(inv.id, "Paid")}
+            title="Record payment"
+          >
+            <Banknote size={12} />
+            Mark paid
+          </button>
+        )}
+        {paid && <PrintDocButton kind="invoice" id={inv.id} compact />}
         <button
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
@@ -562,7 +614,18 @@ export default function InvoicesPage() {
           <Pencil size={12} />
           Edit
         </button>
-        <PrintDocButton kind="invoice" id={inv.id} compact />
+        {paid && (
+          <button
+            type="button"
+            className="btn-secondary !px-2 !py-1 text-xs"
+            onClick={() => onSetInvStatus(inv.id, "Awaiting payment")}
+            title="Undo paid — back to Awaiting payment"
+          >
+            <Undo2 size={12} />
+            Undo paid
+          </button>
+        )}
+        {!paid && <PrintDocButton kind="invoice" id={inv.id} compact />}
         <button
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
@@ -768,7 +831,7 @@ export default function InvoicesPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Send invoice copies the customer pay link. View opens the public page. Print and other extras sit under More. INV-1042 is a mixed GST + GST Free example.
+            Send invoice copies the customer pay link. View opens the public page. Mark paid is on unpaid rows. After Paid, Print is on the row; Undo paid sits under More. INV-1042 is a mixed GST + GST Free example.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">
@@ -812,7 +875,15 @@ export default function InvoicesPage() {
                   />
                 </td>
                 <td className="px-4 py-3">
-                  <DocRowActions keep={2}>
+                  {(() => {
+                    const st = effectiveInvoiceStatus({
+                      status: inv.status as UserInvoice["status"],
+                      dueDate: inv.dueDate,
+                    });
+                    const paid = st === "Paid";
+                    const canMarkPaid = !paid && st !== "Draft";
+                    return (
+                  <DocRowActions keep={canMarkPaid || paid ? 3 : 2}>
                     <button
                       type="button"
                       className="btn-secondary !px-2 !py-1 text-xs"
@@ -830,8 +901,33 @@ export default function InvoicesPage() {
                       <ExternalLink size={12} />
                       View
                     </Link>
-                    <PrintDocButton kind="invoice" id={inv.id} compact />
+                    {canMarkPaid && (
+                      <button
+                        type="button"
+                        className="btn-primary !px-2 !py-1 text-xs"
+                        onClick={() => onSetInvStatus(inv.id, "Paid")}
+                        title="Record payment"
+                      >
+                        <Banknote size={12} />
+                        Mark paid
+                      </button>
+                    )}
+                    {paid && <PrintDocButton kind="invoice" id={inv.id} compact />}
+                    {paid && (
+                      <button
+                        type="button"
+                        className="btn-secondary !px-2 !py-1 text-xs"
+                        onClick={() => onSetInvStatus(inv.id, "Awaiting payment")}
+                        title="Undo paid — back to Awaiting payment"
+                      >
+                        <Undo2 size={12} />
+                        Undo paid
+                      </button>
+                    )}
+                    {!paid && <PrintDocButton kind="invoice" id={inv.id} compact />}
                   </DocRowActions>
+                    );
+                  })()}
                 </td>
               </tr>
             ))}

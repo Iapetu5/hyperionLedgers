@@ -13,6 +13,8 @@ import {
 } from "react";
 import { MoreHorizontal } from "lucide-react";
 
+const MORE_OPEN_EVENT = "hl-more-open";
+
 function menuFocusables(root: HTMLElement) {
   return Array.from(root.querySelectorAll<HTMLElement>('button, a[href], [tabindex]:not([tabindex="-1"])')).filter(
     (el) => !el.hasAttribute("disabled") && el.getAttribute("aria-disabled") !== "true",
@@ -40,6 +42,19 @@ export function MoreMenu({
   const menuRef = useRef<HTMLDivElement>(null);
   const focusLastRef = useRef(false);
   const menuId = useId();
+
+  useEffect(() => {
+    function onOther(e: Event) {
+      const otherId = (e as CustomEvent<string>).detail;
+      if (otherId !== menuId) setOpen(false);
+    }
+    window.addEventListener(MORE_OPEN_EVENT, onOther);
+    return () => window.removeEventListener(MORE_OPEN_EVENT, onOther);
+  }, [menuId]);
+
+  function announceOpen() {
+    window.dispatchEvent(new CustomEvent(MORE_OPEN_EVENT, { detail: menuId }));
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -103,18 +118,25 @@ export function MoreMenu({
         aria-haspopup="menu"
         title={title}
         onClick={() => {
+          if (open) {
+            setOpen(false);
+            return;
+          }
           focusLastRef.current = false;
-          setOpen((v) => !v);
+          announceOpen();
+          setOpen(true);
         }}
         onKeyDown={(e) => {
           if (open) return;
           if (e.key === "ArrowDown") {
             e.preventDefault();
             focusLastRef.current = false;
+            announceOpen();
             setOpen(true);
           } else if (e.key === "ArrowUp") {
             e.preventDefault();
             focusLastRef.current = true;
+            announceOpen();
             setOpen(true);
           }
         }}

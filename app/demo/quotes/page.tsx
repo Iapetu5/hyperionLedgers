@@ -92,13 +92,13 @@ export default function QuotesPage() {
       await navigator.clipboard.writeText(url);
       setCopied(id);
       setSendNote("Quote link copied. Next: View, or More to Print.");
+      setFormOk(null);
       setTimeout(() => {
         setCopied(null);
         setSendNote(null);
       }, 4000);
     } catch {
       setSendNote("Could not copy the link. Next: View and copy the address bar, or More to Print.");
-      setFormError("Could not copy the link — use View and copy the URL from the address bar.");
     }
   }
 
@@ -131,6 +131,7 @@ export default function QuotesPage() {
       amount: q.amount,
     });
     setSendNote("Email quote is open. After you Send: View, or More to Print.");
+    setFormOk(null);
   }
 
   /** One-click: Acme + GST/GST-free lines → customer-link strip (no second Create click). */
@@ -344,7 +345,7 @@ export default function QuotesPage() {
     if (lastCreatedId === id) setLastCreatedId(null);
     reloadUser();
     setSendNote(`Removed ${id}. Next: Create quote.`);
-    setFormOk(`Removed ${id}. Next: Create quote.`);
+    setFormOk(null);
   }
 
   function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {

@@ -290,7 +290,7 @@ export default function BillsPage() {
     if (lastCreatedId === id) setLastCreatedId(null);
     reloadUser();
     setStatusNote(`Removed ${id}. Next: Add bill.`);
-    setFormOk(`Removed ${id}. Next: Add bill.`);
+    setFormOk(null);
   }
 
   function noteBillStatus(id: string, next: UserBill["status"]) {
@@ -306,13 +306,7 @@ export default function BillsPage() {
     if (!row) return;
     const note = noteBillStatus(row.id, next);
     setStatusNote(note);
-    if (next === "Paid") {
-      setFormOk(
-        `${row.id} marked Paid (back office only — no public pay link). Next: Print, or More for Undo paid.`,
-      );
-    } else {
-      setFormOk(note);
-    }
+    setFormOk(null);
   }
 
   function onSampleStatus(id: string, next: UserBill["status"]) {
@@ -320,11 +314,7 @@ export default function BillsPage() {
     setSampleTick((t) => t + 1);
     const note = noteBillStatus(id, next);
     setStatusNote(note);
-    if (next === "Paid") {
-      setFormOk(`${note} Print is an internal summary only — no public pay link.`);
-    } else {
-      setFormOk(note);
-    }
+    setFormOk(null);
   }
 
   function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {
