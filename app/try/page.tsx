@@ -7,18 +7,18 @@ import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 const STEPS = [
   {
     icon: UserPlus,
-    title: "1. Buy — start the trial",
-    body: "Create your account and open Stripe Checkout for the $69 a month plan. The first 14 days are free.",
+    title: "1. Start the trial",
+    body: "Create your account. Open the $69 a month plan. The first 14 days are free.",
   },
   {
     icon: SlidersHorizontal,
-    title: "2. Pay — confirm on Stripe",
-    body: "Checkout verifies the subscription (test mode until live keys are set). Then you return to Downloads.",
+    title: "2. Pay on Stripe",
+    body: "Confirm on the payment page. Then you come back to Downloads.",
   },
   {
     icon: LayoutDashboard,
     title: "3. Download the Windows app",
-    body: "Unlock HyperionInvoices-Setup.exe for Windows. Mac is coming soon. Then create your first invoice.",
+    body: "Unlock the Windows installer. Mac is coming soon. Then make your first invoice.",
   },
 ];
 
@@ -27,30 +27,27 @@ export default function TryPage() {
     <div>
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs font-semibold text-fuchsia-200">
-          <Zap size={12} />
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/30 px-3 py-1 text-sm font-semibold text-fuchsia-100">
+          <Zap size={14} />
           Next step: start the trial
         </div>
-        <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">How it works</h1>
-        <p className="mt-3 max-w-2xl text-lg text-white/75">
-          One path: Buy → Pay on Stripe → Download the Windows app. Start the 14-day free trial,
-          then $69 a month. After checkout, Downloads unlocks HyperionInvoices for Windows.
+        <h1 className="marketing-title">How to start</h1>
+        <p className="marketing-lead">
+          Start the free trial. Pay on the next page. Then download the Windows app.
+          The first 14 days are free. Then it is $69 a month.
         </p>
         <div className="mt-8">
-          <StartTrialButton className="btn-primary" />
+          <StartTrialButton className="btn-marketing-primary" />
         </div>
-        <p className="mt-3 text-sm text-white/60">
-          Or{" "}
-          <Link href="/signup" className="font-medium text-white/80 underline-offset-4 hover:text-white hover:underline">
+        <p className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-base text-slate-100">
+          <Link href="/signup" className="link-quiet">
             Sign up
           </Link>
-          {" · "}
-          <Link href="/pricing" className="font-medium text-white/80 underline-offset-4 hover:text-white hover:underline">
+          <Link href="/pricing" className="link-quiet">
             Pricing
           </Link>
-          {" · "}
-          <Link href="/demo" className="font-medium text-white/80 underline-offset-4 hover:text-white hover:underline">
-            Try a demo
+          <Link href="/demo" className="link-quiet">
+            Open Harbour &amp; Co
           </Link>
         </p>
 
@@ -60,12 +57,12 @@ export default function TryPage() {
             return (
               <div key={s.title} className="card flex flex-col p-6">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500/20 text-brand-300">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500/20 text-brand-200">
                     <Icon size={20} />
                   </span>
-                  <h2 className="font-bold text-white">{s.title}</h2>
+                  <h2 className="text-xl font-bold text-white">{s.title}</h2>
                 </div>
-                <p className="mt-4 flex-1 text-sm text-slate-300">{s.body}</p>
+                <p className="mt-4 flex-1 marketing-copy">{s.body}</p>
               </div>
             );
           })}

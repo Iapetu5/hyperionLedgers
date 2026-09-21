@@ -69,6 +69,35 @@ body {
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-glow transition hover:bg-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-950;
   }
 
+  /* Marketing pages only — brighter primary, larger type. Do not use in the app. */
+  .btn-marketing-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-300 px-5 py-3 text-base font-bold text-slate-950 shadow-glow transition hover:bg-brand-200 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-60;
+  }
+
+  .btn-marketing-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/40 bg-transparent px-4 py-2.5 text-base font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:ring-offset-2 focus:ring-offset-slate-950;
+  }
+
+  .marketing-kicker {
+    @apply text-sm font-semibold uppercase tracking-widest text-brand-200;
+  }
+
+  .marketing-title {
+    @apply mt-3 text-5xl font-bold tracking-tight text-white sm:text-6xl;
+  }
+
+  .marketing-lead {
+    @apply mt-4 max-w-2xl text-xl leading-relaxed text-white;
+  }
+
+  .marketing-copy {
+    @apply text-base leading-relaxed text-slate-100;
+  }
+
+  .link-quiet {
+    @apply text-base font-medium text-white underline-offset-4 transition hover:underline;
+  }
+
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-950;
   }

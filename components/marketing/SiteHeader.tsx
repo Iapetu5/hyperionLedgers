@@ -39,7 +39,7 @@ export function SiteHeader({
     <header className="page-hero no-print">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <BrandLogo hideWordmarkOnMobile />
-        <nav className="hidden items-center gap-5 text-sm text-white/70 md:flex">
+        <nav className="hidden items-center gap-5 text-base text-slate-100 md:flex">
           {LINKS.map((l) => {
             const active = pathname === l.href || pathname.startsWith(l.href + "/");
             return (
@@ -58,13 +58,13 @@ export function SiteHeader({
           })}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/login" className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline">
+          <Link href="/login" className="link-quiet hidden sm:inline">
             Log in
           </Link>
-          <Link href="/signup" className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline">
+          <Link href="/signup" className="link-quiet hidden sm:inline">
             Sign up
           </Link>
-          <StartTrialButton className="btn-primary !px-3" showArrow={false} />
+          <StartTrialButton className="btn-marketing-primary" showArrow={false} />
           <button
             type="button"
             className="inline-flex items-center justify-center rounded-lg border border-white/20 p-2 text-white md:hidden"
@@ -84,24 +84,24 @@ export function SiteHeader({
               <Link
                 key={l.href}
                 href={l.href}
-                className="rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10 hover:text-white"
+                className="rounded-lg px-3 py-2 text-base text-white hover:bg-white/10"
               >
                 {l.label}
               </Link>
             ))}
-            <Link href="/login" className="rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10 hover:text-white">
+            <Link href="/login" className="rounded-lg px-3 py-2 text-base text-white hover:bg-white/10">
               Log in
             </Link>
-            <Link href="/signup" className="rounded-lg px-3 py-2 text-sm font-semibold text-white hover:bg-white/10">
+            <Link href="/signup" className="rounded-lg px-3 py-2 text-base font-semibold text-white hover:bg-white/10">
               Sign up
             </Link>
             {variant === "marketing" ? (
-              <Link href="/demo" className="rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white">
-                Try a demo
+              <Link href="/demo" className="rounded-lg px-3 py-2 text-base text-slate-100 hover:bg-white/10 hover:text-white">
+                Open Harbour &amp; Co
               </Link>
             ) : null}
             <div className="px-3 pt-2">
-              <StartTrialButton className="btn-primary w-full" />
+              <StartTrialButton className="btn-marketing-primary w-full" />
             </div>
           </nav>
         </div>
