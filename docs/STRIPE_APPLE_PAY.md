@@ -1,8 +1,8 @@
-# Stripe cards, Apple Pay, and Google Pay
+# Stripe cards, Apple Pay, Google Pay, and Link
 
-HyperionInvoices Checkout is created only on the server (`POST /api/checkout`). The session uses Stripe **`card`**, which covers debit cards, credit cards, **Apple Pay**, and **Google Pay** on the same hosted Checkout. The secret key never goes to the browser.
+HyperionInvoices Checkout is created only on the server (`POST /api/checkout` and `POST /api/stripe/checkout`). The session uses Stripe **`card`** (debit, credit, **Apple Pay**, **Google Pay**) and **`link`**. The secret key never goes to the browser. Presentment is **AUD $69 / month** (`adaptive_pricing` off) so Checkout does not convert to USD.
 
-Customer copy: **Pay with card or Apple Pay**.
+Customer copy: **Pay with card, Apple Pay, or Link**.
 
 Do not change DNS. Production URL stays `https://www.hyperioninvoices.com.au`. Do not commit `.env` or real Stripe keys.
 
@@ -13,7 +13,8 @@ In **test mode** first, then repeat in **live mode** before production traffic.
 1. Open [Stripe Payment methods](https://dashboard.stripe.com/settings/payment_methods).
 2. Turn on **Cards** (debit and credit). This is the `card` type the app already sends.
 3. Under **Wallets**, turn on **Apple Pay** and **Google Pay**.
-4. Leave other methods off unless Nicholas asks for them. Do not enable bank redirects as the default path.
+4. Turn on **Link**.
+5. Leave bank redirects and other methods off unless Nicholas asks for them.
 
 Checkout still collects a payment method during the 14-day trial (`payment_method_collection=always`).
 

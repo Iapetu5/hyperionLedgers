@@ -50,13 +50,17 @@ export function readEntitlementCookie(): string | null {
 export function setEntitlementCookie(sessionId: string) {
   const value = signEntitlement(sessionId);
   if (!value) return;
-  cookies().set(ENTITLEMENT_COOKIE, value, {
-    httpOnly: true,
-    secure: cookieSecure(),
-    sameSite: "lax",
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60,
-  });
+  try {
+    cookies().set(ENTITLEMENT_COOKIE, value, {
+      httpOnly: true,
+      secure: cookieSecure(),
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
+    });
+  } catch {
+    // App Router Server Components cannot set cookies — Route Handlers can.
+  }
 }
 
 export async function recordStripeEvent(eventId: string): Promise<boolean> {
@@ -136,7 +140,11 @@ export async function persistDownloadGrantFromSubscription(sub: StripeSubscripti
 export async function grantDownloadFromSession(session: StripeCheckoutSession): Promise<void> {
   if (!sessionGrantsDownload(session)) return;
   setEntitlementCookie(session.id);
-  await persistDownloadGrant(session);
+  try {
+    await persistDownloadGrant(session);
+  } catch {
+    // Webhook may already have set has_paid_download; never fail the success page.
+  }
 }
 
 export async function hasDownloadAccess(): Promise<boolean> {
