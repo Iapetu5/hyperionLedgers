@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { FileText, Sparkles } from "lucide-react";
 import { ExploreSampleButton, useExploreHarbourSample } from "@/components/demo/ExploreSampleButton";
-import { DEMO_CTA } from "@/lib/brand";
+const SAMPLE_CTA = "Look at Harbour & Co sample";
 
 export type EmptyStateAction = {
   label: string;
@@ -41,7 +41,7 @@ export function EmptyState({
     if (actions.length === 0) {
       return [
         {
-          label: DEMO_CTA,
+          label: SAMPLE_CTA,
           primary: true,
           onClick: explore,
         },
@@ -55,7 +55,7 @@ export function EmptyState({
     return [
       ...mapped,
       {
-        label: DEMO_CTA,
+        label: SAMPLE_CTA,
         primary: false,
         onClick: explore,
       },
@@ -83,7 +83,7 @@ export function EmptyState({
             <div className="mt-4 flex flex-wrap gap-2">
               {mergedActions.map((a) => {
                 const cls = a.primary ? "btn-primary" : "btn-secondary";
-                const isExplore = a.label === DEMO_CTA;
+                const isExplore = a.label === SAMPLE_CTA;
                 if (a.href) {
                   return (
                     <Link key={a.label} href={a.href} className={cls}>
@@ -114,7 +114,7 @@ export function BlankLedgerHint() {
         <Sparkles size={12} className="text-brand-300" />
         Starting empty — try a demo as a guest anytime.
       </span>
-      <ExploreSampleButton primary={false} className="!px-2.5 !py-1 text-xs" />
+      <ExploreSampleButton primary={false} label="Look at Harbour & Co sample" className="!px-2.5 !py-1 text-xs" />
     </div>
   );
 }

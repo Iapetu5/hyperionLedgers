@@ -7,18 +7,18 @@ import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 const STEPS = [
   {
     icon: UserPlus,
-    title: "1. Start the trial",
-    body: "Create your account. Open the $69 a month plan. The first 14 days are free.",
+    title: "1. Start free trial",
+    body: "Create your account. The first 14 days are free. Then it is $69 a month.",
   },
   {
     icon: SlidersHorizontal,
-    title: "2. Pay on Stripe",
-    body: "Confirm on the payment page. Then you come back to Downloads.",
+    title: "2. Answer a few setup questions",
+    body: "Add your business, GST, and year end. One question at a time.",
   },
   {
     icon: LayoutDashboard,
-    title: "3. Download the Windows app",
-    body: "Unlock the Windows installer. Mac is coming soon. Then make your first invoice.",
+    title: "3. Make your first invoice",
+    body: "Then download the Windows app after you pay if you want it on your computer. Mac is coming soon.",
   },
 ];
 
@@ -29,27 +29,24 @@ export default function TryPage() {
       <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/30 px-3 py-1 text-sm font-semibold text-fuchsia-100">
           <Zap size={14} />
-          Next step: start the trial
+          14 days free · then $69 a month
         </div>
         <h1 className="marketing-title">How to start</h1>
         <p className="marketing-lead">
-          Start the free trial. Pay on the next page. Then download the Windows app.
-          The first 14 days are free. Then it is $69 a month.
+          Start the free trial. Answer a few setup questions. Then make your first invoice.
         </p>
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
           <StartTrialButton className="btn-marketing-primary" />
-        </div>
-        <p className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-base text-slate-100">
+          <Link href="/demo" className="link-quiet">
+            Look at a sample first
+          </Link>
+          <Link href="/pricing" className="link-quiet">
+            See the $69 plan
+          </Link>
           <Link href="/signup" className="link-quiet">
             Sign up
           </Link>
-          <Link href="/pricing" className="link-quiet">
-            Pricing
-          </Link>
-          <Link href="/demo" className="link-quiet">
-            Open Harbour &amp; Co
-          </Link>
-        </p>
+        </div>
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
           {STEPS.map((s) => {

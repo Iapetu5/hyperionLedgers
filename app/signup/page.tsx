@@ -74,11 +74,12 @@ export default function SignupPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 1 of 3 · Account</p>
         <h1 className="mt-1 text-xl font-bold text-white">Start your free trial</h1>
         <p className="mt-1 text-sm text-slate-300">
-          You get 14 days free. Next we set up your business.{" "}
+          You get 14 days free. Then $69 a month. Next we ask a few setup questions. Then you can make
+          your first invoice.{" "}
           <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            Try a demo
-          </Link>{" "}
-          first if you prefer.
+            Look at a sample first
+          </Link>
+          .
         </p>
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <div>
@@ -114,7 +115,7 @@ export default function SignupPage() {
           {fieldErrors.abn && <p className="text-xs text-rose-300">{fieldErrors.abn}</p>}
           {error && <p className="text-sm text-rose-300">{error}</p>}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy ? "Creating…" : "Next set up business"}
+            {busy ? "Creating…" : "Continue"}
           </button>
           <p className="text-center text-xs text-slate-400">Then $69 a month.</p>
         </form>

@@ -155,10 +155,10 @@ export default function DemoOverviewPage() {
 
   if (!usesSampleData) {
     const quickLinks = [
-      { href: "/demo/invoices?mixed=1", label: "Invoices", icon: FileText, blurb: "Create with sample lines + pay link" },
-      { href: "/demo/quotes?mixed=1", label: "Quotes", icon: FileSignature, blurb: "Create with sample lines + customer link" },
-      { href: "/demo/bills?mixed=1", label: "Bills", icon: Receipt, blurb: "Create with sample lines + approve / mark paid" },
-      { href: "/demo/account", label: "Account", icon: Settings, blurb: "GST, FY, ABN" },
+      { href: "/demo/invoices?mixed=1", label: "Invoices", icon: FileText, blurb: "Make an invoice with an example" },
+      { href: "/demo/quotes?mixed=1", label: "Quotes", icon: FileSignature, blurb: "Make a quote with an example" },
+      { href: "/demo/bills?mixed=1", label: "Bills", icon: Receipt, blurb: "Make a bill with an example" },
+      { href: "/demo/account", label: "Account", icon: Settings, blurb: "GST, year end, and ABN" },
     ];
 
     if (!blankLive.hasDocs) {
@@ -173,14 +173,14 @@ export default function DemoOverviewPage() {
           <FirstRunWelcome orgName={user?.businessName} forceShow />
           <EmptyState
             icon={LayoutDashboard}
-            title="Nothing on the overview yet"
+            title="Nothing here yet"
             description={`Cash, receivables, and next-action tips appear after your first invoice, quote, or bill for ${user?.businessName ?? "your business"}. Use the shortcuts below, or try a demo as a guest for a full sample tour.`}
             showExploreSample
             actions={[
               { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
               { label: "Create quote", href: "/demo/quotes?mixed=1" },
               { label: "Create bill", href: "/demo/bills?mixed=1" },
-              { label: "Account settings", href: "/demo/account" },
+              { label: "Account", href: "/demo/account" },
             ]}
             hint="Try a demo opens the guest sample — you can log back into your organisation anytime."
           />

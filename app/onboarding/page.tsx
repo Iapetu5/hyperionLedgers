@@ -259,7 +259,7 @@ export default function OnboardingPage() {
           </div>
         </form>
         <p className="mt-4 text-xs text-slate-400">
-          Saved to your HyperionInvoices organisation. You can change these later in Account settings.
+          Saved to your HyperionInvoices organisation. You can change these later in Account.
         </p>
       </div>
     </div>

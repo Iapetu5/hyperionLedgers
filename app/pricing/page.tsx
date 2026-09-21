@@ -2,11 +2,10 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
-import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 
 const FEATURES = [
   "Make quotes, invoices, and bills",
-  "See GST on each line, and when BAS is due",
+  "See GST on each line, and BAS due dates",
   "See profit and loss, and what you own and owe",
   "Bring in bank transactions",
   "Keep contacts and products in one place",
@@ -25,8 +24,7 @@ export default function PricingPage() {
             One plan. $69 a month.
           </h1>
           <p className="marketing-lead mx-auto">
-            Try it free for 14 days. Then it is $69 a month. You can stop anytime.
-            After you pay, download the Windows app. See cash, GST, and invoices in everyday words.
+            Try it free for 14 days. See cash, GST, and invoices in plain English.
           </p>
         </div>
 
@@ -37,13 +35,13 @@ export default function PricingPage() {
             </span>
             <h2 className="text-2xl font-bold text-white">HyperionInvoices</h2>
             <p className="mt-2 marketing-copy">
-              Everything is in this one plan. Nothing extra to buy later.
+              Everything in one plan. No add-ons to buy later.
             </p>
             <p className="mt-5">
               <span className="text-5xl font-bold text-white">$69</span>
               <span className="text-base text-slate-200"> / month</span>
             </p>
-            <p className="mt-2 text-base text-slate-100">This price starts after the free trial. You can stop anytime.</p>
+            <p className="mt-2 text-base text-slate-100">After the free trial. Stop anytime.</p>
             <ul className="mt-5 flex-1 space-y-2.5">
               {FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-base text-slate-100">
@@ -53,9 +51,14 @@ export default function PricingPage() {
               ))}
             </ul>
             <div className="mt-6 flex flex-col gap-3">
-              <StartTrialButton className="btn-marketing-primary" />
+              <Link href="/signup" className="btn-marketing-primary">
+                Start free trial
+              </Link>
               <Link href="/signup" className="link-quiet text-center">
                 Sign up
+              </Link>
+              <Link href="/demo" className="link-quiet text-center">
+                Look at a sample first
               </Link>
             </div>
           </div>
@@ -64,7 +67,7 @@ export default function PricingPage() {
         <p className="mt-10 text-center text-base text-slate-100">
           Want to look around first?{" "}
           <Link href="/demo" className="font-semibold text-brand-200 hover:underline">
-            Open Harbour &amp; Co
+            Look at a sample first
           </Link>
           {" "}
           with no account, or{" "}
