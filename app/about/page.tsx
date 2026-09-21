@@ -8,7 +8,7 @@ import { MARKETING_LIMITS } from "@/lib/brand";
 
 const GLANCE = [
   "Quotes, invoices, bills, and reports in one place",
-  "Start with your own organisation, or look around first",
+  "Try a demo now, or start with your own organisation",
   "Not a tax agent, BAS agent, or financial adviser",
 ];
 
@@ -37,7 +37,7 @@ export default function AboutPage() {
                 <GuestOnly>
                   {" "}
                   Try a demo first if you want to look around — that path uses sample data, not your
-                  real account.
+                  real account. Harbour & Co Studio is the sample organisation.
                 </GuestOnly>
               </p>
               <p className="marketing-copy">{MARKETING_LIMITS}</p>

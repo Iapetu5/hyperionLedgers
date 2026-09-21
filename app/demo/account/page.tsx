@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AbnField } from "@/components/abn/AbnField";
 import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahead";
-import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import type { GstAccountingMethod } from "@/lib/auth";
 import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
 import { isRealCompanyName } from "@/lib/company-pickup";
@@ -106,7 +105,7 @@ export default function AccountPage() {
         <div className="card border-brand-400/25 bg-brand-500/10 p-5">
           <p className="text-sm font-semibold text-white">Your books</p>
           <p className="mt-1 text-sm text-slate-300">
-            These are your own books — not the sample. Create an invoice next. A quote or bill can wait.
+            Your books start empty. Create an invoice, quote, or bill — each can start from a ready-made example.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link href="/demo/invoices?mixed=1" className="btn-primary">
@@ -118,7 +117,6 @@ export default function AccountPage() {
             <Link href="/demo/bills?mixed=1" className="btn-secondary">
               Create bill
             </Link>
-            <ExploreSampleButton primary={false} />
           </div>
         </div>
       )}

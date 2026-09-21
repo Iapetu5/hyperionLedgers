@@ -219,7 +219,7 @@ export function AiAssistant({
             </p>
             <p className="mt-0.5 text-xs text-white/65">
               {blankLedger
-                ? "Blank-ledger tips — create docs here, or try a demo for full sample facts"
+                ? "Blank-ledger tips — create an invoice, quote, or bill here"
                 : "Grounded demo copilot — sample ledger facts, not a live tax agent"}
             </p>
           </div>
