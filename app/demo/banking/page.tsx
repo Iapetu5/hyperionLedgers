@@ -402,11 +402,17 @@ export default function BankingPage() {
       }
       const next = await appendImportedRows(preview, chequeAccountId, mode);
       const added = next.filter((x) => x.source === "import").length - beforeImportCount;
+      const offered = preview.length;
+      const dupes = Math.max(0, offered - added);
+      const dupeNote =
+        dupes === 0
+          ? ""
+          : ` Skipped ${dupes} duplicate${dupes === 1 ? "" : "s"} already on this cheque (same date, description and amount).`;
       setTxns(next);
       setSuccess(
         added === 0
-          ? `No new rows to import — those transactions are already on this cheque account.${openingNote}`
-          : `Imported ${added} transaction${added === 1 ? "" : "s"}. Next: ${steps.applyN} Apply on a line below.${openingNote}`,
+          ? `Nothing new was imported.${dupeNote} Cash did not change.${openingNote}`
+          : `Imported ${added} new transaction${added === 1 ? "" : "s"}.${dupeNote} Next: ${steps.applyN} Apply on a line below.${openingNote}`,
       );
       setSuccessSkipped(skippedSnapshot);
       setPreview(null);
@@ -497,10 +503,16 @@ export default function BankingPage() {
       try {
       const lines = unmatchedForAccount(await loadBankTransactions(mode), chequeAccountId);
       let applied = 0;
+      let skippedNoSuggestion = 0;
+      let failed = 0;
       for (const t of lines) {
         const suggestion = suggestCategory(t.description, t.amount);
-        if (suggestion.confidence !== "high") continue;
+        if (suggestion.confidence !== "high") {
+          skippedNoSuggestion += 1;
+          continue;
+        }
         if (await applyCategoryToTransaction(t.id, suggestion)) applied += 1;
+        else failed += 1;
       }
       const fresh = await loadBankTransactions(mode);
       setTxns(fresh);
@@ -508,14 +520,20 @@ export default function BankingPage() {
       const remaining = unmatchedForAccount(fresh, chequeAccountId).length;
       const left =
         remaining === 0 ? "Nothing left to Apply." : `${linesToApplyLabel(remaining)} still marked Needs category.`;
+      const skipBit =
+        skippedNoSuggestion > 0
+          ? ` Skipped ${skippedNoSuggestion} (no confident category — still Needs category).`
+          : "";
+      const failBit =
+        failed > 0 ? ` Could not apply ${failed} line${failed === 1 ? "" : "s"} (left unmatched).` : "";
       setSuccess(
         applied === 0
           ? remaining === 0
             ? `Nothing left to Apply. Next: ${steps.importN} Import CSV.`
-            : `Nothing left to Apply automatically. ${left} Next: Ask AI under More, or ${steps.applyN} Apply on a remaining line.`
+            : `Applied 0 lines.${skipBit}${failBit} ${left} Next: Ask AI under More, or ${steps.applyN} Apply on a remaining line.`
           : remaining === 0
-            ? `Applied ${applied} line${applied === 1 ? "" : "s"}. ${left} ${morePowerHint(true, hasImport)}`.trim()
-            : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${left} Next: ${steps.applyN} Apply, or Ask AI under More.`,
+            ? `Applied ${applied} line${applied === 1 ? "" : "s"}.${skipBit}${failBit} ${left} ${morePowerHint(true, hasImport)}`.trim()
+            : `Applied ${applied} line${applied === 1 ? "" : "s"}.${skipBit}${failBit} ${left} Next: ${steps.applyN} Apply, or Ask AI under More.`,
       );
       } finally {
         applyAllLock.current = false;
