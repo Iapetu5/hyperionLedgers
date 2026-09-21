@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Mail, X } from "lucide-react";
+import Link from "next/link";
+import { Copy, ExternalLink, Mail, Printer, X } from "lucide-react";
 import { defaultQuoteSubject } from "@/lib/quote-email";
+import { publicQuoteUrl } from "@/lib/public-docs";
 
 export type SendQuoteTarget = {
   id: string;
@@ -28,6 +30,19 @@ export function SendQuotePanel({
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [configured, setConfigured] = useState<boolean | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function copyCustomerLink() {
+    const url = `${window.location.origin}${publicQuoteUrl(quote.id)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setOk("Customer link copied. Share it, or print / download a PDF from the quote page.");
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setError("Could not copy the link. Use View quote and copy the address bar.");
+    }
+  }
 
   useEffect(() => {
     setTo(quote.contactEmail ?? "");
@@ -108,10 +123,42 @@ export function SendQuotePanel({
           </button>
         </div>
         {configured === false ? (
-          <p className="mt-3 rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-50">
-            Email is not configured. Add EMAIL_* or Gmail settings on Vercel. This quote is already Sent — not a draft.
-          </p>
-        ) : null}
+          <div className="mt-3 space-y-3 rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-3 text-sm text-amber-50">
+            <p>
+              Email is not configured. This quote is already <strong className="text-white">Sent</strong> — not a draft.
+              Copy the customer link or print / download a PDF.
+            </p>
+            <p className="text-xs text-amber-100/80">
+              To enable email later, set <code>GMAIL_USER</code> + <code>GMAIL_APP_PASSWORD</code> or{" "}
+              <code>EMAIL_SMTP_HOST</code> / <code>EMAIL_SMTP_USER</code> / <code>EMAIL_SMTP_PASS</code> or{" "}
+              <code>EMAIL_API_KEY</code> on Vercel (see README). Do not put secrets in Git.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn-primary" onClick={() => void copyCustomerLink()}>
+                <Copy size={16} />
+                {copied ? "Copied" : "Copy customer link"}
+              </button>
+              <Link href={publicQuoteUrl(quote.id)} className="btn-secondary" target="_blank" rel="noreferrer">
+                <ExternalLink size={16} />
+                View quote
+              </Link>
+              <Link
+                href={`${publicQuoteUrl(quote.id)}?print=1`}
+                className="btn-secondary"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Printer size={16} />
+                Print / PDF
+              </Link>
+            </div>
+            {ok ? <p className="text-sm text-emerald-200">{ok}</p> : null}
+            {error ? <p className="text-sm text-rose-200">{error}</p> : null}
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              Close
+            </button>
+          </div>
+        ) : (
         <form className="mt-4 space-y-3" onSubmit={onSubmit}>
           <div>
             <label className="label" htmlFor="send-quote-to">
@@ -165,6 +212,7 @@ export function SendQuotePanel({
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

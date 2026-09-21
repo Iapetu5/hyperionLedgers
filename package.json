@@ -8,7 +8,9 @@
     "build:windows": "mkdir -p private/downloads && cd desktop/launcher && go mod tidy && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=\"-s -w\" -o ../../private/downloads/HyperionInvoices-Setup.exe",
     "start": "next start",
     "lint": "next lint",
-    "test:abn": "node scripts/test-abn.mjs"
+    "test:abn": "node scripts/test-abn.mjs",
+    "test:iso-date": "node scripts/test-iso-date.mjs",
+    "test": "node scripts/test-abn.mjs && node scripts/test-iso-date.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

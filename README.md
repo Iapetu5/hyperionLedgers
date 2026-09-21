@@ -21,7 +21,7 @@ Production: [https://www.hyperioninvoices.com.au](https://www.hyperioninvoices.c
 | `/api/stripe/webhook` | Verifies `checkout.session.completed` and records entitlement |
 | `/api/downloads/windows` | Gated stream of `HyperionInvoices-Setup.exe` |
 | `/demo` | Optional **Try a demo** walkthrough (banner: sample data — not your real account) |
-| `/api/quotes/send` | Send a quote email (To, subject, optional note). Uses `EMAIL_*` / Gmail placeholders. |
+| `/api/quotes/send` | Email a quote when `EMAIL_*` / Gmail is set on Vercel. Without those vars the quote stays **Sent**; copy the customer link or print/PDF instead. |
 
 The homepage does **not** dump visitors into the demo.
 
@@ -53,6 +53,14 @@ STRIPE_WEBHOOK_SECRET=
 ```
 
 **Accounts:** attach Neon on the Vercel project (`Storage → Create Database → Neon`) so `DATABASE_URL` is set, then add `SESSION_SECRET` and redeploy. Schema is in `docs/schema.sql` and is applied on first sign-up.
+
+**Quote email (optional):** `POST /api/quotes/send` needs one of these on the Vercel project (Production + Preview) — never commit real values:
+
+- `GMAIL_USER` + `GMAIL_APP_PASSWORD` (smtp.gmail.com), or
+- `EMAIL_SMTP_HOST` + `EMAIL_SMTP_USER` + `EMAIL_SMTP_PASS` (optional `EMAIL_SMTP_PORT`, `EMAIL_FROM`), or
+- `EMAIL_API_KEY` (Resend)
+
+Until those are set, Send quote shows **Copy customer link** and **Print / PDF**. New quotes stay **Sent**, not Draft. Details: [docs/ENV.md](docs/ENV.md).
 
 **Stripe:** set the test keys on Vercel project `hyperion-ledgers` to enable Checkout. Without them, the UI buy path still ships.
 
