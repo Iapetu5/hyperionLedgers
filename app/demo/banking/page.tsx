@@ -57,7 +57,7 @@ import {
   resetAllCategorisations,
   setBlankOpeningBalance,
 } from "@/lib/books-client";
-import { booksBankingHint, usesServerBooksUi } from "@/lib/books-copy";
+import { booksBankingHint, booksRecentlyCategorisedHint, usesServerBooksUi } from "@/lib/books-copy";
 
 function linesToApplyLabel(count: number) {
   return count === 1 ? "1 line to Apply" : `${count} lines to Apply`;
@@ -557,7 +557,7 @@ export default function BankingPage() {
     }
     void (async () => {
       try {
-        const updated = await applyCategoryToTransaction(t.id, suggestion);
+        const updated = await applyCategoryToTransaction(t.id, suggestion, { mode });
         if (!updated) {
           setError(`Could not apply a category to “${t.description}”. Try refreshing Banking.`);
           setSuccess(null);
@@ -600,7 +600,7 @@ export default function BankingPage() {
           continue;
         }
         try {
-          if (await applyCategoryToTransaction(t.id, suggestion)) applied += 1;
+          if (await applyCategoryToTransaction(t.id, suggestion, { mode })) applied += 1;
           else failed += 1;
         } catch {
           failed += 1;
@@ -649,7 +649,7 @@ export default function BankingPage() {
     unmatchLock.current = t.id;
     void (async () => {
       try {
-        const updated = await clearCategoryFromTransaction(t.id);
+        const updated = await clearCategoryFromTransaction(t.id, mode);
         if (!updated) {
           setError(`Could not undo match for “${t.description}”. Cash and categories are unchanged.`);
           setSuccess(null);
@@ -1402,8 +1402,7 @@ export default function BankingPage() {
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Recently categorised</h2>
             <p className="text-xs text-slate-400">
-              Applied in this browser demo (including via Ask AI). Undo match below is one click. Reset
-              categorisations under More asks what it removes.
+              {booksRecentlyCategorisedHint(serverBooks, mode === "blank")}
             </p>
           </div>
           <ul className="divide-y divide-white/10 text-sm">

@@ -83,3 +83,18 @@ export function booksBankingHint(server: boolean, blank: boolean): string {
     ? "Organisation cheque account — CSV import is saved to your organisation. No live bank feeds."
     : "Cheque account — browser-side CSV only. No live bank feeds, and demo sample lines stay out of this blank ledger.";
 }
+
+/** Ask AI / Apply copy — sample stays browser-local; blank signed-in orgs save to Postgres. */
+export function booksApplyWhere(server: boolean, blank: boolean): string {
+  if (!blank) return "it stays in this browser demo only";
+  return server ? "it saves to your organisation books" : "it stays in this browser";
+}
+
+export function booksRecentlyCategorisedHint(server: boolean, blank: boolean): string {
+  const applied = !blank
+    ? "Applied in this browser demo (including via Ask AI)."
+    : server
+      ? "Applied to your organisation books (including via Ask AI)."
+      : "Applied in this browser (including via Ask AI).";
+  return `${applied} Undo match below is one click. Reset categorisations under More asks what it removes.`;
+}

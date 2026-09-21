@@ -692,6 +692,9 @@ export async function saveBankImportsServer(imports: BankTransaction[]): Promise
 export async function saveBankCatOverridesServer(
   catOverrides: Record<string, unknown>,
 ): Promise<{ ok: true } | { error: string }> {
+  if (catOverrides == null || typeof catOverrides !== "object" || Array.isArray(catOverrides)) {
+    return { error: "catOverrides must be an object map." };
+  }
   const ctx = await requireOrg();
   if ("error" in ctx) return ctx;
   const data = await loadBankData(ctx.orgId);

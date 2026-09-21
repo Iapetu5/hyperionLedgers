@@ -538,42 +538,56 @@ export async function appendImportedRows(
 export async function applyCategoryToTransaction(
   txnId: string,
   suggestion: Pick<CategorySuggestion, "accountCode" | "accountName" | "taxRate">,
-  opts: { markMatched?: boolean } = { markMatched: true },
+  opts: { markMatched?: boolean; mode?: BankLedgerMode } = { markMatched: true },
 ): Promise<BankTransaction | null> {
-  if (!(await serverBooksEnabled())) return applyCategoryToTransactionLocal(txnId, suggestion, opts);
-  try {
-    const payload = await loadBankPayload();
-    const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
-    if (!target) return null;
-    payload.catOverrides[txnId] = {
-      accountCode: suggestion.accountCode,
-      accountName: suggestion.accountName,
-      taxRate: suggestion.taxRate,
-      matched: opts.markMatched !== false,
-      categorisedAt: new Date().toISOString(),
-    };
-    await saveBankFields({ catOverrides: payload.catOverrides });
-    const txns = await loadBankTransactions("blank");
-    return txns.find((t) => t.id === txnId) ?? null;
-  } catch {
-    return null;
+  const mode = opts.mode ?? "blank";
+  // Sample (and guests) stay in localStorage even when the signed-in org uses Postgres.
+  if (!(await serverBooksEnabled()) || mode !== "blank") {
+    return applyCategoryToTransactionLocal(txnId, suggestion, opts);
   }
+  const payload = await loadBankPayload();
+  const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
+  if (!target) return null;
+  const categorisedAt = new Date().toISOString();
+  const matched = opts.markMatched !== false;
+  payload.catOverrides[txnId] = {
+    accountCode: suggestion.accountCode,
+    accountName: suggestion.accountName,
+    taxRate: suggestion.taxRate,
+    matched,
+    categorisedAt,
+  };
+  await saveBankFields({ catOverrides: payload.catOverrides });
+  return {
+    ...target,
+    accountCode: suggestion.accountCode,
+    accountName: suggestion.accountName,
+    taxRate: suggestion.taxRate,
+    matched,
+    categorisedAt,
+  };
 }
 
-export async function clearCategoryFromTransaction(txnId: string): Promise<BankTransaction | null> {
-  if (!(await serverBooksEnabled())) return clearCategoryFromTransactionLocal(txnId);
-  try {
-    const payload = await loadBankPayload();
-    if (!applyCatsFromPayload(payload.imports, payload.catOverrides).some((t) => t.id === txnId)) {
-      return null;
-    }
-    delete payload.catOverrides[txnId];
-    await saveBankFields({ catOverrides: payload.catOverrides });
-    const txns = await loadBankTransactions("blank");
-    return txns.find((t) => t.id === txnId) ?? null;
-  } catch {
-    return null;
+export async function clearCategoryFromTransaction(
+  txnId: string,
+  mode: BankLedgerMode = "blank",
+): Promise<BankTransaction | null> {
+  if (!(await serverBooksEnabled()) || mode !== "blank") {
+    return clearCategoryFromTransactionLocal(txnId);
   }
+  const payload = await loadBankPayload();
+  const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
+  if (!target) return null;
+  delete payload.catOverrides[txnId];
+  await saveBankFields({ catOverrides: payload.catOverrides });
+  return {
+    ...target,
+    matched: false,
+    accountCode: undefined,
+    accountName: undefined,
+    taxRate: undefined,
+    categorisedAt: undefined,
+  };
 }
 
 export async function resetAllCategorisations(mode: BankLedgerMode = "blank"): Promise<number> {
