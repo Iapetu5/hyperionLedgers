@@ -232,13 +232,15 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               <span className="text-white/50"> — </span>
               {hasUserDocs
                 ? "Invoices, quotes, and bills you create stay in this browser. No live bank feeds, payments, or ATO lodgement."
-                : `${orgName} has no documents yet. Try a demo as a guest anytime.`}
+                : `${orgName} has no documents yet. Create an invoice, quote, or bill to get started.`}
             </p>
-            <ExploreSampleButton
-              primary={false}
-              className="!px-3 !py-1.5 text-xs"
-              label={DEMO_CTA}
-            />
+            {!user ? (
+              <ExploreSampleButton
+                primary={false}
+                className="!px-3 !py-1.5 text-xs"
+                label={DEMO_CTA}
+              />
+            ) : null}
           </div>
         </div>
       )}

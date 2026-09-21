@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
+import { TryDemoLink } from "@/components/marketing/TryDemoCta";
 
 export function MarketingFooter() {
   return (
@@ -20,7 +23,7 @@ export function MarketingFooter() {
           <Link href="/product" className="hover:text-white hover:underline">Product</Link>
           <Link href="/about" className="hover:text-white hover:underline">About</Link>
           <Link href="/contact" className="hover:text-white hover:underline">Contact</Link>
-          <Link href="/demo" className="hover:text-white hover:underline">Try a demo</Link>
+          <TryDemoLink className="hover:text-white hover:underline" />
         </div>
       </div>
     </footer>

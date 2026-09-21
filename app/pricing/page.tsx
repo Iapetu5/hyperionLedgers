@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { PricingCardDemoLink, PricingFooterDemoLine } from "@/components/marketing/PricingDemoLinks";
 
 const FEATURES = [
   "Make quotes, invoices, and bills",
@@ -57,25 +58,12 @@ export default function PricingPage() {
               <Link href="/signup" className="link-quiet text-center">
                 Sign up
               </Link>
-              <Link href="/demo" className="link-quiet text-center">
-                Try a demo
-              </Link>
+              <PricingCardDemoLink />
             </div>
           </div>
         </div>
 
-        <p className="mt-10 text-center text-base text-slate-100">
-          Want to look around first?{" "}
-          <Link href="/demo" className="font-semibold text-brand-200 hover:underline">
-            Try a demo
-          </Link>
-          {" "}
-          with no account, or{" "}
-          <Link href="/try" className="font-semibold text-brand-200 hover:underline">
-            see how the trial starts
-          </Link>
-          .
-        </p>
+        <PricingFooterDemoLine />
         <p className="mt-4 text-center text-base text-slate-200">
           Price is in Australian dollars. You can cancel anytime. We do not send forms to the ATO for you.
         </p>

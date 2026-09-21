@@ -36,7 +36,7 @@ export default function AboutPage() {
               {[
                 "Full suite UI for Australian SMB bookkeeping",
                 "Your session stays in this browser",
-                "Try a demo, or start with your own organisation",
+                "Start with your own organisation, or look around first",
                 "Not a tax agent, BAS agent, or financial adviser",
               ].map((item, i) => (
                 <li key={item} className="flex items-start gap-2">

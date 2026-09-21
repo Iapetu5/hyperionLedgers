@@ -12,6 +12,7 @@ import {
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { TryDemoLink } from "@/components/marketing/TryDemoCta";
 
 const FEATURES = [
   { icon: FileText, title: "Sales and quotes", body: "Make quotes and invoices. Send a pay link." },
@@ -42,9 +43,7 @@ export default function ProductPage() {
           <Link href="/pricing" className="link-quiet">
             Pricing
           </Link>
-          <Link href="/demo" className="link-quiet">
-            Try a demo
-          </Link>
+          <TryDemoLink className="link-quiet" />
         </div>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

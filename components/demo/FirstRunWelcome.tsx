@@ -106,8 +106,7 @@ export function FirstRunWelcome({
         </Link>
       </div>
       <p className="mt-3 text-xs text-slate-500">
-        Prefer a full sample tour first? Use{" "}
-        <span className="text-slate-400">Try a demo</span> anytime from empty screens.
+        Pick invoice, quote, or bill — you can add the others later.
       </p>
     </div>
   );

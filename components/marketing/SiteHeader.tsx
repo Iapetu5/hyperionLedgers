@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { GoToAppLink, TryDemoLink } from "@/components/marketing/TryDemoCta";
 
 const LINKS = [
   { href: "/product", label: "Product" },
@@ -58,9 +59,8 @@ export function SiteHeader({
           })}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/demo" className="link-quiet hidden sm:inline">
-            Try a demo
-          </Link>
+          <TryDemoLink className="link-quiet hidden sm:inline" />
+          <GoToAppLink className="link-quiet hidden sm:inline" />
           <Link href="/login" className="link-quiet hidden sm:inline">
             Log in
           </Link>
@@ -99,9 +99,12 @@ export function SiteHeader({
               Sign up
             </Link>
             {variant === "marketing" ? (
-              <Link href="/demo" className="rounded-lg px-3 py-2 text-base text-slate-100 hover:bg-white/10 hover:text-white">
-                Try a demo
-              </Link>
+              <>
+                <TryDemoLink className="rounded-lg px-3 py-2 text-base text-slate-100 hover:bg-white/10 hover:text-white" />
+                <GoToAppLink className="rounded-lg px-3 py-2 text-base text-slate-100 hover:bg-white/10 hover:text-white">
+                  Go to app
+                </GoToAppLink>
+              </>
             ) : null}
             <div className="px-3 pt-2">
               <StartTrialButton className="btn-marketing-primary w-full" />

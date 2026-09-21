@@ -95,7 +95,7 @@ export const SUGGESTED_CHIPS = [
 ];
 
 export const blankAiGreeting =
-  "G'day — you're on a blank ledger (no demo sample figures here). Create an invoice or quote — Create mixed-tax sample (one click), or pick Products on a line — add a mixed-tax bill (Approve / Mark paid), or open Banking for your own cheque account (opening balance + starter CSV). Past-due invoices show Overdue and Sent quotes past expiry show Expired automatically (Draft stays Draft). Try a demo as a guest for the full sample story. Ask “what next?” for a short checklist.";
+  "G'day — you're on a blank ledger (no demo sample figures here). Create an invoice or quote — Create mixed-tax sample (one click), or pick Products on a line — add a mixed-tax bill (Approve / Mark paid), or open Banking for your own cheque account (opening balance + starter CSV). Past-due unpaid invoices show Overdue automatically (Draft stays Draft). Ask “what next?” for a short checklist.";
 
 export const BLANK_SUGGESTED_CHIPS = [
   "What should I do next?",

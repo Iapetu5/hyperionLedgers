@@ -6,6 +6,7 @@ import { FormEvent, useState } from "react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { nextSetupPath } from "@/lib/auth";
+import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
 
 export default function LoginPage() {
   const { logIn } = useAuth();
@@ -38,10 +39,10 @@ export default function LoginPage() {
           <Link href="/pricing" className="font-semibold text-brand-300 hover:underline">
             See pricing
           </Link>
-          {" "}or{" "}
-          <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            Try a demo
-          </Link>
+          <GuestOnly>
+            {" "}or{" "}
+            <TryDemoLink className="font-semibold text-brand-300 hover:underline" />
+          </GuestOnly>
           .
         </p>
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>

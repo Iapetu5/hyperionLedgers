@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { FileText, Sparkles } from "lucide-react";
 import { ExploreSampleButton, useExploreHarbourSample } from "@/components/demo/ExploreSampleButton";
+import { useShowTryDemo } from "@/components/marketing/TryDemoCta";
 import { DEMO_CTA } from "@/lib/brand";
 const SAMPLE_CTA = DEMO_CTA;
 
@@ -35,10 +36,11 @@ export function EmptyState({
   showExploreSample?: boolean;
 }) {
   const explore = useExploreHarbourSample();
+  const showDemoCta = useShowTryDemo() && showExploreSample;
   const hasExplicitPrimary = actions.some((a) => a.primary);
 
   const mergedActions: EmptyStateAction[] = (() => {
-    if (!showExploreSample) return actions;
+    if (!showDemoCta) return actions;
     if (actions.length === 0) {
       return [
         {
@@ -109,6 +111,8 @@ export function EmptyState({
 }
 
 export function BlankLedgerHint() {
+  const showDemo = useShowTryDemo();
+  if (!showDemo) return null;
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
       <span className="inline-flex items-center gap-1.5">

@@ -154,7 +154,7 @@ export default function ReportsPage() {
         <EmptyState
           icon={BarChart3}
           title="No report figures yet"
-          description="Make an invoice or bill in your organisation, or Try a demo as a guest to see sample previews."
+          description="Make an invoice or bill in your organisation to see report previews."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },

@@ -3,6 +3,8 @@ import { UserPlus, SlidersHorizontal, LayoutDashboard, Zap } from "lucide-react"
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { TryPageDemoLink } from "@/components/marketing/TryDemoCard";
+import { GuestOnly } from "@/components/marketing/TryDemoCta";
 
 const STEPS = [
   {
@@ -34,13 +36,11 @@ export default function TryPage() {
         <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">How to start</h1>
         <p className="mt-3 max-w-2xl text-lg text-white/80">
           Start the free trial. Answer a few setup questions. Then make your first invoice.
-          Or try a demo first if you want to look around with sample data.
+          <GuestOnly> Or try a demo first if you want to look around with sample data.</GuestOnly>
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
           <StartTrialButton className="btn-primary" />
-          <Link href="/demo" className="text-sm font-medium text-white/80 hover:text-white hover:underline">
-            Try a demo
-          </Link>
+          <TryPageDemoLink className="text-sm font-medium text-white/80 hover:text-white hover:underline" />
           <Link href="/pricing" className="text-sm font-medium text-white/80 hover:text-white hover:underline">
             See the $69 plan
           </Link>

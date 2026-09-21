@@ -1,7 +1,9 @@
-import Link from "next/link";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { HomeHeroLead } from "@/components/marketing/HomeHeroLead";
+import { HomeHeroActions } from "@/components/marketing/HomeHeroActions";
+import { HomePreviewDemoButton } from "@/components/marketing/HomePreviewDemoButton";
 import { ShieldCheck, Sparkles, Wallet } from "lucide-react";
 
 export default function HomePage() {
@@ -16,23 +18,8 @@ export default function HomePage() {
             <h1 className="marketing-title">
               See cash, GST and invoices in plain English.
             </h1>
-            <p className="marketing-lead">
-              HyperionInvoices keeps the books for a small Australian business. Try it free for 14 days.
-              Then it is $69 a month. You can stop anytime. After you pay, you can download the Windows app.
-              Or try a demo first — that path uses sample data, not your real account.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <StartTrialButton className="btn-marketing-primary" />
-              <Link href="/signup" className="link-quiet">
-                Sign up
-              </Link>
-              <Link href="/pricing" className="link-quiet">
-                Pricing
-              </Link>
-              <Link href="/demo" className="link-quiet">
-                Try a demo
-              </Link>
-            </div>
+            <HomeHeroLead />
+            <HomeHeroActions />
             <p className="mt-4 text-base text-slate-200">
               We do not send forms to the tax office. Mac is coming soon.
             </p>
@@ -64,9 +51,7 @@ export default function HomePage() {
                 ))}
               </div>
               <StartTrialButton className="btn-marketing-primary w-full" />
-              <Link href="/demo" className="link-quiet block text-center">
-                Try a demo
-              </Link>
+              <HomePreviewDemoButton />
             </div>
           </div>
         </section>

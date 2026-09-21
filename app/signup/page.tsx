@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { validateSignup } from "@/lib/auth";
 import { AbnField } from "@/components/abn/AbnField";
+import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
 
 export default function SignupPage() {
   const { signUp } = useAuth();
@@ -75,11 +76,14 @@ export default function SignupPage() {
         <h1 className="mt-1 text-xl font-bold text-white">Start your free trial</h1>
         <p className="mt-1 text-sm text-slate-300">
           You get 14 days free. Then $69 a month. Next we ask a few setup questions. Then you can make
-          your first invoice.{" "}
-          <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            Want to try a demo first?
-          </Link>
-          .
+          your first invoice.
+          <GuestOnly>
+            {" "}
+            <TryDemoLink className="font-semibold text-brand-300 hover:underline">
+              Want to try a demo first?
+            </TryDemoLink>
+            .
+          </GuestOnly>
         </p>
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <div>
