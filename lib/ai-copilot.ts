@@ -101,14 +101,14 @@ export const SUGGESTED_CHIPS = [
 ];
 
 export const blankAiGreeting =
-  "G'day — you're on a blank ledger (no demo sample figures here). Create an invoice or quote — Create mixed-tax sample (one click), or pick Products on a line — add a mixed-tax bill (Approve / Mark paid), or open Banking for your own cheque account (opening balance + starter CSV). Past-due unpaid invoices show Overdue automatically (Draft stays Draft). Ask “what next?” for a short checklist.";
+  "G'day — you're on a blank ledger. Create an invoice, quote, or bill when you're ready. Ask “what next?” for a short checklist.";
 
 export const BLANK_SUGGESTED_CHIPS = [
   "What should I do next?",
   "How do I create an invoice?",
   "Invoice tip: mixed tax / products",
   "Blank banking / starter CSV",
-  "Explore sample data",
+  "How do I create a bill?",
 ];
 
 export type CopilotContext = {
@@ -781,7 +781,7 @@ function replyBlankNext(orgName: string | undefined, books: BlankBooksSnapshot, 
   });
 
   const prose = [
-    `${who} is on a blank starting ledger (no demo sample KPIs).`,
+    `${who} is on a blank starting ledger.`,
     priority,
     statusNote.trim(),
   ].join(" ");
@@ -889,7 +889,7 @@ function replyBlankRedirect(
   if (intent === "invoices") {
     return {
       intent,
-      prose: `On ${who}'s blank ledger, open Invoices and use Create invoice (contact, tax-exclusive lines, GST on Income / GST Free Income). Tip: “Create mixed-tax sample” (or ?mixed=1) one-click creates a GST on Income + GST Free Income invoice — then open the pay link for the nebula tax-invoice header. Past-due unpaid rows show Overdue automatically (Draft stays Draft; same idea as bills). No demo sample list is mixed in.`,
+      prose: `On ${who}'s blank ledger, open Invoices and use Create invoice (contact, tax-exclusive lines, GST on Income / GST Free Income). Tip: “Create mixed-tax sample” (or ?mixed=1) one-click creates a GST on Income + GST Free Income invoice — then open the pay link for the nebula tax-invoice header. Past-due unpaid rows show Overdue automatically (Draft stays Draft; same idea as bills).`,
       citations: [{ label: "Ledger mode", value: "Blank", source: "onboarding choice" }],
       actions: [
         { id: "inv-mixed", label: "Create mixed-tax sample", kind: "link", href: "/demo/invoices?mixed=1" },
@@ -929,7 +929,7 @@ function replyBlankRedirect(
   if (intent === "categorise" || intent === "banking" || intent === "cash") {
     return {
       intent,
-      prose: `${who}'s blank ledger has its own cheque account (not demo sample balances). On Banking: set an opening balance so cash total is clear, Try starter CSV for a few generic lines, or upload your own statement — then categorise unmatched lines (Apply / Ask AI / Unmatch). Demo sample KPIs stay in the guest tour.`,
+      prose: `${who}'s blank ledger has its own cheque account (not demo sample balances). On Banking: set an opening balance so cash total is clear, Try starter CSV for a few generic lines, or upload your own statement — then categorise unmatched lines (Apply / Ask AI / Unmatch).`,
       citations: [
         { label: "Ledger mode", value: "Blank", source: "onboarding choice" },
         {
@@ -949,7 +949,7 @@ function replyBlankRedirect(
   if (intent === "bills") {
     return {
       intent,
-      prose: `On ${who}'s blank ledger, open Bills to create a supplier bill (multi-line). Tip: “Create mixed-tax sample” or ?mixed=1 one-click creates a GST on Expenses + GST Free Expenses bill — then Approve / Mark paid on the status strip. Print works for an internal summary (same as demo sample bills) — there is no public pay URL for bills. Demo overdue sample totals live in the guest tour.`,
+      prose: `On ${who}'s blank ledger, open Bills to create a supplier bill (multi-line). Tip: “Create mixed-tax sample” or ?mixed=1 one-click creates a GST on Expenses + GST Free Expenses bill — then Approve / Mark paid on the status strip. Print works for an internal summary (same as demo sample bills) — there is no public pay URL for bills.`,
       citations: [
         { label: "Ledger mode", value: "Blank", source: "onboarding choice" },
         { label: "Print", value: "Internal summary only", source: "no /pay route for bills" },
@@ -986,11 +986,11 @@ function replyBlankRedirect(
     }
     return {
       intent,
-      prose: `${who} has no overdue user invoices yet. Create an invoice and set a past due date (or wait until due) to see Overdue automatically — or try a demo as a guest to chase sample INV-1038 Maple & Pine.`,
+      prose: `${who} has no overdue user invoices yet. Create an invoice and set a past due date (or wait until due) to see Overdue automatically.`,
       citations: [{ label: "Ledger mode", value: "Blank", source: "onboarding choice" }],
       actions: [
         { id: "inv", label: "Create mixed-tax invoice", kind: "link", href: "/demo/invoices?mixed=1" },
-        { id: "sample", label: "Overview / explore sample", kind: "link", href: "/demo" },
+        { id: "sample", label: "Back to overview", kind: "link", href: "/demo" },
       ],
       chips: BLANK_SUGGESTED_CHIPS,
       disclaimer: AI_DISCLAIMER,
@@ -1002,10 +1002,10 @@ function replyBlankRedirect(
       ? "BAS due dates and GST drafts"
       : intent === "profit"
           ? "profit KPIs"
-          : "Demo sample facts";
+          : "those sample facts";
   return {
     intent,
-    prose: `${who} is blank — I don't have ${topic} for this org yet. Create your own invoice/quote here, use Banking (own cheque + starter CSV), or try a demo as a guest where those sample answers live.`,
+    prose: `${who} is blank — I don't have ${topic} for this org yet. Create an invoice, quote, or bill, or open Banking.`,
     citations: [{ label: "Ledger mode", value: "Blank", source: "onboarding choice" }],
     actions: [
       { id: "inv", label: "Mixed-tax invoice", kind: "link", href: "/demo/invoices?mixed=1" },

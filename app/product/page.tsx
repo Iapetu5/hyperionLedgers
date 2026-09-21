@@ -37,7 +37,7 @@ export default function ProductPage() {
           Ask a question and get a plain answer.
           <GuestOnly>
             {" "}
-            Or try a demo first — that path uses sample data, not your real account.
+            Try a demo with sample data before you sign up. Inside the demo, Harbour & Co is the sample organisation.
           </GuestOnly>
         </p>
         <MarketingPageActions />
