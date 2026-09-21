@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   FileText,
   Landmark,
@@ -10,8 +9,8 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
-import { StartTrialButton } from "@/components/marketing/StartTrialButton";
-import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { MarketingPageActions } from "@/components/marketing/MarketingPageActions";
+import { GuestOnly } from "@/components/marketing/TryDemoCta";
 import { MARKETING_LIMITS } from "@/lib/brand";
 
 const FEATURES = [
@@ -41,16 +40,7 @@ export default function ProductPage() {
             Or try a demo first — that path uses sample data, not your real account.
           </GuestOnly>
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <StartTrialButton className="btn-marketing-primary" />
-          <Link href="/signup" className="link-quiet">
-            Sign up
-          </Link>
-          <Link href="/pricing" className="link-quiet">
-            Pricing
-          </Link>
-          <TryDemoLink className="link-quiet" />
-        </div>
+        <MarketingPageActions />
 
         <section className="mt-16">
           <h2 className="marketing-section-title">What you can do in HyperionInvoices</h2>

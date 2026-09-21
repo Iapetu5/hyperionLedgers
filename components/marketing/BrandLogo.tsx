@@ -14,7 +14,7 @@ export function BrandLogo({
   className?: string;
 }) {
   return (
-    <Link href={href} className={`inline-flex min-w-0 items-center gap-2.5 ${className}`}>
+    <Link href={href} className={`inline-flex min-h-11 min-w-0 items-center gap-2.5 ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/black-hole-logo.svg"

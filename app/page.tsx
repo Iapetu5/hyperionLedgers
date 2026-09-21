@@ -64,15 +64,17 @@ export default function HomePage() {
               <p className="marketing-copy">
                 See quotes, invoices, bills, bank imports, and reports. Then see what to do next.
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {[
                   ["Trial", "14 days"],
                   ["Then", "$69 / mo"],
                   ["Cancel", "Anytime"],
                 ].map(([label, value]) => (
-                  <div key={label} className="card-inset px-3 py-3">
+                  <div key={label} className="card-inset px-2 py-3 sm:px-3">
                     <p className="text-sm font-semibold text-slate-100">{label}</p>
-                    <p className="mt-1 text-base font-semibold text-white">{value}</p>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-white sm:text-base">
+                      {value}
+                    </p>
                   </div>
                 ))}
               </div>

@@ -1,12 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Link from "next/link";
 import { Mail, MapPin, Clock } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
-import { StartTrialButton } from "@/components/marketing/StartTrialButton";
-import { TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { MarketingPageActions } from "@/components/marketing/MarketingPageActions";
 import { MARKETING_LIMITS } from "@/lib/brand";
 
 export default function ContactPage() {
@@ -26,16 +24,7 @@ export default function ContactPage() {
         <p className="marketing-lead">
           Questions about HyperionInvoices? Leave a note here. This page does not send email yet.
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <StartTrialButton className="btn-marketing-primary" />
-          <Link href="/signup" className="link-quiet">
-            Sign up
-          </Link>
-          <Link href="/pricing" className="link-quiet">
-            Pricing
-          </Link>
-          <TryDemoLink className="link-quiet" />
-        </div>
+        <MarketingPageActions />
 
         <div className="mt-16 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
           <aside className="card h-fit p-6">
@@ -78,25 +67,25 @@ export default function ContactPage() {
               <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="name">
                 Name
               </label>
-              <input id="name" name="name" required className="input" placeholder="Alex Morgan" />
+              <input id="name" name="name" required className="input min-h-11" placeholder="Alex Morgan" />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="email">
                 Email
               </label>
-              <input id="email" name="email" type="email" required className="input" placeholder="alex@example.com.au" />
+              <input id="email" name="email" type="email" required className="input min-h-11" placeholder="alex@example.com.au" />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="business">
                 Business (optional)
               </label>
-              <input id="business" name="business" className="input" placeholder="Example Pty Ltd" />
+              <input id="business" name="business" className="input min-h-11" placeholder="Example Pty Ltd" />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="topic">
                 Topic
               </label>
-              <select id="topic" name="topic" className="input" defaultValue="Product questions">
+              <select id="topic" name="topic" className="input min-h-11" defaultValue="Product questions">
                 <option>Product questions</option>
                 <option>Pricing</option>
                 <option>Something else</option>
