@@ -274,6 +274,40 @@ export function getBasPeriodBounds(isoDate: string): { start: string; end: strin
   return { start: periodStartISO(y, endM), end: item.periodEnd };
 }
 
+/**
+ * Standard Australian financial year (1 Jul – 30 Jun) containing an ISO date.
+ * Callers should pass a Sydney calendar date (see `todayISO` in format.ts).
+ * Used for year-to-date GST practice figures — not an ATO lodgement period.
+ */
+export type AuFinancialYear = {
+  /** Inclusive YYYY-MM-DD (1 Jul of the starting calendar year). */
+  start: string;
+  /** Inclusive YYYY-MM-DD (30 Jun of the following calendar year). */
+  end: string;
+  /** Calendar year of the 1 July that opens this FY. */
+  startYear: number;
+  /** e.g. "2026–27" */
+  shortLabel: string;
+  /** e.g. "1 Jul 2026 – 30 Jun 2027" */
+  rangeLabel: string;
+};
+
+export function getAuFinancialYear(isoDate: string): AuFinancialYear | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
+  const y = Number(isoDate.slice(0, 4));
+  const m = Number(isoDate.slice(5, 7));
+  if (!y || m < 1 || m > 12) return null;
+  const startYear = m >= 7 ? y : y - 1;
+  const endYear = startYear + 1;
+  return {
+    start: iso(startYear, 7, 1),
+    end: iso(endYear, 6, 30),
+    startYear,
+    shortLabel: `${startYear}–${String(endYear).slice(-2)}`,
+    rangeLabel: `1 Jul ${startYear} – 30 Jun ${endYear}`,
+  };
+}
+
 /** Fiscal year of the July that starts the AU GST year containing this period end. */
 function fiscalYearOfPeriodEnd(year: number, endM: number): number {
   // Sep/Dec end in the FY that started that July. Mar/Jun end in the next calendar year.

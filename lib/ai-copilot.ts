@@ -3,9 +3,10 @@
  * Grounded in Harbour & Co sample ledger. No external LLM required.
  */
 
-import { getNextBasDue } from "@/lib/bas-dates";
+import { getAuFinancialYear, getNextBasDue } from "@/lib/bas-dates";
+import { rollupSampleReportsInIsoRange } from "@/lib/blank-reports";
 import { suggestCategory, type CategorySuggestion } from "@/lib/chart-of-accounts";
-import { formatAUD, formatDateAU } from "@/lib/format";
+import { formatAUD, formatDateAU, todayISO } from "@/lib/format";
 import { getInvoiceStatus, getQuoteStatus } from "@/lib/public-docs";
 import {
   loadBankTransactions,
@@ -349,9 +350,15 @@ function replyBas(): AiReply {
   const next = getNextBasDue();
   const dueLabel = next ? formatDateAU(next.dueDate) : "—";
   const period = next?.quarterLabel ?? gstBas.period;
+  const fy = getAuFinancialYear(todayISO());
+  const ytd = fy ? rollupSampleReportsInIsoRange(fy.start, fy.end) : null;
+  const ytdBit =
+    ytd && fy
+      ? ` Year-to-date net GST for FY ${fy.shortLabel} (${fy.rangeLabel}, Sydney dates) is ${formatAUD(ytd.netGst)} — the practice figure you would use when paying the tax office.`
+      : "";
   const prose = next
-    ? `Next BAS due date for ${DEMO_ORG.name} is ${dueLabel} (${period}). The Jul–Sep 2026 draft shows net GST of about ${formatAUD(gstBas.netGst)} payable, plus PAYG figures in the sample. This is a simulated draft only — HyperionInvoices does not lodge with the ATO and this is not tax advice.`
-    : `Sample BAS draft for ${gstBas.period} shows net GST ${formatAUD(gstBas.netGst)}. No upcoming due date was calculated. Demo only — no ATO lodgement.`;
+    ? `Next BAS due date for ${DEMO_ORG.name} is ${dueLabel} (${period}). The Jul–Sep 2026 draft shows net GST of about ${formatAUD(gstBas.netGst)} payable, plus PAYG figures in the sample.${ytdBit} This is a simulated draft only — HyperionInvoices does not lodge with the ATO and this is not tax advice.`
+    : `Sample BAS draft for ${gstBas.period} shows net GST ${formatAUD(gstBas.netGst)}.${ytdBit} No upcoming due date was calculated. Demo only — no ATO lodgement.`;
 
   return {
     intent: "bas",
@@ -359,10 +366,20 @@ function replyBas(): AiReply {
     citations: [
       { label: "Next BAS due", value: dueLabel, source: next ? `${next.quarterLabel} · bas-dates` : "n/a" },
       { label: "Net GST (draft)", value: formatAUD(gstBas.netGst), source: "gstBas sample · Jul–Sep 2026" },
+      ...(ytd && fy
+        ? [
+            {
+              label: "Net GST YTD (practice)",
+              value: formatAUD(ytd.netGst),
+              source: `AU FY ${fy.shortLabel} · listed invoices & bills`,
+            },
+          ]
+        : []),
       { label: "Period status", value: gstBas.status, source: "gstBas.status" },
     ],
     actions: [
-      { id: "bas-page", label: "Open GST & BAS", kind: "link", href: "/demo/tax/gst-bas" },
+      { id: "bas-page", label: "Open year-to-date GST", kind: "link", href: "/demo/tax/gst-bas#ytd-gst" },
+      { id: "bas-quarter", label: "Open this quarter", kind: "link", href: "/demo/tax/gst-bas#quarter-draft" },
       { id: "next", label: "What should I do next?", kind: "prompt", prompt: "What should I do next?" },
     ],
     chips: ["What should I do next?", "Chase overdue invoices"],

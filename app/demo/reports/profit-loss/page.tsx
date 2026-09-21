@@ -91,10 +91,14 @@ export default function ProfitLossReportPage() {
             Net profit matches the ex-tax income minus expenses roll-up of listed invoices and bills
             (not a full general ledger). GST Free lines are included in ex-tax income/expense but do
             not appear in the GST rows.{" "}
-            <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
-              Open GST &amp; BAS
+            <Link href="/demo/tax/gst-bas#ytd-gst" className="font-semibold text-brand-300 hover:underline">
+              Open year-to-date GST
             </Link>{" "}
-            for quarterly draft boxes.
+            for the amount you would use when paying the ATO (practice figure), or{" "}
+            <Link href="/demo/tax/gst-bas#quarter-draft" className="font-semibold text-brand-300 hover:underline">
+              this quarter&apos;s BAS draft
+            </Link>
+            . HyperionInvoices does not lodge with the ATO.
           </p>
         </>
       ) : showBlank ? (
@@ -136,10 +140,15 @@ export default function ProfitLossReportPage() {
             lines are included in ex-tax totals but not in the GST rows. These GST rows are
             year-to-date across all documents; GST &amp; BAS draft boxes count only the derived
             quarter, so the two can differ.{" "}
-            <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
-              Open GST &amp; BAS
+            <Link href="/demo/tax/gst-bas#ytd-gst" className="font-semibold text-brand-300 hover:underline">
+              Open year-to-date GST
             </Link>{" "}
-            for the quarter-scoped simulated draft (not lodged with the ATO).
+            for the amount you would use when paying the ATO this Australian financial year (practice
+            figure), or{" "}
+            <Link href="/demo/tax/gst-bas#quarter-draft" className="font-semibold text-brand-300 hover:underline">
+              this quarter&apos;s draft
+            </Link>
+            . HyperionInvoices does not lodge with the ATO.
           </p>
         </>
       ) : (

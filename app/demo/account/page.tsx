@@ -206,6 +206,14 @@ export default function AccountPage() {
         <p className="text-xs text-slate-400">
           Ledger mode: <strong className="text-slate-200">{user.ledgerMode ?? "sample"}</strong> (set during onboarding).
         </p>
+        <p className="text-xs leading-relaxed text-slate-400">
+          Year-to-date GST on the{" "}
+          <Link href="/demo/tax/gst-bas#ytd-gst" className="font-semibold text-brand-300 hover:underline">
+            GST &amp; BAS
+          </Link>{" "}
+          page uses the standard Australian financial year (1 Jul – 30 Jun, Sydney dates) so you can
+          see what you would pay the tax office. HyperionInvoices does not lodge with the ATO.
+        </p>
         {error && <p className="text-sm text-rose-300">{error}</p>}
         {message && <p className="text-sm text-emerald-300">{message}</p>}
         <button type="submit" className="btn-primary">Save</button>
