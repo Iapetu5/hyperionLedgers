@@ -13,7 +13,7 @@ export default function NotFound() {
         <div className="grid items-start gap-10 lg:grid-cols-[1.4fr_1fr] lg:gap-14">
           <div>
             <p className="marketing-kicker">Australian bookkeeping · page not found</p>
-            <h1 className="marketing-title">This page is not in HyperionInvoices</h1>
+            <h1 className="marketing-title">We cannot find that page</h1>
             <p className="marketing-lead">
               The link may be old, or the address may be mistyped. Start the free trial, or go back
               home.
@@ -53,7 +53,7 @@ export default function NotFound() {
                 {" — "}leave a note in this browser
               </li>
             </ul>
-            <Link href="/" className="btn-marketing-primary mt-6 w-full">
+            <Link href="/" className="link-quiet mt-6 block text-center">
               Back to home
             </Link>
           </aside>

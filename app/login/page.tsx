@@ -121,7 +121,6 @@ function LoginForm() {
             </p>
           </GuestOnly>
           <p className="mt-10 marketing-copy">{MARKETING_LIMITS}</p>
-          <p className="mt-3 marketing-copy">Your session stays in this browser.</p>
         </div>
 
         <div className="card h-fit p-6 sm:p-8">
