@@ -14,6 +14,7 @@ import {
 } from "@/lib/abn";
 import { PENDING_ORG_NAME, nextSetupPath } from "@/lib/auth";
 import {
+  SETUP_STEP,
   isRealCompanyName,
   readSelectedCompany,
   safeAddCompanyReturn,
@@ -68,7 +69,7 @@ function AddCompanyForm() {
 
   const stepLabel = user
     ? needsOnboarding
-      ? "Step 2 of 3 · Company"
+      ? SETUP_STEP.addCompany
       : "Your company"
     : "Add a company";
 

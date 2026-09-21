@@ -7,7 +7,7 @@ import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { validateSignup } from "@/lib/auth";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
-import { addCompanyHref } from "@/lib/company-pickup";
+import { addCompanyHref, SETUP_STEP } from "@/lib/company-pickup";
 
 export default function SignupPage() {
   const { signUp } = useAuth();
@@ -67,7 +67,7 @@ export default function SignupPage() {
         </nav>
       </div>
       <div className="card p-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 1 of 3 · Account</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">{SETUP_STEP.account}</p>
         <h1 className="mt-1 text-xl font-bold text-white">Start your free trial</h1>
         <p className="mt-1 text-sm text-slate-300">
           Name, email, and password only. Next you add your company on the HyperionInvoices Add company

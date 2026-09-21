@@ -31,6 +31,13 @@ export function addCompanyHref(returnTo = "/onboarding"): string {
   return `/add-company?returnTo=${encodeURIComponent(dest)}`;
 }
 
+/** Signup → Add company → organisation setup. */
+export const SETUP_STEP = {
+  account: "Step 1 of 3 · Account",
+  addCompany: "Step 2 of 3 · Add company",
+  organisation: "Step 3 of 3 · Organisation setup",
+} as const;
+
 /** True when the org name is a real company, not the signup placeholder. */
 export function isRealCompanyName(name?: string | null): boolean {
   const n = (name ?? "").trim();

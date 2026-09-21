@@ -6,7 +6,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
-import { addCompanyHref, isRealCompanyName } from "@/lib/company-pickup";
+import { SETUP_STEP, addCompanyHref, isRealCompanyName } from "@/lib/company-pickup";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
 
 type WizardStep = "gst" | "method" | "fy" | "start";
@@ -29,6 +29,10 @@ export default function OnboardingPage() {
     }
     if (!needsOnboarding) {
       router.replace("/demo");
+      return;
+    }
+    if (!isRealCompanyName(user.businessName)) {
+      router.replace(addCompanyHref("/onboarding"));
       return;
     }
     if (user.gstRegistered !== undefined) setGstRegistered(user.gstRegistered);
@@ -132,7 +136,7 @@ export default function OnboardingPage() {
       </div>
       <div className="card p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">
-          Setup {stepIndex + 1} of {steps.length} · {orgName}
+          {SETUP_STEP.organisation} · {orgName}
         </p>
         <h1 className="mt-1 text-xl font-bold text-white">{titles[step]}</h1>
         <p className="mt-1 text-sm text-slate-300">One choice at a time. You can change this later in Account.</p>
