@@ -13,7 +13,12 @@ import {
   validateAbnField,
 } from "@/lib/abn";
 import { PENDING_ORG_NAME, nextSetupPath } from "@/lib/auth";
-import { readSelectedCompany, safeAddCompanyReturn, saveSelectedCompany } from "@/lib/company-pickup";
+import {
+  isRealCompanyName,
+  readSelectedCompany,
+  safeAddCompanyReturn,
+  saveSelectedCompany,
+} from "@/lib/company-pickup";
 
 function AddCompanyForm() {
   const { user, loading, updateProfile, needsOnboarding } = useAuth();
@@ -273,7 +278,11 @@ function AddCompanyForm() {
               )}
               {error && <p className="text-sm text-rose-300">{error}</p>}
               <div className="flex flex-wrap gap-2">
-                <button type="submit" className="btn-primary" disabled={busy}>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={busy || !isRealCompanyName(legalName)}
+                >
                   {busy ? "Saving…" : "Confirm company"}
                 </button>
                 <button type="button" className="btn-secondary" onClick={() => applyCompany(null)}>
@@ -300,11 +309,6 @@ function AddCompanyForm() {
           {error && !detailsReady && <p className="text-sm text-rose-300">{error}</p>}
 
           <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-white/10 pt-4 text-sm text-slate-300">
-            {user && needsOnboarding && (
-              <Link href="/onboarding" className="font-semibold text-brand-300 hover:underline">
-                Add later — continue setup
-              </Link>
-            )}
             {user && !needsOnboarding && (
               <Link href={continueHref} className="hover:text-white hover:underline">
                 Back to the app

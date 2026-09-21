@@ -6,8 +6,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
-import { PENDING_ORG_NAME } from "@/lib/auth";
-import { addCompanyHref } from "@/lib/company-pickup";
+import { addCompanyHref, isRealCompanyName } from "@/lib/company-pickup";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
 
 type WizardStep = "gst" | "method" | "fy" | "start";
@@ -53,6 +52,10 @@ export default function OnboardingPage() {
   }
 
   async function saveAndFinish() {
+    if (!isRealCompanyName(user?.businessName)) {
+      setError("Add your company first — search, pick a match, then confirm.");
+      return;
+    }
     const res = await completeOnboarding({
       gstRegistered,
       gstAccountingMethod: gstRegistered ? method : undefined,
@@ -80,6 +83,10 @@ export default function OnboardingPage() {
   function goNext(e?: FormEvent) {
     e?.preventDefault();
     setError(null);
+    if (!isRealCompanyName(user?.businessName)) {
+      setError("Add your company first — search, pick a match, then confirm.");
+      return;
+    }
     if (isLast) {
       void saveAndFinish();
       return;
@@ -97,7 +104,8 @@ export default function OnboardingPage() {
     return <div className="p-8 text-center text-white">Loading…</div>;
   }
 
-  const savedName = user.businessName !== PENDING_ORG_NAME ? user.businessName : "";
+  const hasCompany = isRealCompanyName(user.businessName);
+  const savedName = hasCompany ? user.businessName : "";
   const orgName = savedName || "your business";
   const titles: Record<WizardStep, string> = {
     gst: "Are you registered for GST?",
@@ -249,13 +257,21 @@ export default function OnboardingPage() {
                 Back
               </button>
             )}
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="btn-primary" disabled={!hasCompany}>
               {isLast
                 ? ledgerMode === "blank"
                   ? "Continue — create your first document"
                   : "Continue to your organisation"
                 : "Next"}
             </button>
+            {!hasCompany && (
+              <p className="w-full text-sm text-slate-300">
+                Continue is off until you add a company.{" "}
+                <Link href={addCompanyHref("/onboarding")} className="font-semibold text-brand-300 hover:underline">
+                  Add company
+                </Link>
+              </p>
+            )}
             <button type="button" className="text-sm font-medium text-slate-400 hover:text-white hover:underline" onClick={onSkip}>
               Skip — use sample data
             </button>

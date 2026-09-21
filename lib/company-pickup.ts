@@ -31,6 +31,12 @@ export function addCompanyHref(returnTo = "/onboarding"): string {
   return `/add-company?returnTo=${encodeURIComponent(dest)}`;
 }
 
+/** True when the org name is a real company, not the signup placeholder. */
+export function isRealCompanyName(name?: string | null): boolean {
+  const n = (name ?? "").trim();
+  return n.length > 0 && n !== "Your organisation";
+}
+
 export function saveSelectedCompany(company: SelectedCompany) {
   if (typeof window === "undefined") return;
   sessionStorage.setItem(ADD_COMPANY_KEY, JSON.stringify(company));

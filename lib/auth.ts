@@ -1,7 +1,7 @@
 /** Browser-local demo auth. Accounts stay in localStorage — never sent to a server. */
 
 import { formatAbn, validateAbnField } from "./abn";
-import { addCompanyHref } from "./company-pickup";
+import { addCompanyHref, isRealCompanyName } from "./company-pickup";
 
 export const AUTH_ACCOUNTS_KEY = "hl_demo_accounts_v1";
 export const AUTH_SESSION_KEY = "hl_demo_session_v1";
@@ -96,8 +96,6 @@ export function validateSignup(input: {
   fullName: string;
   email: string;
   password: string;
-  businessName?: string;
-  abn?: string;
 }): Record<string, string> {
   const errors: Record<string, string> = {};
   if (!input.fullName.trim()) errors.fullName = "Enter your full name.";
@@ -105,8 +103,6 @@ export function validateSignup(input: {
   if (emailErr) errors.email = emailErr;
   const pwErr = validatePassword(input.password);
   if (pwErr) errors.password = pwErr;
-  const abnErr = validateAbnField(input.abn ?? "", false);
-  if (abnErr) errors.abn = abnErr;
   return errors;
 }
 
@@ -167,9 +163,8 @@ export function needsOnboarding(account: PublicAccount | null | undefined): bool
 /** True when a new account has not saved a company on the Add company page yet. */
 export function needsCompany(account: PublicAccount | null | undefined): boolean {
   if (!account || account.onboardingComplete !== false) return false;
-  if (account.companyAdded === true) return false;
-  const name = account.businessName?.trim() ?? "";
-  return !name || name === PENDING_ORG_NAME;
+  if (account.companyAdded === true && isRealCompanyName(account.businessName)) return false;
+  return !isRealCompanyName(account.businessName);
 }
 
 /** Next signed-in destination after signup, login, or saving a company. */
@@ -189,11 +184,6 @@ export async function signUp(input: {
   fullName: string;
   email: string;
   password: string;
-  businessName?: string;
-  abn?: string;
-  entityType?: string;
-  businessAddress?: string;
-  gstRegistered?: boolean;
 }): Promise<AuthResult> {
   if (!isBrowser()) return { ok: false, error: "Sign-up is only available in the browser." };
   const errors = validateSignup(input);
@@ -204,18 +194,13 @@ export async function signUp(input: {
     return { ok: false, error: "An account with this email already exists. Try logging in." };
   }
   const passwordHash = await hashPassword(email, input.password);
-  const named = input.businessName?.trim() ?? "";
   const account: DemoAccount = {
     id: crypto.randomUUID(),
     fullName: input.fullName.trim(),
     email,
     passwordHash,
-    businessName: named || PENDING_ORG_NAME,
-    abn: input.abn?.trim() ? formatAbn(input.abn) : undefined,
-    entityType: input.entityType?.trim() || undefined,
-    businessAddress: input.businessAddress?.trim() || undefined,
-    gstRegistered: input.gstRegistered,
-    companyAdded: Boolean(named && named !== PENDING_ORG_NAME),
+    businessName: PENDING_ORG_NAME,
+    companyAdded: false,
     createdAt: new Date().toISOString(),
     onboardingComplete: false,
   };
