@@ -192,6 +192,7 @@ export async function signUp(input: {
   abn?: string;
   entityType?: string;
   businessAddress?: string;
+  gstRegistered?: boolean;
 }): Promise<AuthResult> {
   if (!isBrowser()) return { ok: false, error: "Sign-up is only available in the browser." };
   const errors = validateSignup(input);
@@ -212,6 +213,7 @@ export async function signUp(input: {
     abn: input.abn?.trim() ? formatAbn(input.abn) : undefined,
     entityType: input.entityType?.trim() || undefined,
     businessAddress: input.businessAddress?.trim() || undefined,
+    gstRegistered: input.gstRegistered,
     companyAdded: Boolean(named && named !== PENDING_ORG_NAME),
     createdAt: new Date().toISOString(),
     onboardingComplete: false,

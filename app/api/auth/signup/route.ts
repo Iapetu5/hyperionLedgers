@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     abn?: string;
     entityType?: string;
     businessAddress?: string;
+    gstRegistered?: boolean;
   };
   const result = await signUpServer({
     fullName: body.fullName ?? "",
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
     abn: body.abn,
     entityType: body.entityType,
     businessAddress: body.businessAddress,
+    gstRegistered: typeof body.gstRegistered === "boolean" ? body.gstRegistered : undefined,
   });
   if (!result.ok) return NextResponse.json({ configured: true, error: result.error }, { status: 400 });
   return NextResponse.json({ configured: true, account: result.account });

@@ -182,6 +182,7 @@ export async function signUpServer(input: {
   abn?: string;
   entityType?: string;
   businessAddress?: string;
+  gstRegistered?: boolean;
 }): Promise<{ ok: true; account: PublicAccount } | { ok: false; error: string }> {
   await ensureSchema();
   const errors = validateSignup(input);
@@ -198,13 +199,14 @@ export async function signUpServer(input: {
   const companyAdded = Boolean(named && named !== PENDING_ORG_NAME);
   const entityType = input.entityType?.trim() || null;
   const address = input.businessAddress?.trim() || null;
+  const gstRegistered = input.gstRegistered ?? null;
   await db()`
     INSERT INTO users (id, email, password_hash, full_name)
     VALUES (${userId}, ${email}, ${passwordHash}, ${input.fullName.trim()})
   `;
   await db()`
-    INSERT INTO organisations (id, user_id, name, abn, onboarding_complete, ledger_mode, company_added, entity_type, address)
-    VALUES (${orgId}, ${userId}, ${businessName}, ${abn}, false, 'blank', ${companyAdded}, ${entityType}, ${address})
+    INSERT INTO organisations (id, user_id, name, abn, onboarding_complete, ledger_mode, company_added, entity_type, address, gst_registered)
+    VALUES (${orgId}, ${userId}, ${businessName}, ${abn}, false, 'blank', ${companyAdded}, ${entityType}, ${address}, ${gstRegistered})
   `;
   await createSession(userId);
   const account = await getSessionAccount();

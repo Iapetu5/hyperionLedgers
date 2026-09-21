@@ -161,6 +161,10 @@ export default function OnboardingPage() {
           {(address || user.businessAddress) && (
             <p className="text-xs text-slate-400">{address || user.businessAddress}</p>
           )}
+          <p className="mt-1 text-xs text-slate-400">
+            {gstRegistered ? "GST registered" : "Not GST registered"}
+            {abn || user.abn ? "" : " — confirm when you add the company"}
+          </p>
           <Link href="/add-company" className="mt-2 inline-block font-semibold text-brand-300 hover:underline">
             {savedName ? "Open full company search" : "Add your business"}
           </Link>
@@ -229,6 +233,7 @@ export default function OnboardingPage() {
                   if (!businessName.trim()) setBusinessName(company.legalName);
                   if (!entityType) setEntityType(company.entityType);
                   if (!address && company.address) setAddress(company.address);
+                  if (company.gstRegistered !== undefined) setGstRegistered(company.gstRegistered);
                 }}
               />
               {(entityType || address) && (

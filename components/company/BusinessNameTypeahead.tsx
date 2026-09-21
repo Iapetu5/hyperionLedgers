@@ -26,11 +26,13 @@ export function BusinessNameTypeahead({
   const listId = useId();
   const [open, setOpen] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [picked, setPicked] = useState<AbrCompany | null>(null);
   const { results, busy, error, simulated } = useAbrSearch(value, open);
 
   async function pick(company: AbrCompany) {
     onChange(company.legalName);
     setOpen(false);
+    setPicked(company);
     onSelect?.(company);
     const enriched = await enrichAbrCompany(company);
     if (
@@ -39,6 +41,7 @@ export function BusinessNameTypeahead({
       enriched.legalName !== company.legalName
     ) {
       onChange(enriched.legalName);
+      setPicked(enriched);
       onSelect?.(enriched);
     }
   }
@@ -65,6 +68,7 @@ export function BusinessNameTypeahead({
         aria-activedescendant={results[activeIndex] ? `${listId}-${activeIndex}` : undefined}
         onChange={(e) => {
           onChange(e.target.value);
+          setPicked(null);
           setOpen(true);
           setActiveIndex(0);
         }}
@@ -90,6 +94,13 @@ export function BusinessNameTypeahead({
             ? "Type the name or ABN. Pick a match to fill the company, or keep typing it yourself."
             : "Type the name or ABN. Pick an Australian Business Register match to fill the company.")}
       </p>
+      {picked && picked.legalName === value && (
+        <p className="mt-1 text-xs text-slate-300">
+          Filled ABN {picked.abn}
+          {picked.gstRegistered ? " · GST registered" : " · Not GST registered"}
+          . You can edit any field.
+        </p>
+      )}
       {busy && <p className="mt-1 text-sm text-slate-300">Searching…</p>}
       {error && <p className="mt-1 text-sm text-rose-300">{error}</p>}
       {showList && results.length > 0 && (
@@ -114,7 +125,7 @@ export function BusinessNameTypeahead({
                   <p className="font-semibold text-white">{row.legalName}</p>
                   <p className="text-xs text-slate-300">
                     ABN {row.abn} · {row.entityType}
-                    {row.entityStatus ? ` · ${row.entityStatus}` : ""}
+                    {row.gstRegistered ? " · GST registered" : " · Not GST registered"}
                   </p>
                 </button>
               </li>

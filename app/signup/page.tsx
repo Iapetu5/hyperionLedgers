@@ -21,6 +21,7 @@ export default function SignupPage() {
   const [abn, setAbn] = useState("");
   const [entityType, setEntityType] = useState<AbrEntityType | "">("");
   const [address, setAddress] = useState("");
+  const [gstRegistered, setGstRegistered] = useState<boolean | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -43,6 +44,7 @@ export default function SignupPage() {
       abn,
       entityType: entityType || undefined,
       businessAddress: address || undefined,
+      gstRegistered,
     });
     if (!res.ok) {
       setBusy(false);
@@ -122,6 +124,7 @@ export default function SignupPage() {
               setAbn(company.abn);
               setEntityType(company.entityType);
               setAddress(company.address ?? "");
+              setGstRegistered(company.gstRegistered);
             }}
           />
           {fieldErrors.businessName && <p className="mt-1 text-xs text-rose-300">{fieldErrors.businessName}</p>}
@@ -133,6 +136,7 @@ export default function SignupPage() {
               if (!businessName.trim()) setBusinessName(company.legalName);
               if (!entityType) setEntityType(company.entityType);
               if (!address && company.address) setAddress(company.address);
+              if (gstRegistered === undefined) setGstRegistered(company.gstRegistered);
             }}
           />
           {(entityType || address) && (
