@@ -163,7 +163,8 @@ async function booksFetch<T>(path: string, init?: RequestInit): Promise<T | { er
 export async function loadInvoices(): Promise<UserInvoice[]> {
   if (!(await serverBooksEnabled())) return loadUserInvoicesLocal();
   const data = await booksFetch<{ invoices: UserInvoice[] }>("/api/books/invoices");
-  if ("error" in data) return [];
+  if ("error" in data) throw new Error(data.error);
+  if (!Array.isArray(data.invoices)) throw new Error("Invoice list was incomplete.");
   return data.invoices;
 }
 
@@ -223,7 +224,8 @@ export async function setInvoiceStatus(id: string, status: UserInvoice["status"]
 export async function loadQuotes(): Promise<UserQuote[]> {
   if (!(await serverBooksEnabled())) return loadUserQuotesLocal();
   const data = await booksFetch<{ quotes: UserQuote[] }>("/api/books/quotes");
-  if ("error" in data) return [];
+  if ("error" in data) throw new Error(data.error);
+  if (!Array.isArray(data.quotes)) throw new Error("Quote list was incomplete.");
   return data.quotes;
 }
 
@@ -283,7 +285,8 @@ export async function setQuoteStatus(id: string, status: UserQuote["status"]): P
 export async function loadBills(): Promise<UserBill[]> {
   if (!(await serverBooksEnabled())) return loadUserBillsLocal();
   const data = await booksFetch<{ bills: UserBill[] }>("/api/books/bills");
-  if ("error" in data) return [];
+  if ("error" in data) throw new Error(data.error);
+  if (!Array.isArray(data.bills)) throw new Error("Bill list was incomplete.");
   return data.bills;
 }
 
@@ -392,8 +395,21 @@ type BankPayload = {
 
 async function loadBankPayload(): Promise<BankPayload> {
   const data = await booksFetch<BankPayload>("/api/books/banking");
-  if ("error" in data) return { imports: [], catOverrides: {}, openingBalance: null };
-  return data;
+  // Never invent an empty ledger on GET failure — a later PUT would wipe imports/cats/opening.
+  if ("error" in data) throw new Error(data.error);
+  if (
+    !Array.isArray(data.imports) ||
+    data.catOverrides == null ||
+    typeof data.catOverrides !== "object" ||
+    Array.isArray(data.catOverrides)
+  ) {
+    throw new Error("Banking payload was incomplete.");
+  }
+  return {
+    imports: data.imports,
+    catOverrides: data.catOverrides,
+    openingBalance: data.openingBalance ?? null,
+  };
 }
 
 function applyCatsFromPayload(txns: BankTransaction[], cats: Record<string, unknown>): BankTransaction[] {
@@ -424,12 +440,17 @@ function stripCatFields(t: BankTransaction): BankTransaction {
   return { ...rest, matched: false };
 }
 
-async function saveBankPayload(payload: BankPayload): Promise<void> {
-  await booksFetch("/api/books/banking", {
+async function saveBankFields(fields: {
+  imports?: BankTransaction[];
+  catOverrides?: Record<string, unknown>;
+  openingBalance?: number | null;
+}): Promise<void> {
+  const data = await booksFetch<BankPayload>("/api/books/banking", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(fields),
   });
+  if ("error" in data) throw new Error(data.error);
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("hl-bank-updated"));
   }
@@ -472,7 +493,7 @@ export async function appendImportedRows(
   }
   if (added.length) {
     payload.imports = [...payload.imports, ...added.map(stripCatFields)];
-    await saveBankPayload(payload);
+    await saveBankFields({ imports: payload.imports });
   }
   return loadBankTransactions("blank");
 }
@@ -483,34 +504,47 @@ export async function applyCategoryToTransaction(
   opts: { markMatched?: boolean } = { markMatched: true },
 ): Promise<BankTransaction | null> {
   if (!(await serverBooksEnabled())) return applyCategoryToTransactionLocal(txnId, suggestion, opts);
-  const payload = await loadBankPayload();
-  const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
-  if (!target) return null;
-  payload.catOverrides[txnId] = {
-    accountCode: suggestion.accountCode,
-    accountName: suggestion.accountName,
-    taxRate: suggestion.taxRate,
-    matched: opts.markMatched !== false,
-    categorisedAt: new Date().toISOString(),
-  };
-  await saveBankPayload(payload);
-  return loadBankTransactions("blank").then((txns) => txns.find((t) => t.id === txnId) ?? null);
+  try {
+    const payload = await loadBankPayload();
+    const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
+    if (!target) return null;
+    payload.catOverrides[txnId] = {
+      accountCode: suggestion.accountCode,
+      accountName: suggestion.accountName,
+      taxRate: suggestion.taxRate,
+      matched: opts.markMatched !== false,
+      categorisedAt: new Date().toISOString(),
+    };
+    await saveBankFields({ catOverrides: payload.catOverrides });
+    const txns = await loadBankTransactions("blank");
+    return txns.find((t) => t.id === txnId) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function clearCategoryFromTransaction(txnId: string): Promise<BankTransaction | null> {
   if (!(await serverBooksEnabled())) return clearCategoryFromTransactionLocal(txnId);
-  const payload = await loadBankPayload();
-  delete payload.catOverrides[txnId];
-  await saveBankPayload(payload);
-  return loadBankTransactions("blank").then((txns) => txns.find((t) => t.id === txnId) ?? null);
+  try {
+    const payload = await loadBankPayload();
+    if (!applyCatsFromPayload(payload.imports, payload.catOverrides).some((t) => t.id === txnId)) {
+      return null;
+    }
+    delete payload.catOverrides[txnId];
+    await saveBankFields({ catOverrides: payload.catOverrides });
+    const txns = await loadBankTransactions("blank");
+    return txns.find((t) => t.id === txnId) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function resetAllCategorisations(mode: BankLedgerMode = "blank"): Promise<number> {
   if (!(await serverBooksEnabled()) || mode !== "blank") return resetAllCategorisationsLocal(mode);
   const payload = await loadBankPayload();
   const n = Object.keys(payload.catOverrides).length;
-  payload.catOverrides = {};
-  await saveBankPayload(payload);
+  if (!n) return 0;
+  await saveBankFields({ catOverrides: {} });
   return n;
 }
 
@@ -518,14 +552,10 @@ export async function clearImportedTransactions(mode: BankLedgerMode = "blank"):
   if (!(await serverBooksEnabled()) || mode !== "blank") return clearImportedTransactionsLocal(mode);
   const payload = await loadBankPayload();
   const n = payload.imports.length;
-  payload.imports = [];
-  for (const id of Object.keys(payload.catOverrides)) {
-    if (payload.imports.every((t) => t.id !== id)) {
-      // keep overrides for sample ids only — imports cleared
-    }
-  }
-  payload.catOverrides = {};
-  await saveBankPayload(payload);
+  if (!n) return 0;
+  const catOverrides = { ...payload.catOverrides };
+  for (const t of payload.imports) delete catOverrides[t.id];
+  await saveBankFields({ imports: [], catOverrides });
   return n;
 }
 
@@ -545,18 +575,20 @@ export async function setBlankOpeningBalance(amount: number): Promise<number> {
   if (!(await serverBooksEnabled())) return setBlankOpeningBalanceLocal(amount);
   const payload = await loadBankPayload();
   const n = Math.round(Number(amount) * 100) / 100;
-  payload.openingBalance = Number.isFinite(n) ? n : 0;
-  await saveBankPayload(payload);
-  return payload.openingBalance ?? 0;
+  if (!Number.isFinite(n) || Math.abs(n) > 50_000_000) {
+    return payload.openingBalance ?? 0;
+  }
+  await saveBankFields({ openingBalance: n });
+  return n;
 }
 
 export async function clearBlankOpeningBalance(): Promise<boolean> {
   if (!(await serverBooksEnabled())) return clearBlankOpeningBalanceLocal();
   const payload = await loadBankPayload();
   const had = payload.openingBalance != null;
-  payload.openingBalance = null;
-  await saveBankPayload(payload);
-  return had;
+  if (!had) return false;
+  await saveBankFields({ openingBalance: null });
+  return true;
 }
 
 export async function loadProductsForMode(usesSampleData: boolean): Promise<Product[]> {

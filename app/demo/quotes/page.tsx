@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { ExternalLink, FileSignature, Mail, Package, Pencil, Plus, Send, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
@@ -43,6 +43,7 @@ export default function QuotesPage() {
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [showTaxTreatment, setShowTaxTreatment] = useState(true);
   const [userRows, setUserRows] = useState<UserQuote[]>([]);
   const [contact, setContact] = useState("");
@@ -59,9 +60,23 @@ export default function QuotesPage() {
   const [issueDate, setIssueDate] = useState(() => todayISO());
   const [expiryDate, setExpiryDate] = useState(() => plusDaysISO(14));
   const [status, setStatus] = useState<UserQuote["status"]>("Sent");
+  const submitLock = useRef(false);
+  const [submitBusy, setSubmitBusy] = useState(false);
 
   const reloadUser = useCallback(async () => {
-    setUserRows(await loadQuotes());
+    try {
+      setUserRows(await loadQuotes());
+      setStatusError((prev) =>
+        prev ===
+        "Could not load quotes. The list below may be incomplete — do not create or delete until it reloads."
+          ? null
+          : prev,
+      );
+    } catch {
+      setStatusError(
+        "Could not load quotes. The list below may be incomplete — do not create or delete until it reloads.",
+      );
+    }
   }, []);
 
   const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
@@ -81,6 +96,34 @@ export default function QuotesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tick, mounted],
   );
+
+  async function markQuoteSent(id: string) {
+    try {
+      const isUserRow = userRows.some((r) => r.id === id);
+      if (isUserRow) {
+        const row = await setQuoteStatus(id, "Sent");
+        if (!row) {
+          setSendNote(null);
+          setStatusError(`Email sent, but ${id} is still not marked Sent — check the list.`);
+          await reloadUser();
+          return;
+        }
+        setPublicDocStatus("quote", id, row.status);
+      } else {
+        setPublicDocStatus("quote", id, "Sent");
+      }
+      setStatusError(null);
+      await reloadUser();
+    } catch {
+      setSendNote(null);
+      setStatusError(`Email sent, but ${id} may still not be Sent — check the list.`);
+      try {
+        await reloadUser();
+      } catch {
+        /* leave the list as last shown */
+      }
+    }
+  }
 
   async function copyLink(id: string) {
     const url = `${window.location.origin}${publicQuoteUrl(id)}`;
@@ -155,9 +198,13 @@ export default function QuotesPage() {
 
   function createMixedTaxSample() {
     if (!tryBeginMixedOneClick()) return;
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     const draftLines = mixedTaxStarterDrafts("income");
     const contactName = "Acme Pty Ltd";
     void (async () => {
+      try {
       const res = await createQuote({ contact: contactName, lines: draftsToInputs(draftLines) });
       if ("error" in res) {
         setLines(draftLines);
@@ -176,6 +223,10 @@ export default function QuotesPage() {
       window.setTimeout(() => {
         document.getElementById("qu-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 40);
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
+      }
     })();
   }
 
@@ -241,9 +292,13 @@ export default function QuotesPage() {
   useComposeQuery(openComposer);
 
   function persistQuote(asDraft: boolean) {
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     setFormError(null);
     setFormOk(null);
     void (async () => {
+      try {
       const nextStatus: UserQuote["status"] = editingId ? status : asDraft ? "Draft" : "Sent";
       if (editingId) {
         const res = await updateQuote(editingId, {
@@ -279,18 +334,32 @@ export default function QuotesPage() {
         setFormError(`${res.error}${nudge}`);
         return;
       }
-      const updated = await updateQuote(res.id, {
-        contact: res.contact,
-        contactEmail,
-        lines: draftsToInputs(lines),
-        issueDate,
-        expiryDate,
-        status: nextStatus,
-      });
-      if (!("error" in updated)) {
-        setPublicDocStatus("quote", updated.id, updated.status);
+      let updated: Awaited<ReturnType<typeof updateQuote>>;
+      try {
+        updated = await updateQuote(res.id, {
+          contact: res.contact,
+          contactEmail,
+          lines: draftsToInputs(lines),
+          issueDate,
+          expiryDate,
+          status: nextStatus,
+        });
+      } catch (e) {
+        updated = { error: e instanceof Error ? e.message : "save failed" };
       }
-      const created = "error" in updated ? res : updated;
+      if ("error" in updated) {
+        setPublicDocStatus("quote", res.id, res.status);
+        setEditingId(res.id);
+        setLastCreatedId(res.id);
+        setFormError(
+          `Created ${res.id}, but dates/status did not save (${updated.error}). Update ${res.id} below to retry — do not create another.`,
+        );
+        setFormOk(null);
+        await reloadUser();
+        return;
+      }
+      setPublicDocStatus("quote", updated.id, updated.status);
+      const created = updated;
       resetForm();
       setLastCreatedId(created.id);
       setFormOk(
@@ -302,6 +371,18 @@ export default function QuotesPage() {
         openSend({ ...created, contactEmail: contactEmail || created.contactEmail });
       }
       await reloadUser();
+      } catch {
+        setFormError("Could not finish saving. Check the list before creating again.");
+        setFormOk(null);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
+      }
     })();
   }
 
@@ -341,12 +422,32 @@ export default function QuotesPage() {
 
   function onDelete(id: string) {
     void (async () => {
-      await deleteQuote(id);
-      if (editingId === id) resetForm();
-      if (lastCreatedId === id) setLastCreatedId(null);
-      await reloadUser();
-      setSendNote(`Removed ${id}. Next: Create quote.`);
-      setFormOk(null);
+      try {
+        const ok = await deleteQuote(id);
+        if (!ok) {
+          await reloadUser();
+          setSendNote(null);
+          setFormOk(null);
+          setStatusError(`Could not delete ${id} — still in the list.`);
+          return;
+        }
+        setUserRows((rows) => rows.filter((r) => r.id !== id));
+        await reloadUser();
+        if (editingId === id) resetForm();
+        if (lastCreatedId === id) setLastCreatedId(null);
+        setStatusError(null);
+        setSendNote(`Removed ${id}. Next: Create quote.`);
+        setFormOk(null);
+      } catch {
+        setSendNote(null);
+        setFormOk(null);
+        setStatusError(`Could not delete ${id} — still in the list.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
@@ -517,7 +618,7 @@ export default function QuotesPage() {
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="btn-primary" disabled={submitBusy}>
           {editingId ? (
             <>
               <Pencil size={16} />
@@ -534,6 +635,7 @@ export default function QuotesPage() {
           <button
             type="button"
             className="btn-secondary"
+            disabled={submitBusy}
             onClick={() => persistQuote(true)}
           >
             Save as draft
@@ -592,6 +694,14 @@ export default function QuotesPage() {
             </button>
           )}
         </div>
+        {statusError && (
+          <p
+            className="rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-2 text-sm text-rose-200"
+            role="alert"
+          >
+            {statusError}
+          </p>
+        )}
         {sendNote && (
           <p
             className="rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100"
@@ -642,7 +752,7 @@ export default function QuotesPage() {
           Email quote
         </button>
         <PrintDocButton kind="quote" id={q.id} compact />
-        <DocDeleteButton id={q.id} kind="quote" onDelete={onDelete} />
+        <DocDeleteButton key={q.id} id={q.id} kind="quote" onDelete={onDelete} />
       </DocRowActions>
     );
   }
@@ -738,9 +848,7 @@ export default function QuotesPage() {
             quote={sendTarget}
             onClose={() => setSendTarget(null)}
             onSent={() => {
-              void setQuoteStatus(sendTarget.id, "Sent");
-              setPublicDocStatus("quote", sendTarget.id, "Sent");
-              reloadUser();
+              void markQuoteSent(sendTarget.id);
             }}
           />
         ) : null}
@@ -791,9 +899,7 @@ export default function QuotesPage() {
           quote={sendTarget}
           onClose={() => setSendTarget(null)}
           onSent={() => {
-            void setQuoteStatus(sendTarget.id, "Sent");
-            setPublicDocStatus("quote", sendTarget.id, "Sent");
-            reloadUser();
+            void markQuoteSent(sendTarget.id);
           }}
         />
       ) : null}
@@ -815,7 +921,9 @@ export default function QuotesPage() {
         <div className="card overflow-x-auto">
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Your created quotes</h2>
-            <p className="text-xs text-slate-400">{booksStoredHint(serverBooks)}</p>
+            <p className="text-xs text-slate-400">
+              {booksStoredHint(serverBooks)} Quotes are not invoices — Delete quote does not remove any invoice.
+            </p>
           </div>
           <table className="min-w-full text-left text-sm">
             <thead className="table-head">

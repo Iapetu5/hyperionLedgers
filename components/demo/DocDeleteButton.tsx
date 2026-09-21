@@ -36,6 +36,7 @@ export function docDeleteCopy(kind: DocDeleteKind, id: string) {
 /**
  * Rose quiet Delete. Confirm is owned here so list pages can pass a real delete.
  * The dialog must survive More closing — MoreMenu keeps overflow items mounted.
+ * pendingId is snapshotted on click so Mark paid / status change cannot rename the confirm.
  */
 export function DocDeleteButton({
   id,
@@ -46,28 +47,30 @@ export function DocDeleteButton({
   kind: DocDeleteKind;
   onDelete: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const copy = docDeleteCopy(kind, id);
+  const [pending, setPending] = useState<{ id: string; title: string; body: string; confirmLabel: string } | null>(
+    null,
+  );
   return (
     <>
       <button
         type="button"
         className="btn-quiet-danger !px-2 !py-1 text-xs"
-        onClick={() => setOpen(true)}
+        onClick={() => setPending({ id, ...docDeleteCopy(kind, id) })}
         title={`Remove ${id} from this browser — other documents stay`}
       >
         <Trash2 size={12} />
         Delete
       </button>
       <ConfirmDialog
-        open={open}
-        title={copy.title}
-        body={copy.body}
-        confirmLabel={copy.confirmLabel}
-        onCancel={() => setOpen(false)}
+        open={pending != null}
+        title={pending?.title ?? docDeleteCopy(kind, id).title}
+        body={pending?.body ?? docDeleteCopy(kind, id).body}
+        confirmLabel={pending?.confirmLabel ?? COPY[kind].confirmLabel}
+        onCancel={() => setPending(null)}
         onConfirm={() => {
-          setOpen(false);
-          onDelete(id);
+          const del = pending?.id;
+          setPending(null);
+          if (del) onDelete(del);
         }}
       />
     </>

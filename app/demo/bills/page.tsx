@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Banknote, Check, Package, Pencil, Plus, Receipt, Undo2, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -50,6 +50,7 @@ export default function BillsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [formOk, setFormOk] = useState<string | null>(null);
   const [statusNote, setStatusNote] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   /** After create — Approve / Mark paid strip so first session does not hunt the table */
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
   /** List-first: create form collapsed until New / Edit / mixed-tax / post-create. */
@@ -59,9 +60,23 @@ export default function BillsPage() {
   const [billDate, setBillDate] = useState(() => todayISO());
   const [dueDate, setDueDate] = useState(() => plusDaysISO(14));
   const [status, setStatus] = useState<UserBill["status"]>("Awaiting approval");
+  const submitLock = useRef(false);
+  const [submitBusy, setSubmitBusy] = useState(false);
 
   const reloadUser = useCallback(async () => {
-    setUserRows(await loadBills());
+    try {
+      setUserRows(await loadBills());
+      setStatusError((prev) =>
+        prev ===
+        "Could not load bills. The list below may be incomplete — do not create or delete until it reloads."
+          ? null
+          : prev,
+      );
+    } catch {
+      setStatusError(
+        "Could not load bills. The list below may be incomplete — do not create or delete until it reloads.",
+      );
+    }
   }, []);
 
   const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
@@ -130,9 +145,13 @@ export default function BillsPage() {
   /** One-click: OfficeNest + GST/GST-free expense lines → Approve / Mark paid strip. */
   function createMixedTaxSample() {
     if (!tryBeginMixedOneClick()) return;
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     const draftLines = mixedTaxStarterDrafts("expense");
     const supplierName = "OfficeNest Supplies Pty Ltd";
     void (async () => {
+      try {
       const res = await createBill({ supplier: supplierName, lines: draftsToInputs(draftLines) });
       if ("error" in res) {
         setLines(draftLines);
@@ -150,6 +169,10 @@ export default function BillsPage() {
       window.setTimeout(() => {
         document.getElementById("bill-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 40);
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
+      }
     })();
   }
 
@@ -217,9 +240,13 @@ export default function BillsPage() {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     setFormError(null);
     setFormOk(null);
     void (async () => {
+      try {
       if (editingId) {
         const res = await updateBill(editingId, {
           supplier,
@@ -251,19 +278,47 @@ export default function BillsPage() {
         setFormError(`${res.error}${nudge}`);
         return;
       }
-      const updated = await updateBill(res.id, {
-        supplier: res.supplier,
-        lines: draftsToInputs(lines),
-        date: billDate,
-        dueDate,
-        status,
-      });
-      const createdId = "error" in updated ? res.id : updated.id;
+      let updated: Awaited<ReturnType<typeof updateBill>>;
+      try {
+        updated = await updateBill(res.id, {
+          supplier: res.supplier,
+          lines: draftsToInputs(lines),
+          date: billDate,
+          dueDate,
+          status,
+        });
+      } catch (e) {
+        updated = { error: e instanceof Error ? e.message : "save failed" };
+      }
+      if ("error" in updated) {
+        setEditingId(res.id);
+        setLastCreatedId(res.id);
+        setComposerOpen(true);
+        setFormError(
+          `Created ${res.id}, but dates/status did not save (${updated.error}). Update ${res.id} below to retry — do not create another.`,
+        );
+        setFormOk(null);
+        await reloadUser();
+        return;
+      }
+      const createdId = updated.id;
       resetForm();
       setLastCreatedId(createdId);
       setComposerOpen(true);
       setFormOk(`Created ${createdId}.`);
       await reloadUser();
+      } catch {
+        setFormError("Could not finish saving. Check the list before creating again.");
+        setFormOk(null);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
+      }
     })();
   }
 
@@ -296,12 +351,32 @@ export default function BillsPage() {
 
   function onDelete(id: string) {
     void (async () => {
-      await deleteBill(id);
-      if (editingId === id) resetForm();
-      if (lastCreatedId === id) setLastCreatedId(null);
-      await reloadUser();
-      setStatusNote(`Removed ${id}. Next: Add bill.`);
-      setFormOk(null);
+      try {
+        const ok = await deleteBill(id);
+        if (!ok) {
+          await reloadUser();
+          setStatusNote(null);
+          setFormOk(null);
+          setStatusError(`Could not delete ${id} — still in the list.`);
+          return;
+        }
+        setUserRows((rows) => rows.filter((r) => r.id !== id));
+        await reloadUser();
+        if (editingId === id) resetForm();
+        if (lastCreatedId === id) setLastCreatedId(null);
+        setStatusError(null);
+        setStatusNote(`Removed ${id}. Next: Add bill.`);
+        setFormOk(null);
+      } catch {
+        setStatusNote(null);
+        setFormOk(null);
+        setStatusError(`Could not delete ${id} — still in the list.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
@@ -314,12 +389,28 @@ export default function BillsPage() {
 
   function onSetStatus(id: string, next: UserBill["status"]) {
     void (async () => {
-      const row = await setBillStatus(id, next);
-      await reloadUser();
-      if (!row) return;
-      const note = noteBillStatus(row.id, next);
-      setStatusNote(note);
-      setFormOk(null);
+      try {
+        const row = await setBillStatus(id, next);
+        await reloadUser();
+        if (!row) {
+          setStatusNote(null);
+          setFormOk(null);
+          setStatusError(`Could not change ${id}. Status is unchanged — check the list.`);
+          return;
+        }
+        setStatusError(null);
+        setStatusNote(noteBillStatus(row.id, next));
+        setFormOk(null);
+      } catch {
+        setStatusNote(null);
+        setFormOk(null);
+        setStatusError(`Could not change ${id}. Check the list — status may be unchanged.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
@@ -521,7 +612,7 @@ export default function BillsPage() {
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="btn-primary" disabled={submitBusy}>
           {editingId ? (
             <>
               <Pencil size={16} />
@@ -575,6 +666,14 @@ export default function BillsPage() {
             </button>
           )}
         </div>
+        {statusError && (
+          <p
+            className="rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-2 text-sm text-rose-200"
+            role="alert"
+          >
+            {statusError}
+          </p>
+        )}
         {statusNote && (
           <p
             className="rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100"
@@ -650,7 +749,7 @@ export default function BillsPage() {
           </button>
         )}
         {!paid && <PrintBillButton id={b.id} compact />}
-        <DocDeleteButton id={b.id} kind="bill" onDelete={onDelete} />
+        <DocDeleteButton key={b.id} id={b.id} kind="bill" onDelete={onDelete} />
       </DocRowActions>
     );
   }

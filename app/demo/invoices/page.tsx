@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Banknote, ExternalLink, FileText, Package, Pencil, Plus, Send, Undo2, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
@@ -42,6 +42,7 @@ export default function InvoicesPage() {
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [showTaxTreatment, setShowTaxTreatment] = useState(true);
   const [userRows, setUserRows] = useState<UserInvoice[]>([]);
   const [contact, setContact] = useState("");
@@ -56,9 +57,23 @@ export default function InvoicesPage() {
   const [issueDate, setIssueDate] = useState(() => todayISO());
   const [dueDate, setDueDate] = useState(() => plusDaysISO(14));
   const [status, setStatus] = useState<UserInvoice["status"]>("Awaiting payment");
+  const submitLock = useRef(false);
+  const [submitBusy, setSubmitBusy] = useState(false);
 
   const reloadUser = useCallback(async () => {
-    setUserRows(await loadInvoices());
+    try {
+      setUserRows(await loadInvoices());
+      setStatusError((prev) =>
+        prev ===
+        "Could not load invoices. The list below may be incomplete — do not create or delete until it reloads."
+          ? null
+          : prev,
+      );
+    } catch {
+      setStatusError(
+        "Could not load invoices. The list below may be incomplete — do not create or delete until it reloads.",
+      );
+    }
   }, []);
 
   const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
@@ -136,9 +151,13 @@ export default function InvoicesPage() {
   /** One-click: Acme + GST/GST-free lines → pay-link strip (no second Create click). */
   function createMixedTaxSample() {
     if (!tryBeginMixedOneClick()) return;
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     const draftLines = mixedTaxStarterDrafts("income");
     const contactName = "Acme Pty Ltd";
     void (async () => {
+      try {
       const res = await createInvoice({ contact: contactName, lines: draftsToInputs(draftLines) });
       if ("error" in res) {
         setLines(draftLines);
@@ -157,6 +176,10 @@ export default function InvoicesPage() {
       window.setTimeout(() => {
         document.getElementById("inv-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 40);
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
+      }
     })();
   }
 
@@ -224,9 +247,13 @@ export default function InvoicesPage() {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitBusy(true);
     setFormError(null);
     setFormOk(null);
     void (async () => {
+      try {
       if (editingId) {
         const payload = {
           contact,
@@ -257,22 +284,49 @@ export default function InvoicesPage() {
         setFormError(`${res.error}${nudge}`);
         return;
       }
-      const updated = await updateInvoice(res.id, {
-        contact: res.contact,
-        lines: draftsToInputs(lines),
-        issueDate,
-        dueDate,
-        status,
-      });
-      if (!("error" in updated)) {
-        setPublicDocStatus("invoice", updated.id, updated.status);
+      let updated: Awaited<ReturnType<typeof updateInvoice>>;
+      try {
+        updated = await updateInvoice(res.id, {
+          contact: res.contact,
+          lines: draftsToInputs(lines),
+          issueDate,
+          dueDate,
+          status,
+        });
+      } catch (e) {
+        updated = { error: e instanceof Error ? e.message : "save failed" };
       }
-      const createdId = "error" in updated ? res.id : updated.id;
+      if ("error" in updated) {
+        setPublicDocStatus("invoice", res.id, res.status);
+        setEditingId(res.id);
+        setLastCreatedId(res.id);
+        setComposerOpen(true);
+        setFormError(
+          `Created ${res.id}, but dates/status did not save (${updated.error}). Update ${res.id} below to retry — do not create another.`,
+        );
+        setFormOk(null);
+        await reloadUser();
+        return;
+      }
+      setPublicDocStatus("invoice", updated.id, updated.status);
+      const createdId = updated.id;
       resetForm();
       setLastCreatedId(createdId);
       setComposerOpen(true);
       setFormOk(`Created ${createdId}.`);
       await reloadUser();
+      } catch {
+        setFormError("Could not finish saving. Check the list before creating again.");
+        setFormOk(null);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      } finally {
+        submitLock.current = false;
+        setSubmitBusy(false);
+      }
     })();
   }
 
@@ -308,12 +362,32 @@ export default function InvoicesPage() {
 
   function onDelete(id: string) {
     void (async () => {
-      await deleteInvoice(id);
-      if (editingId === id) resetForm();
-      if (lastCreatedId === id) setLastCreatedId(null);
-      await reloadUser();
-      setSendNote(`Removed ${id}. Next: Create invoice.`);
-      setFormOk(null);
+      try {
+        const ok = await deleteInvoice(id);
+        if (!ok) {
+          await reloadUser();
+          setSendNote(null);
+          setFormOk(null);
+          setStatusError(`Could not delete ${id} — still in the list.`);
+          return;
+        }
+        setUserRows((rows) => rows.filter((r) => r.id !== id));
+        await reloadUser();
+        if (editingId === id) resetForm();
+        if (lastCreatedId === id) setLastCreatedId(null);
+        setStatusError(null);
+        setSendNote(`Removed ${id}. Next: Create invoice.`);
+        setFormOk(null);
+      } catch {
+        setSendNote(null);
+        setFormOk(null);
+        setStatusError(`Could not delete ${id} — still in the list.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
@@ -325,11 +399,35 @@ export default function InvoicesPage() {
 
   function onSetInvStatus(id: string, next: UserInvoice["status"]) {
     void (async () => {
-      setPublicDocStatus("invoice", id, next);
-      await setInvoiceStatus(id, next);
-      await reloadUser();
-      setSendNote(noteInvoiceStatus(id, next));
-      setFormOk(null);
+      try {
+        const isUserRow = userRows.some((r) => r.id === id);
+        if (isUserRow) {
+          const row = await setInvoiceStatus(id, next);
+          if (!row) {
+            setSendNote(null);
+            setFormOk(null);
+            setStatusError(`Could not change ${id}. Status is unchanged — check the list.`);
+            await reloadUser();
+            return;
+          }
+          setPublicDocStatus("invoice", id, row.status);
+        } else {
+          setPublicDocStatus("invoice", id, next);
+        }
+        await reloadUser();
+        setStatusError(null);
+        setSendNote(noteInvoiceStatus(id, next));
+        setFormOk(null);
+      } catch {
+        setSendNote(null);
+        setFormOk(null);
+        setStatusError(`Could not change ${id}. Check the list — status may be unchanged.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
@@ -495,7 +593,7 @@ export default function InvoicesPage() {
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="btn-primary" disabled={submitBusy}>
           {editingId ? (
             <>
               <Pencil size={16} />
@@ -561,6 +659,14 @@ export default function InvoicesPage() {
             </button>
           )}
         </div>
+        {statusError && (
+          <p
+            className="rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-2 text-sm text-rose-200"
+            role="alert"
+          >
+            {statusError}
+          </p>
+        )}
         {sendNote && (
           <p
             className="rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100"
@@ -632,7 +738,7 @@ export default function InvoicesPage() {
           </button>
         )}
         {!paid && <PrintDocButton kind="invoice" id={inv.id} compact />}
-        <DocDeleteButton id={inv.id} kind="invoice" onDelete={onDelete} />
+        <DocDeleteButton key={inv.id} id={inv.id} kind="invoice" onDelete={onDelete} />
       </DocRowActions>
     );
   }

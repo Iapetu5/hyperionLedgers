@@ -24,8 +24,14 @@ export function useBlankBooksReload(
 
   useEffect(() => {
     if (!ready || skip) return;
-    void reload();
-    const onUpdate = () => void reload();
+    void Promise.resolve(reload()).catch(() => {
+      /* keep last shown books — loaders must not invent an empty list */
+    });
+    const onUpdate = () => {
+      void Promise.resolve(reload()).catch(() => {
+        /* keep last shown books */
+      });
+    };
     for (const ev of BOOKS_EVENTS) window.addEventListener(ev, onUpdate);
     return () => {
       for (const ev of BOOKS_EVENTS) window.removeEventListener(ev, onUpdate);
