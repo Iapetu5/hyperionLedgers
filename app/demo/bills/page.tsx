@@ -43,6 +43,7 @@ export default function BillsPage() {
   const [lines, setLines] = useState<LineDraft[]>(() => [emptyLineDraft()]);
   const [formError, setFormError] = useState<string | null>(null);
   const [formOk, setFormOk] = useState<string | null>(null);
+  const [statusNote, setStatusNote] = useState<string | null>(null);
   /** After create — Approve / Mark paid strip so first session does not hunt the table */
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
   /** List-first: create form collapsed until New / Edit / mixed-tax / post-create. */
@@ -288,32 +289,32 @@ export default function BillsPage() {
     if (editingId === id) resetForm();
     if (lastCreatedId === id) setLastCreatedId(null);
     reloadUser();
-    setFormOk(`Removed ${id}. Create again above if you need a fresh draft.`);
+    setStatusNote(`Removed ${id}. Next: Add bill.`);
+    setFormOk(null);
+  }
+
+  function noteBillStatus(id: string, next: UserBill["status"]) {
+    if (next === "Paid") return `${id} marked Paid. Next: Print, or More for Undo paid.`;
+    if (next === "Approved") return `${id} approved. Next: Mark paid.`;
+    if (next === "Awaiting approval") return `${id} back to Awaiting approval. Next: Approve.`;
+    return `${id} updated.`;
   }
 
   function onSetStatus(id: string, next: UserBill["status"]) {
     const row = setUserBillStatus(id, next);
     reloadUser();
     if (!row) return;
-    if (next === "Paid") {
-      setFormOk(
-        `${row.id} marked Paid (back office only — no public pay link). Print stays on the row for an internal summary.`,
-      );
-    } else {
-      setFormOk(`${row.id} marked ${next} (back office only — no public pay link).`);
-    }
+    const note = noteBillStatus(row.id, next);
+    setStatusNote(note);
+    setFormOk(null);
   }
 
   function onSampleStatus(id: string, next: UserBill["status"]) {
     setSampleBillStatus(id, next);
     setSampleTick((t) => t + 1);
-    if (next === "Paid") {
-      setFormOk(
-        `Sample ${id} marked Paid in this browser (demo back office). Print stays on the row — internal summary only, no public pay link.`,
-      );
-    } else {
-      setFormOk(`Sample ${id} marked ${next} in this browser (demo back office).`);
-    }
+    const note = noteBillStatus(id, next);
+    setStatusNote(note);
+    setFormOk(null);
   }
 
   function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {
@@ -546,17 +547,27 @@ export default function BillsPage() {
 
   function pageHeader(subtitle: ReactNode) {
     return (
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Bills</h1>
-          <BooksSectionNav />
-          <p className="text-sm text-white/70">{subtitle}</p>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Bills</h1>
+            <BooksSectionNav />
+            <p className="text-sm text-white/70">{subtitle}</p>
+          </div>
+          {!showComposer && (
+            <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
+              <Plus size={16} />
+              Add bill
+            </button>
+          )}
         </div>
-        {!showComposer && (
-          <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
-            <Plus size={16} />
-            New bill
-          </button>
+        {statusNote && (
+          <p
+            className="rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100"
+            role="status"
+          >
+            {statusNote}
+          </p>
         )}
       </div>
     );
@@ -570,6 +581,7 @@ export default function BillsPage() {
     const keep = paid ? 1 : awaiting ? 3 : 2;
     return (
       <DocRowActions keep={keep}>
+        {paid && <PrintBillButton id={b.id} compact primary />}
         {awaiting && (
           <button
             type="button"
@@ -623,7 +635,7 @@ export default function BillsPage() {
             Undo paid
           </button>
         )}
-        <PrintBillButton id={b.id} compact primary={paid} />
+        {!paid && <PrintBillButton id={b.id} compact />}
         <button
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
@@ -706,17 +718,17 @@ export default function BillsPage() {
         <EmptyState
           icon={Receipt}
           title="No bills yet"
-          description="Create a supplier bill, or start from a ready-made example you can approve or mark paid."
+          description="Next: Add bill. Create sample bill makes a ready-made example you can Approve or Mark paid."
           showExploreSample
           actions={[
             {
-              label: "Create sample bill",
+              label: "Add bill",
               primary: true,
-              onClick: () => createMixedTaxSample(),
+              onClick: () => openComposer(),
             },
             {
-              label: "New bill",
-              onClick: () => openComposer(),
+              label: "Create sample bill",
+              onClick: () => createMixedTaxSample(),
             },
             { label: "Back to overview", href: "/demo" },
           ]}
@@ -731,7 +743,7 @@ export default function BillsPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Make a bill with an example, edit lines later, Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically.
+              Next: Add bill, then Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically.
             </>
           ) : (
             <>
@@ -796,7 +808,8 @@ export default function BillsPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Line amounts before GST; choose GST or GST-free per line. Approve awaiting rows, then Mark paid (saved in this browser). Undo and Print sit under More. Print is an internal summary only — no public supplier pay link. Past-due unpaid rows show Overdue.
+            Line amounts before GST. Next: Approve, then Mark paid. After Paid, Print is on the row. Undo Approve and Undo paid sit under More.
+            Print is an internal summary only — no public supplier pay link. Past-due unpaid rows show Overdue.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">

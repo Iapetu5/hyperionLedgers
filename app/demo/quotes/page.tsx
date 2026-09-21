@@ -39,6 +39,7 @@ export default function QuotesPage() {
   const { usesSampleData, user } = useAuth();
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
+  const [sendNote, setSendNote] = useState<string | null>(null);
   const [showTaxTreatment, setShowTaxTreatment] = useState(true);
   const [userRows, setUserRows] = useState<UserQuote[]>([]);
   const [contact, setContact] = useState("");
@@ -90,9 +91,14 @@ export default function QuotesPage() {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(id);
-      setTimeout(() => setCopied(null), 1500);
+      setSendNote("Quote link copied. Next: View, or More to Print.");
+      setFormOk(null);
+      setTimeout(() => {
+        setCopied(null);
+        setSendNote(null);
+      }, 4000);
     } catch {
-      setFormError("Could not copy link — use View and copy the URL from the address bar.");
+      setSendNote("Could not copy the link. Next: View and copy the address bar, or More to Print.");
     }
   }
 
@@ -124,6 +130,8 @@ export default function QuotesPage() {
       businessName: q.businessName || user?.businessName || "HyperionInvoices",
       amount: q.amount,
     });
+    setSendNote("Email quote is open. After you Send: View, or More to Print.");
+    setFormOk(null);
   }
 
   /** One-click: Acme + GST/GST-free lines → customer-link strip (no second Create click). */
@@ -336,7 +344,8 @@ export default function QuotesPage() {
     if (editingId === id) resetForm();
     if (lastCreatedId === id) setLastCreatedId(null);
     reloadUser();
-    setFormOk(`Removed ${id}. Create a new quote above if you need a fresh draft.`);
+    setSendNote(`Removed ${id}. Next: Create quote.`);
+    setFormOk(null);
   }
 
   function blockImplicitEnter(e: KeyboardEvent<HTMLFormElement>) {
@@ -438,7 +447,7 @@ export default function QuotesPage() {
       {lastCreatedId && !editingId && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-3 py-2 text-xs text-cyan-50">
           <span className="font-semibold text-white">{lastCreatedId}</span>
-          <span className="text-cyan-100/80">ready — View, Send quote, or print the customer quote page</span>
+          <span className="text-cyan-100/80">ready — View, Send quote, Email quote, or Print</span>
           <Link
             href={publicQuoteUrl(lastCreatedId)}
             target="_blank"
@@ -465,7 +474,7 @@ export default function QuotesPage() {
             }}
           >
             <Mail size={12} />
-            Send quote
+            Email quote
           </button>
         </div>
       )}
@@ -558,26 +567,36 @@ export default function QuotesPage() {
 
   function pageHeader(subtitle: ReactNode) {
     return (
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Quotes</h1>
-          <BooksSectionNav />
-          <p className="text-sm text-white/70">{subtitle}</p>
-          <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
-            <input
-              type="checkbox"
-              className="rounded border-white/20 bg-black/30"
-              checked={showTaxTreatment}
-              onChange={(e) => setShowTaxTreatment(e.target.checked)}
-            />
-            Show tax treatment summary
-          </label>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Quotes</h1>
+            <BooksSectionNav />
+            <p className="text-sm text-white/70">{subtitle}</p>
+            <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
+              <input
+                type="checkbox"
+                className="rounded border-white/20 bg-black/30"
+                checked={showTaxTreatment}
+                onChange={(e) => setShowTaxTreatment(e.target.checked)}
+              />
+              Show tax treatment summary
+            </label>
+          </div>
+          {!showComposer && (
+            <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
+              <Plus size={16} />
+              Create quote
+            </button>
+          )}
         </div>
-        {!showComposer && (
-          <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
-            <Plus size={16} />
-            New quote
-          </button>
+        {sendNote && (
+          <p
+            className="rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100"
+            role="status"
+          >
+            {sendNote}
+          </p>
         )}
       </div>
     );
@@ -586,14 +605,6 @@ export default function QuotesPage() {
   function userActions(q: UserQuote) {
     return (
       <DocRowActions keep={3}>
-        <button
-          type="button"
-          className="btn-secondary !px-2 !py-1 text-xs"
-          onClick={() => openSend(q)}
-        >
-          <Mail size={12} />
-          Send quote
-        </button>
         <button
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
@@ -619,6 +630,14 @@ export default function QuotesPage() {
         >
           <Pencil size={12} />
           Edit
+        </button>
+        <button
+          type="button"
+          className="btn-secondary !px-2 !py-1 text-xs"
+          onClick={() => openSend(q)}
+        >
+          <Mail size={12} />
+          Email quote
         </button>
         <PrintDocButton kind="quote" id={q.id} compact />
         <button
@@ -648,17 +667,17 @@ export default function QuotesPage() {
         <EmptyState
           icon={FileSignature}
           title="No quotes yet"
-          description="Create your first quote, or start from a ready-made example with a customer link."
+          description="Next: Create quote. Create sample quote makes a ready-made example with a customer link."
           showExploreSample
           actions={[
             {
-              label: "Create sample quote",
+              label: "Create quote",
               primary: true,
-              onClick: () => createMixedTaxSample(),
+              onClick: () => openComposer(),
             },
             {
-              label: "New quote",
-              onClick: () => openComposer(),
+              label: "Create sample quote",
+              onClick: () => createMixedTaxSample(),
             },
             { label: "Back to overview", href: "/demo" },
           ]}
@@ -727,7 +746,7 @@ export default function QuotesPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Make a quote with an example (saved in this browser). Sent quotes past expiry show Expired automatically.
+              Next: Create quote (saved in this browser). Sent quotes past expiry show Expired automatically.
             </>
           ) : (
             <>
@@ -846,7 +865,7 @@ export default function QuotesPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Send quote copies the customer link. View opens the public page. Print sits under More. QU-210 is a mixed GST + GST Free example.
+            Send quote copies the customer link. View opens the public page. Email quote and Print sit under More. QU-210 is a mixed GST + GST Free example.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">
@@ -921,7 +940,7 @@ export default function QuotesPage() {
                       }
                     >
                       <Mail size={12} />
-                      Send quote
+                      Email quote
                     </button>
                   </DocRowActions>
                 </td>

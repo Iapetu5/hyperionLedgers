@@ -55,7 +55,7 @@ export function PrintDocButton({
         onClick={openPrint}
       >
         <Printer size={compact ? 12 : 16} />
-        Print / PDF
+        {compact ? "Print" : "Print / PDF"}
       </button>
 
       {mounted &&
