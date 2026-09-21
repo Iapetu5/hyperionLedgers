@@ -57,7 +57,7 @@ export default function OnboardingPage() {
 
   async function saveAndFinish() {
     if (!isRealCompanyName(user?.businessName)) {
-      setError("Add your company first — search, pick a match, then confirm.");
+      setError("Add your company first — search or type the details, then confirm.");
       return;
     }
     const res = await completeOnboarding({
@@ -88,7 +88,7 @@ export default function OnboardingPage() {
     e?.preventDefault();
     setError(null);
     if (!isRealCompanyName(user?.businessName)) {
-      setError("Add your company first — search, pick a match, then confirm.");
+      setError("Add your company first — search or type the details, then confirm.");
       return;
     }
     if (isLast) {
@@ -203,7 +203,7 @@ export default function OnboardingPage() {
             </>
           ) : (
             <>
-              Add your company first, then come back to these questions.{" "}
+              Add your company first — search or type the details, then confirm.{" "}
               <Link
                 href={addCompanyHref("/onboarding")}
                 className="font-semibold text-brand-300 hover:underline"

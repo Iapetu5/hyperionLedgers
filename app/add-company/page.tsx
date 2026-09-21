@@ -10,8 +10,10 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import {
   ABR_ENTITY_TYPES,
   type AbrCompany,
+  describeAbrLookup,
   digitsOnlyAbn,
   formatAbn,
+  looksLikeAbnQuery,
   validateAbnField,
 } from "@/lib/abn";
 import { PENDING_ORG_NAME, nextSetupPath } from "@/lib/auth";
@@ -35,9 +37,10 @@ function AddCompanyForm() {
   const rawReturn =
     searchParams.get("returnTo") || searchParams.get("return") || searchParams.get("next");
   const nextUrl = rawReturn ? safeAddCompanyReturn(rawReturn) : null;
+  const nameRef = useRef<HTMLInputElement>(null);
+  const confirmHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const [selected, setSelected] = useState<AbrCompany | null>(null);
-  const [manual, setManual] = useState(false);
   const [legalName, setLegalName] = useState("");
   const [abn, setAbn] = useState("");
   const [entityType, setEntityType] = useState<(typeof ABR_ENTITY_TYPES)[number]>(
@@ -49,8 +52,6 @@ function AddCompanyForm() {
   const [abnHint, setAbnHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
-  const confirmHeadingRef = useRef<HTMLHeadingElement>(null);
-  const detailsReady = Boolean(selected || manual);
 
   useEffect(() => {
     if (prefilled) return;
@@ -63,7 +64,6 @@ function AddCompanyForm() {
       if (picked.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(picked.entityType)) {
         setEntityType(picked.entityType as (typeof ABR_ENTITY_TYPES)[number]);
       }
-      setManual(true);
       setPrefilled(true);
       return;
     }
@@ -74,7 +74,6 @@ function AddCompanyForm() {
     if (user.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(user.entityType)) {
       setEntityType(user.entityType as (typeof ABR_ENTITY_TYPES)[number]);
     }
-    setManual(true);
     setPrefilled(true);
   }, [user, prefilled]);
 
@@ -86,6 +85,9 @@ function AddCompanyForm() {
       : "Your company"
     : "Add a company";
   const pageTitle = changingExisting ? "Change your company" : "Add your company";
+  const selectedCopy = selected
+    ? describeAbrLookup(!selected.simulated, selected.simulated)
+    : null;
 
   const continueHref = useMemo(() => {
     if (nextUrl) return nextUrl;
@@ -104,40 +106,33 @@ function AddCompanyForm() {
     setError(null);
     setFieldErrors({});
     setAbnHint(null);
-    if (!company) {
-      setManual(false);
-      return;
-    }
+    if (!company) return;
     setLegalName(company.legalName);
     setAbn(company.abn);
     setEntityType(company.entityType);
     setAddress(company.address ?? "");
-    setManual(false);
+    window.setTimeout(() => confirmHeadingRef.current?.focus(), 0);
   }
 
-  function openManual() {
-    setManual(true);
+  function openManual(query = "") {
     setSelected(null);
     setError(null);
     setFieldErrors({});
     setAbnHint(null);
-    setLegalName((current) =>
-      current || (user && user.businessName !== PENDING_ORG_NAME ? user.businessName : "")
-    );
+    const suggested = query.trim();
+    if (suggested && !looksLikeAbnQuery(suggested)) {
+      setLegalName((current) => current || suggested);
+    } else {
+      setLegalName((current) =>
+        current || (user && user.businessName !== PENDING_ORG_NAME ? user.businessName : "")
+      );
+    }
     setAbn((current) => current || user?.abn || "");
     setAddress((current) => current || user?.businessAddress || "");
+    window.setTimeout(() => nameRef.current?.focus(), 0);
   }
 
   useEffect(() => {
-    if (loading || !detailsReady) return;
-    confirmHeadingRef.current?.focus();
-  }, [detailsReady, loading]);
-
-  useEffect(() => {
-    if (!manual || selected) {
-      setAbnHint(null);
-      return;
-    }
     const digits = digitsOnlyAbn(abn);
     if (digits.length !== 11 || validateAbnField(abn, false)) {
       setAbnHint(null);
@@ -151,10 +146,15 @@ function AddCompanyForm() {
           signal: controller.signal,
           cache: "no-store",
         });
-        const data = (await res.json()) as { results?: AbrCompany[]; simulated?: boolean };
+        const data = (await res.json()) as {
+          results?: AbrCompany[];
+          simulated?: boolean;
+          liveConfigured?: boolean;
+        };
         const row = data.results?.[0];
+        const copy = describeAbrLookup(data.liveConfigured === true, data.simulated !== false);
         if (!row) {
-          setAbnHint("Valid ABN checksum — no register match. Enter the legal name yourself.");
+          setAbnHint("Valid ABN checksum — no register match. You can still confirm the name below.");
           return;
         }
         if (!legalName.trim()) {
@@ -163,12 +163,12 @@ function AddCompanyForm() {
           if (row.address) setAddress(row.address);
         }
         setAbnHint(
-          data.simulated === false
-            ? `Matched ${row.legalName} from the live register — check the name before you confirm.`
+          copy.live
+            ? `Matched ${row.legalName} from the Australian Business Register — check the name before you confirm.`
             : `Practice register match for ${row.legalName} — edit any field if needed.`
         );
       } catch {
-        setAbnHint("Valid ABN checksum — confirm the legal name before you save.");
+        setAbnHint("Valid ABN checksum — confirm the business name before you save.");
       }
     }, 320);
 
@@ -176,7 +176,7 @@ function AddCompanyForm() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [abn, manual, selected, legalName]);
+  }, [abn, legalName]);
 
   function formatAbnField() {
     if (!abn.trim() || validateAbnField(abn, false)) return;
@@ -188,7 +188,7 @@ function AddCompanyForm() {
     const validated = validateCompanySave({
       legalName,
       abn,
-      requireAbn: manual && !selected,
+      requireAbn: false,
     });
     if (!validated.ok) {
       setFieldErrors(validated.errors);
@@ -240,6 +240,8 @@ function AddCompanyForm() {
     return <AddCompanyLoading />;
   }
 
+  const typedReady = Boolean(legalName.trim());
+
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -277,15 +279,15 @@ function AddCompanyForm() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">{stepLabel}</p>
         <h1 className="mt-1 text-2xl font-bold text-white">{pageTitle}</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Type the business name or ABN, pick a match, then confirm. Or enter your legal name and
-          real ABN yourself — we validate the ABN checksum before saving.
+          Search if you like, or type the business name, optional ABN, and business type, then
+          confirm. You do not need a register match to continue.
         </p>
         <AbrRegisterNote className="mt-3 text-xs text-slate-400" />
         <ol className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-300">
           {[
-            { n: "1", label: "Search", current: !detailsReady },
-            { n: "2", label: "Pick a match", current: false },
-            { n: "3", label: "Confirm", current: detailsReady },
+            { n: "1", label: "Search", current: !selected && !typedReady },
+            { n: "2", label: "Pick or type", current: !selected && typedReady },
+            { n: "3", label: "Confirm", current: Boolean(selected) },
           ].map((chip) => (
             <li
               key={chip.n}
@@ -303,153 +305,147 @@ function AddCompanyForm() {
         </ol>
 
         <div className="mt-6 space-y-6">
-          <CompanySearch selected={selected} onSelect={applyCompany} />
+          <CompanySearch selected={selected} onSelect={applyCompany} onNeedManual={openManual} />
 
-          {detailsReady && (
-            <form
-              className="space-y-4 rounded-xl border border-brand-400/25 bg-brand-500/5 p-4"
-              onSubmit={save}
-              noValidate
+          <form
+            id="company-details"
+            className="space-y-4 rounded-xl border border-brand-400/25 bg-brand-500/5 p-4"
+            onSubmit={save}
+            noValidate
+          >
+            <h2
+              ref={confirmHeadingRef}
+              tabIndex={-1}
+              className="text-sm font-semibold text-white outline-none"
             >
-              <h2
-                ref={confirmHeadingRef}
-                tabIndex={-1}
-                className="text-sm font-semibold text-white outline-none"
-              >
-                {selected ? "Confirm these details" : "Enter company details"}
-              </h2>
-              <p className="text-sm text-slate-300">
-                {selected
-                  ? "Check the name, ABN, and type, then confirm."
-                  : "Enter your legal name and 11-digit ABN. We check the ABN checksum before saving."}
+              {selected ? "Confirm these details" : "Enter company details"}
+            </h2>
+            <p className="text-sm text-slate-300">
+              {selected
+                ? "Check the name, ABN, and type, then confirm."
+                : "Business name and business type are required. ABN is optional — if you enter one, we check the 11-digit checksum."}
+            </p>
+            {selected?.entityStatus === "Cancelled" && (
+              <p className="text-sm text-amber-200" role="status">
+                This record is cancelled. Check you picked the right business before you confirm.
               </p>
-              {selected?.entityStatus === "Cancelled" && (
-                <p className="text-sm text-amber-200" role="status">
-                  This record is cancelled. Check you picked the right business before you confirm.
+            )}
+            <div>
+              <label className="label" htmlFor="legalName">
+                Business name
+              </label>
+              <input
+                ref={nameRef}
+                id="legalName"
+                className="input"
+                required
+                value={legalName}
+                aria-invalid={Boolean(fieldErrors.legalName)}
+                aria-describedby={fieldErrors.legalName ? "legalName-error" : "legalName-hint"}
+                onChange={(e) => {
+                  setLegalName(e.target.value);
+                  if (fieldErrors.legalName) {
+                    setFieldErrors((prev) => ({ ...prev, legalName: undefined }));
+                  }
+                }}
+                autoComplete="organization"
+              />
+              {fieldErrors.legalName ? (
+                <p id="legalName-error" className="mt-1 text-sm text-rose-300" role="alert">
+                  {fieldErrors.legalName}
+                </p>
+              ) : (
+                <p id="legalName-hint" className="mt-1 text-xs text-slate-400">
+                  The official name on the ABN record.
                 </p>
               )}
-              <div>
-                <label className="label" htmlFor="legalName">
-                  Business name
-                </label>
-                <input
-                  id="legalName"
-                  className="input"
-                  required
-                  value={legalName}
-                  aria-invalid={Boolean(fieldErrors.legalName)}
-                  aria-describedby={fieldErrors.legalName ? "legalName-error" : "legalName-hint"}
-                  onChange={(e) => {
-                    setLegalName(e.target.value);
-                    if (fieldErrors.legalName) {
-                      setFieldErrors((prev) => ({ ...prev, legalName: undefined }));
-                    }
-                  }}
-                  autoComplete="organization"
-                />
-                {fieldErrors.legalName ? (
-                  <p id="legalName-error" className="mt-1 text-sm text-rose-300" role="alert">
-                    {fieldErrors.legalName}
-                  </p>
-                ) : (
-                  <p id="legalName-hint" className="mt-1 text-xs text-slate-400">
-                    The official name on the ABN record.
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="label" htmlFor="confirmAbn">
-                  ABN {manual && !selected ? "" : "(optional if unknown)"}
-                </label>
-                <input
-                  id="confirmAbn"
-                  className="input"
-                  inputMode="numeric"
-                  value={abn}
-                  aria-invalid={Boolean(fieldErrors.abn)}
-                  aria-describedby={fieldErrors.abn ? "confirmAbn-error" : "confirmAbn-hint"}
-                  onChange={(e) => {
-                    setAbn(e.target.value);
-                    if (fieldErrors.abn) {
-                      setFieldErrors((prev) => ({ ...prev, abn: undefined }));
-                    }
-                  }}
-                  onBlur={formatAbnField}
-                  placeholder="11 digits, spaces optional"
-                  autoComplete="off"
-                />
-                {fieldErrors.abn ? (
-                  <p id="confirmAbn-error" className="mt-1 text-sm text-rose-300" role="alert">
-                    {fieldErrors.abn}
-                  </p>
-                ) : (
-                  <p id="confirmAbn-hint" className="mt-1 text-xs text-slate-400">
-                    {manual && !selected
-                      ? "Must be a valid 11-digit ABN. Spaces are fine."
-                      : "11 digits. Spaces are fine. Leave blank only if you do not have an ABN yet."}
-                  </p>
-                )}
-                {abnHint && !fieldErrors.abn && (
-                  <p className="mt-1 text-xs text-brand-200" role="status">
-                    {abnHint}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="label" htmlFor="entityType">
-                  Business type
-                </label>
-                <select
-                  id="entityType"
-                  className="input"
-                  value={entityType}
-                  onChange={(e) => setEntityType(e.target.value as (typeof ABR_ENTITY_TYPES)[number])}
-                >
-                  {ABR_ENTITY_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-slate-400">
-                  Company, sole trader, or partnership — pick the closest match.
+            </div>
+            <div>
+              <label className="label" htmlFor="confirmAbn">
+                ABN
+              </label>
+              <input
+                id="confirmAbn"
+                className="input"
+                inputMode="numeric"
+                value={abn}
+                aria-invalid={Boolean(fieldErrors.abn)}
+                aria-describedby={fieldErrors.abn ? "confirmAbn-error" : "confirmAbn-hint"}
+                onChange={(e) => {
+                  setAbn(e.target.value);
+                  if (fieldErrors.abn) {
+                    setFieldErrors((prev) => ({ ...prev, abn: undefined }));
+                  }
+                }}
+                onBlur={formatAbnField}
+                placeholder="11 digits, spaces optional"
+                autoComplete="off"
+              />
+              {fieldErrors.abn ? (
+                <p id="confirmAbn-error" className="mt-1 text-sm text-rose-300" role="alert">
+                  {fieldErrors.abn}
                 </p>
-              </div>
-              <div>
-                <label className="label" htmlFor="address">
-                  Address {selected && !selected.address ? "(not listed — you can type it)" : ""}
-                </label>
-                <input
-                  id="address"
-                  className="input"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Street, suburb, state and postcode"
-                  autoComplete="street-address"
-                />
-              </div>
+              ) : (
+                <p id="confirmAbn-hint" className="mt-1 text-xs text-slate-400">
+                  11 digits. Spaces are fine. You can leave this blank.
+                </p>
+              )}
+              {abnHint && !fieldErrors.abn && (
+                <p className="mt-1 text-xs text-brand-200" role="status">
+                  {abnHint}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="label" htmlFor="entityType">
+                Business type
+              </label>
+              <select
+                id="entityType"
+                className="input"
+                value={entityType}
+                onChange={(e) => setEntityType(e.target.value as (typeof ABR_ENTITY_TYPES)[number])}
+              >
+                {ABR_ENTITY_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-400">
+                Company, sole trader, or partnership — pick the closest match.
+              </p>
+            </div>
+            <div>
+              <label className="label" htmlFor="address">
+                Address {selected && !selected.address ? "(not listed — you can type it)" : ""}
+              </label>
+              <input
+                id="address"
+                className="input"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Street, suburb, state and postcode"
+                autoComplete="street-address"
+              />
+            </div>
+            {selected && selectedCopy && (
+              <p className="text-xs text-slate-400">
+                Status: {selected.entityStatus}
+                {selected.gstRegistered ? " · GST registered" : " · Not GST registered"}
+                . {selectedCopy.matchFooter}
+              </p>
+            )}
+            {error && (
+              <p className="text-sm text-rose-300" role="alert">
+                {error}
+              </p>
+            )}
+            <div className="space-y-2">
+              <button type="submit" className="btn-primary w-full" disabled={busy}>
+                {busy ? "Saving…" : "Confirm company"}
+              </button>
               {selected && (
-                <p className="text-xs text-slate-400">
-                  Status: {selected.entityStatus}
-                  {selected.gstRegistered ? " · GST registered" : " · Not GST registered"}
-                  {selected.simulated
-                    ? ". Practice register result — you can edit any field."
-                    : ". From the live Australian Business Register."}
-                </p>
-              )}
-              {error && (
-                <p className="text-sm text-rose-300" role="alert">
-                  {error}
-                </p>
-              )}
-              <div className="space-y-2">
-                <button
-                  type="submit"
-                  className="btn-primary w-full"
-                  disabled={busy || !isRealCompanyName(legalName)}
-                >
-                  {busy ? "Saving…" : "Confirm company"}
-                </button>
                 <button
                   type="button"
                   className="text-sm font-medium text-slate-400 hover:text-white hover:underline"
@@ -457,27 +453,21 @@ function AddCompanyForm() {
                 >
                   Clear and search again
                 </button>
-              </div>
-            </form>
-          )}
+              )}
+            </div>
+          </form>
 
-          {!manual && (
+          {!selected && (
             <p className="text-sm text-slate-300">
-              Can&apos;t find the business?{" "}
+              Prefer to skip the search?{" "}
               <button
                 type="button"
                 className="font-semibold text-brand-300 hover:underline"
-                onClick={openManual}
+                onClick={() => openManual()}
               >
-                Enter your legal name and ABN
+                Enter the details yourself
               </button>
               .
-            </p>
-          )}
-
-          {error && !detailsReady && (
-            <p className="text-sm text-rose-300" role="alert">
-              {error}
             </p>
           )}
 

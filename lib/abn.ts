@@ -68,9 +68,40 @@ export function validateAbnField(abn: string, required = false): string | null {
   const trimmed = abn.trim();
   if (!trimmed) return required ? "Enter an ABN." : null;
   const digits = digitsOnlyAbn(trimmed);
-  if (!/^\d{11}$/.test(digits)) return "ABN should be 11 digits (spaces optional).";
-  if (!isValidAbnChecksum(digits)) return "That ABN does not look right. Check the 11 digits and try again.";
+  if (!/^\d{11}$/.test(digits)) return "That ABN needs 11 digits. Spaces are fine.";
+  if (!isValidAbnChecksum(digits)) {
+    return "That ABN does not look right. Check the 11 digits and try again.";
+  }
   return null;
+}
+
+/** True when the query is mostly digits (an ABN, not a trading name). */
+export function looksLikeAbnQuery(query: string): boolean {
+  const digits = digitsOnlyAbn(query);
+  return /^\d{8,11}$/.test(digits);
+}
+
+/**
+ * UI copy for practice vs live ABR. Never claim the Australian Business Register
+ * unless a GUID is configured *and* this payload is not simulated.
+ */
+export function describeAbrLookup(liveConfigured: boolean, simulated: boolean) {
+  const live = liveConfigured && !simulated;
+  return {
+    live,
+    searchHelp: live
+      ? "Matches come from the Australian Business Register."
+      : "This is a practice register — you can still enter the details yourself.",
+    selected: live
+      ? "Selected from the Australian Business Register. Check the details below, then confirm."
+      : "Selected from the practice list. Check the details below, then confirm.",
+    matchFooter: live
+      ? "From the Australian Business Register."
+      : "Practice match — you can edit any field.",
+    typeaheadHint: live
+      ? "Type the name or ABN. Pick an Australian Business Register match to fill the company."
+      : "Type the name or ABN. Pick a match to fill the company, or keep typing it yourself.",
+  };
 }
 
 /** Deterministic valid ABN from a seed string — used for synthesised ABR hits. */

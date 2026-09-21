@@ -1,5 +1,5 @@
 import { formatAbn, validateAbnField } from "@/lib/abn";
-import { isRealCompanyName } from "@/lib/company-pickup";
+import { validateBusinessName } from "@/lib/company-pickup";
 
 export type CompanyFieldErrors = {
   legalName?: string;
@@ -30,15 +30,12 @@ export function validateCompanySave(input: CompanySaveInput): {
   const name = input.legalName.trim();
   const errors: CompanyFieldErrors = {};
 
-  if (!name) {
-    errors.legalName = "Enter the legal name of the company.";
-  } else if (!isRealCompanyName(name)) {
-    errors.legalName = "Enter your company’s legal name.";
-  }
+  const nameErr = validateBusinessName(input.legalName);
+  if (nameErr) errors.legalName = nameErr;
 
   const trimmedAbn = input.abn.trim();
   if (input.requireAbn && !trimmedAbn) {
-    errors.abn = "Enter your 11-digit ABN.";
+    errors.abn = "Enter an ABN.";
   } else if (trimmedAbn) {
     const abnErr = validateAbnField(trimmedAbn, false);
     if (abnErr) errors.abn = abnErr;
