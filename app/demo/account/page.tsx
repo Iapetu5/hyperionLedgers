@@ -73,14 +73,14 @@ export default function AccountPage() {
       setError(res.error);
       return;
     }
-    setMessage("Saved.");
+    setMessage("Saved your business details.");
   }
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-white">Your account</h1>
       <p className="text-sm text-slate-300">
-        Change your business details here. Press Save when you finish.
+        Change your business details here. Press Save changes when you finish.
       </p>
 
       {!usesSampleData && (
@@ -121,11 +121,12 @@ export default function AccountPage() {
         <div>
           <p className="text-sm font-semibold text-white">Company name and ABN</p>
           <p className="mt-1 text-sm text-slate-300">
-            You can also change these from Add company above. Press Save when you finish.
+            You can also change these from Add company above.
           </p>
         </div>
         <BusinessNameTypeahead
           id="bn"
+          label="Business name"
           value={businessName}
           onChange={setBusinessName}
           onSelect={(company: AbrCompany) => {
@@ -149,7 +150,7 @@ export default function AccountPage() {
         {(entityType || address) && (
           <>
             <div>
-              <label className="label" htmlFor="entityType">Entity type</label>
+              <label className="label" htmlFor="entityType">Business type</label>
               <select
                 id="entityType"
                 className="input"
@@ -180,7 +181,7 @@ export default function AccountPage() {
         <div>
           <p className="text-sm font-semibold text-white">GST and year end</p>
           <p className="mt-1 text-sm text-slate-300">
-            These are the same choices you made during setup. Change them if needed, then Save.
+            These are the same choices you made during setup. Change them if needed, then Save changes.
           </p>
         </div>
         <fieldset>
@@ -251,9 +252,19 @@ export default function AccountPage() {
           page uses the standard Australian financial year (1 Jul – 30 Jun, Sydney dates) so you can
           see what you would pay the tax office. HyperionInvoices does not lodge with the ATO.
         </p>
-        {error && <p className="text-sm text-rose-300">{error}</p>}
-        {message && <p className="text-sm text-emerald-300">{message}</p>}
-        <button type="submit" className="btn-primary">Save</button>
+        {error && (
+          <p className="text-sm text-rose-300" role="alert">
+            {error}
+          </p>
+        )}
+        {message && (
+          <p className="text-sm text-emerald-300" role="status" aria-live="polite">
+            {message}
+          </p>
+        )}
+        <button type="submit" className="btn-primary">
+          Save changes
+        </button>
       </form>
     </div>
   );

@@ -114,7 +114,7 @@ function AddCompanyForm() {
     e?.preventDefault();
     const name = legalName.trim();
     if (!name) {
-      setError("Enter the legal name of the company.");
+      setError("Enter the business name.");
       return;
     }
     const abnErr = validateAbnField(abn, false);
@@ -231,7 +231,7 @@ function AddCompanyForm() {
               </h2>
               <div>
                 <label className="label" htmlFor="legalName">
-                  Legal name
+                  Business name
                 </label>
                 <input
                   id="legalName"
@@ -256,10 +256,13 @@ function AddCompanyForm() {
                   placeholder="11 digits, spaces optional"
                   autoComplete="off"
                 />
+                <p className="mt-1 text-xs text-slate-400">
+                  11 digits. Spaces are fine. You can leave this blank.
+                </p>
               </div>
               <div>
                 <label className="label" htmlFor="entityType">
-                  Entity type
+                  Business type
                 </label>
                 <select
                   id="entityType"
@@ -279,7 +282,7 @@ function AddCompanyForm() {
               </div>
               <div>
                 <label className="label" htmlFor="address">
-                  Address {selected && !selected.address ? "(not on this register record)" : ""}
+                  Address {selected && !selected.address ? "(not listed — you can type it)" : ""}
                 </label>
                 <input
                   id="address"
@@ -295,7 +298,7 @@ function AddCompanyForm() {
                   Status: {selected.entityStatus}
                   {selected.gstRegistered ? " · GST registered" : " · Not GST registered"}
                   {selected.simulated
-                    ? ". Demo register result — you can edit any field."
+                    ? ". Practice match — you can edit any field."
                     : ". From the Australian Business Register."}
                 </p>
               )}
@@ -346,7 +349,7 @@ function AddCompanyForm() {
           <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-white/10 pt-4 text-sm text-slate-300">
             {user && needsOnboarding && (
               <Link href="/onboarding" className="hover:text-white hover:underline">
-                Back to organisation setup
+                Back to setup questions
               </Link>
             )}
             {user && !needsOnboarding && (

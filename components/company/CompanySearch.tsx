@@ -41,7 +41,7 @@ export function CompanySearch({ selected, onSelect }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-slate-300">
           {selected.simulated
-            ? "Selected from the demo register. Check the details below, then confirm."
+            ? "Selected from the practice list. Check the details below, then confirm."
             : "Selected from the Australian Business Register. Check the details below, then confirm."}
         </p>
         <button

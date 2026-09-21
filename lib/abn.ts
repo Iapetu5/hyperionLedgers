@@ -69,7 +69,7 @@ export function validateAbnField(abn: string, required = false): string | null {
   if (!trimmed) return required ? "Enter an ABN." : null;
   const digits = digitsOnlyAbn(trimmed);
   if (!/^\d{11}$/.test(digits)) return "ABN should be 11 digits (spaces optional).";
-  if (!isValidAbnChecksum(digits)) return "ABN checksum is invalid. Check the number and try again.";
+  if (!isValidAbnChecksum(digits)) return "That ABN does not look right. Check the 11 digits and try again.";
   return null;
 }
 

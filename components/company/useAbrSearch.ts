@@ -56,7 +56,7 @@ export function useAbrSearch(query: string, enabled = true): AbrSearchState {
         setSimulated(data.simulated !== false);
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
-        setError("Could not search the register. Try again.");
+        setError("Could not search just now. Try again.");
         setResults([]);
       } finally {
         setBusy(false);

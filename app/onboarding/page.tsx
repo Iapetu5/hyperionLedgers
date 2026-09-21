@@ -122,6 +122,29 @@ export default function OnboardingPage() {
     fy: "Most Australian businesses use 30 June. Pick a different date if your accountant uses one.",
     start: "Start empty for your own books, or look around with sample data first.",
   };
+  const innerLabels: Record<WizardStep, string> = {
+    gst: "GST",
+    method: "GST method",
+    fy: "Year end",
+    start: "How to start",
+  };
+  const recapParts: string[] = [];
+  if (step !== "gst") recapParts.push(gstRegistered ? "GST yes" : "GST no");
+  if (gstRegistered && (step === "fy" || step === "start") && steps.includes("method")) {
+    recapParts.push(method === "accruals" ? "Accruals" : "Cash");
+  }
+  if (step === "start") recapParts.push(`Year end ${fyEnd}`);
+
+  function nextLabel() {
+    if (isLast) {
+      return ledgerMode === "blank"
+        ? "Continue — create your first document"
+        : "Continue to your organisation";
+    }
+    if (step === "gst") return gstRegistered ? "Next: how you work out GST" : "Next: year end";
+    if (step === "method") return "Next: year end";
+    return "Next: how to start";
+  }
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
@@ -144,18 +167,23 @@ export default function OnboardingPage() {
           {SETUP_STEP.organisation}
         </p>
         <p className="mt-2 text-sm font-semibold text-slate-200" aria-current="step">
-          Step {stepIndex + 1} of {steps.length}
+          Step {stepIndex + 1} of {steps.length} · {innerLabels[step]}
         </p>
         <div className="mt-2 flex gap-1" aria-hidden>
           {steps.map((key, i) => (
             <span
               key={key}
-              className={`h-1 flex-1 rounded-full ${
+              className={`h-1.5 flex-1 rounded-full ${
                 i <= stepIndex ? "bg-brand-400" : "bg-white/15"
               }`}
             />
           ))}
         </div>
+        {recapParts.length > 0 && (
+          <p className="mt-3 text-sm text-slate-300">
+            So far: {recapParts.join(" · ")}. Back changes an earlier answer.
+          </p>
+        )}
         <h1 className="mt-4 text-xl font-bold text-white">{titles[step]}</h1>
         <p className="mt-1 text-sm text-slate-300">{intros[step]}</p>
 
@@ -282,21 +310,32 @@ export default function OnboardingPage() {
             </>
           )}
 
-          {error && <p className="text-sm text-rose-300">{error}</p>}
+          {error && (
+            <p className="text-sm text-rose-300" role="alert">
+              {error}
+            </p>
+          )}
 
           <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              {stepIndex > 0 && (
-                <button type="button" className="text-sm font-semibold text-slate-200 hover:underline" onClick={goBack}>
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              {stepIndex > 0 ? (
+                <button
+                  type="button"
+                  className="self-start text-sm font-semibold text-slate-200 hover:underline"
+                  onClick={goBack}
+                >
                   Back
                 </button>
+              ) : (
+                <Link
+                  href={addCompanyHref("/onboarding")}
+                  className="self-start text-sm font-semibold text-slate-200 hover:underline"
+                >
+                  Back to add company
+                </Link>
               )}
-              <button type="submit" className="btn-primary" disabled={!hasCompany}>
-                {isLast
-                  ? ledgerMode === "blank"
-                    ? "Continue — create your first document"
-                    : "Continue to your organisation"
-                  : "Next"}
+              <button type="submit" className="btn-primary w-full sm:w-auto" disabled={!hasCompany}>
+                {nextLabel()}
               </button>
             </div>
             {!hasCompany && (
