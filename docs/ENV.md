@@ -11,6 +11,14 @@ STRIPE_SECRET_KEY=
 STRIPE_PRICE_ID=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_WEBHOOK_SECRET=
+EMAIL_FROM=
+EMAIL_SMTP_HOST=
+EMAIL_SMTP_PORT=
+EMAIL_SMTP_USER=
+EMAIL_SMTP_PASS=
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
+EMAIL_API_KEY=
 ```
 
 ## Required for production marketing
@@ -48,6 +56,20 @@ Create a product in the Stripe Dashboard (test mode) with one recurring price: *
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | Vercel secret |
 
 Webhook URL: `https://www.hyperioninvoices.com.au/api/stripe/webhook` (event: `checkout.session.completed`).
+
+Do not invent or commit real keys.
+
+## Quote email (optional)
+
+`POST /api/quotes/send` emails a customer quote when one of these is set on Vercel. Without them, Send quote still works in the UI and shows “Email is not configured” — new quotes stay **Sent**, not Draft.
+
+| Name | Example shape | Where |
+|------|----------------|--------|
+| `GMAIL_USER` | `you@gmail.com` | Vercel secret |
+| `GMAIL_APP_PASSWORD` | Gmail app password | Vercel secret |
+| `EMAIL_SMTP_HOST` | `smtp.gmail.com` | Vercel secret |
+| `EMAIL_FROM` | `quotes@yourdomain.com.au` | Vercel (public-ish) |
+| `EMAIL_API_KEY` | Resend `re_…` | Vercel secret |
 
 Do not invent or commit real keys.
 
