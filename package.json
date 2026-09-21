@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "HL_DIST_DIR=.next-dev next dev -H 0.0.0.0 -p 3000",
-    "build": "next build",
+    "build": "node scripts/migrate.mjs && next build",
     "build:windows": "mkdir -p private/downloads && cd desktop/launcher && go mod tidy && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=\"-s -w\" -o ../../private/downloads/HyperionInvoices-Setup.exe",
     "start": "next start",
     "lint": "next lint",
@@ -12,6 +12,7 @@
     "test:iso-date": "node scripts/test-iso-date.mjs",
     "test:checkout-aud": "node scripts/test-checkout-aud.mjs",
     "test:books-mode": "node scripts/test-books-mode.mjs",
+    "migrate": "node scripts/migrate.mjs",
     "test": "node scripts/test-abn.mjs && node --experimental-strip-types scripts/verify-abn.ts && node scripts/test-iso-date.mjs && node scripts/test-checkout-aud.mjs && node scripts/test-books-mode.mjs"
   },
   "dependencies": {
