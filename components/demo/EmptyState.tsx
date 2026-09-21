@@ -4,7 +4,8 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { FileText, Sparkles } from "lucide-react";
 import { ExploreSampleButton, useExploreHarbourSample } from "@/components/demo/ExploreSampleButton";
-const SAMPLE_CTA = "Look at Harbour & Co sample";
+import { DEMO_CTA } from "@/lib/brand";
+const SAMPLE_CTA = DEMO_CTA;
 
 export type EmptyStateAction = {
   label: string;
@@ -112,9 +113,9 @@ export function BlankLedgerHint() {
     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
       <span className="inline-flex items-center gap-1.5">
         <Sparkles size={12} className="text-brand-300" />
-        Starting empty — look at Harbour & Co sample as a guest anytime.
+        Starting empty — Try a demo as a guest anytime.
       </span>
-      <ExploreSampleButton primary={false} label="Look at Harbour & Co sample" className="!px-2.5 !py-1 text-xs" />
+      <ExploreSampleButton primary={false} className="!px-2.5 !py-1 text-xs" />
     </div>
   );
 }

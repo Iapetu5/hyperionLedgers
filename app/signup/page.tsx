@@ -77,7 +77,7 @@ export default function SignupPage() {
           You get 14 days free. Then $69 a month. Next we ask a few setup questions. Then you can make
           your first invoice.{" "}
           <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
-            Look at a sample first
+            Try a demo
           </Link>
           .
         </p>

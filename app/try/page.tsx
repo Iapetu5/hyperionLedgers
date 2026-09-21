@@ -38,7 +38,7 @@ export default function TryPage() {
         <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
           <StartTrialButton className="btn-primary" />
           <Link href="/demo" className="text-sm font-medium text-white/80 hover:text-white hover:underline">
-            Look at a sample first
+            Try a demo
           </Link>
           <Link href="/pricing" className="text-sm font-medium text-white/80 hover:text-white hover:underline">
             See the $69 plan

@@ -58,7 +58,7 @@ export default function PricingPage() {
                 Sign up
               </Link>
               <Link href="/demo" className="link-quiet text-center">
-                Look at a sample first
+                Try a demo
               </Link>
             </div>
           </div>
@@ -67,7 +67,7 @@ export default function PricingPage() {
         <p className="mt-10 text-center text-base text-slate-100">
           Want to look around first?{" "}
           <Link href="/demo" className="font-semibold text-brand-200 hover:underline">
-            Look at a sample first
+            Try a demo
           </Link>
           {" "}
           with no account, or{" "}

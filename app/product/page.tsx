@@ -43,7 +43,7 @@ export default function ProductPage() {
             Pricing
           </Link>
           <Link href="/demo" className="link-quiet">
-            Open Harbour &amp; Co
+            Try a demo
           </Link>
         </div>
 

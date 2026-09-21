@@ -108,12 +108,23 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   const navLinks = (
     <>
       <div className="px-3 py-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-300/80">
-          {orgName}
-        </p>
         {usesSampleData ? (
-          <p className="mt-0.5 text-[10px] font-medium text-white/50">Sample data</p>
-        ) : null}
+          <>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-300/80">
+                Demo
+              </p>
+              <span className="rounded-full border border-white/20 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-white/70">
+                Sample data
+              </span>
+            </div>
+            <p className="mt-0.5 text-[10px] font-medium text-white/45">Harbour & Co Studio</p>
+          </>
+        ) : (
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-300/80">
+            {orgName}
+          </p>
+        )}
       </div>
       {NAV.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || (href !== "/demo" && pathname.startsWith(href));
@@ -221,12 +232,12 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               <span className="text-white/50"> — </span>
               {hasUserDocs
                 ? "Invoices, quotes, and bills you create stay in this browser. No live bank feeds, payments, or ATO lodgement."
-                : `${orgName} has no documents yet. Look at Harbour & Co sample as a guest anytime.`}
+                : `${orgName} has no documents yet. Try a demo as a guest anytime.`}
             </p>
             <ExploreSampleButton
               primary={false}
               className="!px-3 !py-1.5 text-xs"
-              label={hasUserDocs ? DEMO_CTA : "Look at Harbour & Co sample"}
+              label={DEMO_CTA}
             />
           </div>
         </div>

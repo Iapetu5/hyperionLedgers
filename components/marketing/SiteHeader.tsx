@@ -58,6 +58,9 @@ export function SiteHeader({
           })}
         </nav>
         <div className="flex items-center gap-2">
+          <Link href="/demo" className="link-quiet hidden sm:inline">
+            Try a demo
+          </Link>
           <Link href="/login" className="link-quiet hidden sm:inline">
             Log in
           </Link>
@@ -97,7 +100,7 @@ export function SiteHeader({
             </Link>
             {variant === "marketing" ? (
               <Link href="/demo" className="rounded-lg px-3 py-2 text-base text-slate-100 hover:bg-white/10 hover:text-white">
-                Open Harbour &amp; Co
+                Try a demo
               </Link>
             ) : null}
             <div className="px-3 pt-2">

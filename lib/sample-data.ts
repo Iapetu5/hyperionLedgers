@@ -9,7 +9,7 @@ export const DEMO_ORG = {
   suburb: "Surry Hills",
   state: "NSW",
   postcode: "2010",
-  demoLabel: "This is a demo with sample data — not your real account.",
+  demoLabel: "You're in a demo — sample data only",
 };
 
 export const accounts = [

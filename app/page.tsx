@@ -28,6 +28,9 @@ export default function HomePage() {
               <Link href="/pricing" className="link-quiet">
                 Pricing
               </Link>
+              <Link href="/demo" className="link-quiet">
+                Try a demo
+              </Link>
             </div>
             <p className="mt-4 text-base text-slate-200">
               We do not send forms to the tax office. Mac is coming soon.
@@ -61,7 +64,7 @@ export default function HomePage() {
               </div>
               <StartTrialButton className="btn-marketing-primary w-full" />
               <Link href="/demo" className="link-quiet block text-center">
-                Open Harbour &amp; Co
+                Try a demo
               </Link>
             </div>
           </div>

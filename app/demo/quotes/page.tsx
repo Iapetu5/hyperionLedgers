@@ -726,7 +726,7 @@ export default function QuotesPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Make a quote with an example (saved in this browser), or look at Harbour & Co sample for the full list. Sent quotes past expiry show Expired automatically.
+              Make a quote with an example (saved in this browser), or Try a demo for the full list. Sent quotes past expiry show Expired automatically.
             </>
           ) : (
             <>

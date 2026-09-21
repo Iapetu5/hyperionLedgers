@@ -81,7 +81,7 @@ export default function AccountPage() {
             <Link href="/demo/bills?mixed=1" className="btn-secondary">
               Create bill
             </Link>
-            <ExploreSampleButton primary={false} label="Look at Harbour & Co sample" />
+            <ExploreSampleButton primary={false} />
           </div>
         </div>
       )}

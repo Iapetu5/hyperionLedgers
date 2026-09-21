@@ -20,7 +20,7 @@ export function MarketingFooter() {
           <Link href="/product" className="hover:text-white hover:underline">Product</Link>
           <Link href="/about" className="hover:text-white hover:underline">About</Link>
           <Link href="/contact" className="hover:text-white hover:underline">Contact</Link>
-          <Link href="/demo" className="hover:text-white hover:underline">Open Harbour &amp; Co</Link>
+          <Link href="/demo" className="hover:text-white hover:underline">Try a demo</Link>
         </div>
       </div>
     </footer>
