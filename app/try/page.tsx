@@ -5,29 +5,31 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { TryPageDemoLink } from "@/components/marketing/TryDemoCard";
 import { GuestOnly } from "@/components/marketing/TryDemoCta";
-
-const STEPS = [
-  {
-    icon: UserPlus,
-    step: "1",
-    title: "Start free trial",
-    body: "Create your account. The first 14 days are free. Then it is $69 a month.",
-  },
-  {
-    icon: SlidersHorizontal,
-    step: "2",
-    title: "Answer a few setup questions",
-    body: "Add your business, GST, and year end. You can start with a blank set of books.",
-  },
-  {
-    icon: LayoutDashboard,
-    step: "3",
-    title: "Make your first invoice",
-    body: "Then download the Windows app after you pay if you want it on your computer. Mac is coming soon.",
-  },
-];
+import { getPlatformStatus, windowsDownloadLabel } from "@/lib/platform-status.server";
 
 export default function TryPage() {
+  const { windowsInstallerReady } = getPlatformStatus();
+  const steps = [
+    {
+      icon: UserPlus,
+      step: "1",
+      title: "Start free trial",
+      body: "Create your account. The first 14 days are free. Then it is $69 a month.",
+    },
+    {
+      icon: SlidersHorizontal,
+      step: "2",
+      title: "Answer a few setup questions",
+      body: "Add your business, GST, and year end. You can start with a blank set of books.",
+    },
+    {
+      icon: LayoutDashboard,
+      step: "3",
+      title: "Make your first invoice",
+      body: `${windowsDownloadLabel(windowsInstallerReady)} Mac is coming soon.`,
+    },
+  ];
+
   return (
     <div>
       <SiteHeader />
@@ -60,7 +62,7 @@ export default function TryPage() {
             One primary path: start the trial. You can stop anytime.
           </p>
           <div className="mt-8 grid gap-5 lg:grid-cols-3">
-            {STEPS.map((s) => {
+            {steps.map((s) => {
               const Icon = s.icon;
               return (
                 <div key={s.title} className="card flex flex-col p-6">

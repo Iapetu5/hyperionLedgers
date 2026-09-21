@@ -1,4 +1,4 @@
-/** Australian Business Number checksum and simulated ABR search (demo only). */
+/** Australian Business Number checksum and simulated ABR search (practice fallback). */
 
 export type AbrEntityType =
   | "Australian Private Company"

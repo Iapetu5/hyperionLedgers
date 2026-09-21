@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { CHECKOUT_PAY_COPY, PLAN, isStripeConfigured } from "@/lib/billing";
+import { getPlatformStatus, windowsDownloadLabel } from "@/lib/platform-status.server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function CheckoutPage({
   }
 
   const configured = isStripeConfigured();
+  const { windowsInstallerReady } = getPlatformStatus();
   const cancelled = searchParams.reason === "cancelled";
   const stripeError = searchParams.reason === "stripe-error";
   const unconfigured = searchParams.reason === "unconfigured";
@@ -41,7 +43,7 @@ export default async function CheckoutPage({
                 : unconfigured
                   ? "Stripe test keys are not set in this environment. Sign up still works; add the keys in Vercel and redeploy to open Checkout."
                 : configured
-                  ? `You will go to Stripe Checkout (test mode) for the $69 monthly plan with a 14-day free trial. ${CHECKOUT_PAY_COPY}. Google Pay shows on the same Checkout when Stripe supports it on that device. After payment you land on Downloads for the Windows app.`
+                  ? `You will go to Stripe Checkout (test mode) for the $69 monthly plan with a 14-day free trial. ${CHECKOUT_PAY_COPY}. Google Pay shows on the same Checkout when Stripe supports it on that device. ${windowsDownloadLabel(windowsInstallerReady)}`
                   : "The buy path is ready. Stripe test keys are not in this environment yet, so Checkout cannot open. Sign up still works, and Nicholas can add the keys in Vercel without changing DNS."}
           </p>
           {!configured ? (
