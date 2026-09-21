@@ -16,6 +16,7 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { openAssistant } from "@/components/demo/AiAssistant";
 import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
+import { ConfirmDialog } from "@/components/demo/ConfirmDialog";
 import { MoreMenu } from "@/components/demo/MoreMenu";
 import { formatAUD, formatDateAU } from "@/lib/format";
 import { accounts } from "@/lib/sample-data";
@@ -68,10 +69,54 @@ function bankingStepNums(mode: BankLedgerMode) {
 }
 
 function morePowerHint(hasReset: boolean, hasClear: boolean) {
-  if (hasReset && hasClear) return "Use More for Reset categorisations or Clear CSV imports.";
-  if (hasReset) return "Use More for Reset categorisations.";
-  if (hasClear) return "Use More for Clear CSV imports.";
+  if (hasReset && hasClear) return "Use More for Reset categorisations or Clear CSV imports (each asks first).";
+  if (hasReset) return "Use More for Reset categorisations (asks first).";
+  if (hasClear) return "Use More for Clear CSV imports (asks first).";
   return "";
+}
+
+type BankingConfirm =
+  | { action: "reset"; n: number }
+  | { action: "clearCsv"; n: number }
+  | { action: "clearOpening"; amount: number };
+
+function bankingConfirmCopy(
+  pending: BankingConfirm,
+  mode: BankLedgerMode,
+): { title: string; body: string; confirmLabel: string } {
+  if (pending.action === "reset") {
+    return {
+      title: "Reset categorisations?",
+      confirmLabel: "Reset categorisations",
+      body: `Removes Apply / Ask AI categories on this cheque (${pending.n} line${
+        pending.n === 1 ? "" : "s"
+      }). Bank lines stay. Opening stays. CSV imports stay. Undo match on a single line does not need this.`,
+    };
+  }
+  if (pending.action === "clearCsv") {
+    return {
+      title: "Clear CSV imports?",
+      confirmLabel: "Clear CSV imports",
+      body:
+        mode === "blank"
+          ? `Removes ${pending.n} imported CSV line${pending.n === 1 ? "" : "s"} and their categories. Opening is kept. Guest sample lines are not on this ledger.`
+          : `Removes ${pending.n} imported CSV line${pending.n === 1 ? "" : "s"} and their categories. Sample cheque lines stay. Opening is not used on this sample ledger.`,
+    };
+  }
+  return {
+    title: "Clear opening?",
+    confirmLabel: "Clear opening",
+    body: `Unsets the saved opening of ${formatAUD(pending.amount)}. Cash total becomes movements only. CSV lines, their categories, and imports stay.`,
+  };
+}
+
+function skippedRowsPhrase(skips: ParseBankCsvSkip[]) {
+  return (
+    skips
+      .slice(0, 4)
+      .map((s) => `line ${s.line} — ${s.reason}`)
+      .join("; ") + (skips.length > 4 ? "…" : "")
+  );
 }
 
 function bankingWhereNext(opts: {
@@ -132,6 +177,7 @@ export default function BankingPage() {
   const [opening, setOpening] = useState(0);
   const [openingSet, setOpeningSet] = useState(false);
   const [ledgerReady, setLedgerReady] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState<BankingConfirm | null>(null);
 
   const reload = useCallback(async () => {
     setTxns(await loadBankTransactions(mode));
@@ -249,9 +295,9 @@ export default function BankingPage() {
     setPreview(result.rows);
     setSkipped(result.skipped);
     setError(null);
+    setSuccessSkipped([]);
     if (result.skipped.length > 0) {
       setSuccess(null);
-      setSuccessSkipped([]);
     }
   }
 
@@ -320,14 +366,21 @@ export default function BankingPage() {
       const beforeImportCount = txns.filter((x) => x.source === "import").length;
       const skippedSnapshot = skipped;
       let openingNote = "";
-      if (mode === "blank" && !(await hasBlankOpeningBalance())) {
+      if (mode === "blank") {
         const inferred = inferOpeningFromParsedRows(preview);
         if (inferred != null) {
-          const savedOpening = await setBlankOpeningBalance(inferred);
-          setOpening(savedOpening);
-          setOpeningSet(true);
-          setOpeningDraft(String(savedOpening));
-          openingNote = ` Opening balance set to ${formatAUD(inferred)} from the CSV running balance (only because none was saved yet).`;
+          if (!(await hasBlankOpeningBalance())) {
+            const savedOpening = await setBlankOpeningBalance(inferred);
+            setOpening(savedOpening);
+            setOpeningSet(true);
+            setOpeningDraft(String(savedOpening));
+            openingNote = ` Opening balance set to ${formatAUD(inferred)} from the CSV running balance (only because none was saved yet).`;
+          } else {
+            const savedOpening = await getBlankOpeningBalance();
+            if (savedOpening !== inferred) {
+              openingNote = ` Saved opening kept at ${formatAUD(savedOpening)}. CSV running balance suggested ${formatAUD(inferred)} — use Save opening to replace.`;
+            }
+          }
         }
       }
       const next = await appendImportedRows(preview, chequeAccountId, mode);
@@ -354,24 +407,27 @@ export default function BankingPage() {
     if (raw === "") {
       setError("Enter an opening balance (use Clear opening to leave it unset).");
       setSuccess(null);
-      setSuccessSkipped([]);
       return;
     }
     const n = Number(raw);
     if (!Number.isFinite(n)) {
       setError("Opening balance must be a number.");
       setSuccess(null);
-      setSuccessSkipped([]);
       return;
     }
+    const prevSet = openingSet;
+    const prev = opening;
     void (async () => {
       const saved = await setBlankOpeningBalance(n);
       setOpening(saved);
       setOpeningSet(true);
       setOpeningDraft(String(saved));
       setError(null);
-      setSuccessSkipped([]);
-      setSuccess(`Opening saved as ${formatAUD(saved)}. Next: ${steps.importN} Import CSV below.`);
+      setSuccess(
+        prevSet && prev !== saved
+          ? `Replaced opening ${formatAUD(prev)} with ${formatAUD(saved)}. CSV lines and categories stay. Next: ${steps.importN} Import CSV below.`
+          : `Opening saved as ${formatAUD(saved)}. Next: ${steps.importN} Import CSV below.`,
+      );
     })();
   }
 
@@ -394,20 +450,20 @@ export default function BankingPage() {
       if (!updated) {
         setError(`Could not apply a category to “${t.description}”. Try refreshing Banking.`);
         setSuccess(null);
-        setSuccessSkipped([]);
         return;
       }
       const fresh = await loadBankTransactions(mode);
       setTxns(fresh);
       setError(null);
-      setSuccessSkipped([]);
       const remaining = unmatchedForAccount(fresh, chequeAccountId).length;
+      const left =
+        remaining === 0 ? "Nothing left to Apply." : `${linesToApplyLabel(remaining)} still marked Needs category.`;
       setSuccess(
         `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
-          remaining > 0
-            ? `Next: ${steps.applyN} Apply the next line below (${remaining} left).`
-            : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)} Undo match below.`
-        }`,
+          remaining === 0
+            ? `${left} ${morePowerHint(true, hasImport)} Undo match below.`
+            : `${left} Next: ${steps.applyN} Apply the next line.`
+        }`.replace(/\s+/g, " ").trim(),
       );
     })();
   }
@@ -424,18 +480,17 @@ export default function BankingPage() {
       const fresh = await loadBankTransactions(mode);
       setTxns(fresh);
       setError(null);
-      setSuccessSkipped([]);
       const remaining = unmatchedForAccount(fresh, chequeAccountId).length;
+      const left =
+        remaining === 0 ? "Nothing left to Apply." : `${linesToApplyLabel(remaining)} still marked Needs category.`;
       setSuccess(
         applied === 0
-          ? remaining > 0
-            ? `Nothing left to Apply automatically. Next: Ask AI under More, or ${steps.importN} Import CSV.`
-            : `Nothing left to Apply automatically. Next: ${steps.importN} Import CSV.`
-          : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${
-              remaining > 0
-                ? `Next: ${steps.applyN} Apply the rest, or Ask AI under More (${remaining} left).`
-                : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)}`
-            }`,
+          ? remaining === 0
+            ? `Nothing left to Apply. Next: ${steps.importN} Import CSV.`
+            : `Nothing left to Apply automatically. ${left} Next: Ask AI under More, or ${steps.applyN} Apply on a remaining line.`
+          : remaining === 0
+            ? `Applied ${applied} line${applied === 1 ? "" : "s"}. ${left} ${morePowerHint(true, hasImport)}`.trim()
+            : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${left} Next: ${steps.applyN} Apply, or Ask AI under More.`,
       );
     })();
   }
@@ -446,12 +501,10 @@ export default function BankingPage() {
       if (!updated) {
         setError(`Could not undo match for “${t.description}”.`);
         setSuccess(null);
-        setSuccessSkipped([]);
         return;
       }
       setTxns(await loadBankTransactions(mode));
       setError(null);
-      setSuccessSkipped([]);
       setSuccess(`Undid match for “${t.description}”. Next: ${steps.applyN} Apply on that line below.`);
     })();
   }
@@ -461,11 +514,10 @@ export default function BankingPage() {
       const n = await resetAllCategorisations(mode);
       setTxns(await loadBankTransactions(mode));
       setError(null);
-      setSuccessSkipped([]);
       setSuccess(
         n === 0
           ? `Nothing to reset. Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`
-          : `Reset ${n} categorisation${n === 1 ? "" : "s"}. Next: ${steps.applyN} Apply on a line below.`,
+          : `Reset ${n} categorisation${n === 1 ? "" : "s"}. Bank lines, opening, and CSV imports stayed. Next: ${steps.applyN} Apply on a line below.`,
       );
     })();
   }
@@ -475,13 +527,12 @@ export default function BankingPage() {
       const n = await clearImportedTransactions(mode);
       setTxns(await loadBankTransactions(mode));
       setError(null);
-      setSuccessSkipped([]);
       setSuccess(
         n === 0
           ? `No CSV imports to clear. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply.`
           : mode === "blank"
-            ? `Cleared ${n} imported row${n === 1 ? "" : "s"}. Opening left as-is. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply on remaining lines.`
-            : `Cleared ${n} imported row${n === 1 ? "" : "s"} (sample lines kept). Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`,
+            ? `Cleared ${n} imported row${n === 1 ? "" : "s"} and their categories. Opening left as-is. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply on remaining lines.`
+            : `Cleared ${n} imported row${n === 1 ? "" : "s"} and their categories (sample lines kept). Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`,
       );
     })();
   }
@@ -493,14 +544,24 @@ export default function BankingPage() {
       setOpeningSet(false);
       setOpeningDraft("");
       setError(null);
-      setSuccessSkipped([]);
       setSuccess(
         cleared
-          ? "Opening cleared. Next: 1 Save opening."
+          ? "Opening cleared. CSV lines, categories, and imports stayed. Next: 1 Save opening."
           : "Opening was already unset. Next: 1 Save opening, or 2 Import CSV.",
       );
     })();
   }
+
+  function runPendingConfirm() {
+    const pending = pendingConfirm;
+    setPendingConfirm(null);
+    if (!pending) return;
+    if (pending.action === "reset") resetCats();
+    else if (pending.action === "clearCsv") clearImports();
+    else clearOpening();
+  }
+
+  const confirmCopy = pendingConfirm ? bankingConfirmCopy(pendingConfirm, mode) : null;
 
   return (
     <div className="space-y-6">
@@ -574,10 +635,10 @@ export default function BankingPage() {
               <MoreMenu buttonClassName="btn-secondary !px-3 !py-2 text-xs" title="More opening actions">
                 <button
                   type="button"
-                  className="btn-secondary !px-3 !py-2 text-xs"
-                  onClick={clearOpening}
+                  className="btn-quiet-danger !px-3 !py-2 text-xs"
+                  onClick={() => setPendingConfirm({ action: "clearOpening", amount: opening })}
                   disabled={!openingSet}
-                  title="Unset opening (cash total = movements only)"
+                  title="Unset opening (cash total = movements only) — asks first"
                 >
                   Clear opening
                 </button>
@@ -586,8 +647,9 @@ export default function BankingPage() {
             <p className="mt-2 text-xs text-slate-400">
               Cash total = opening + categorised movements. Unmatched lines do not move cash until you Apply.
               A starter CSV with a balance column can set opening automatically <em>only when opening is still unset</em>{" "}
-              — it will not overwrite a saved opening (including $0). Undo match, Reset categorisations, or Clear CSV
-              imports (under More) drops those movements and leaves opening; use Clear opening separately.
+              — it will not overwrite a saved opening (including $0). If the CSV suggests a different amount, Banking
+              says so and keeps the saved figure. Undo match stays one click. Reset categorisations, Clear CSV
+              imports, and Clear opening ask first.
             </p>
           </div>
           <div className="card p-5">
@@ -714,7 +776,8 @@ export default function BankingPage() {
             <code className="rounded bg-white/10 px-1 text-brand-200">credit</code> columns
             {mode === "sample" && sampleCheque ? ` for ${sampleCheque.name}` : " for your cheque account"}.
             Dates: DD/MM/YYYY. Amounts: −42.50 or ($42.50). Parsed in your browser — nothing is sent to a
-            server. No live bank feed.
+            server. No live bank feed. If any rows are skipped, the list stays on this page after import until
+            you Import CSV again.
           </p>
         </div>
 
@@ -795,12 +858,7 @@ export default function BankingPage() {
                     Skipped {skipped.length} bad row{skipped.length === 1 ? "" : "s"}
                   </span>{" "}
                   <span className="font-normal text-amber-100/90">
-                    (still importing the valid ones):{" "}
-                    {skipped
-                      .slice(0, 4)
-                      .map((s) => `line ${s.line} — ${s.reason}`)
-                      .join("; ")}
-                    {skipped.length > 4 ? "…" : ""}.
+                    (still importing the valid ones): {skippedRowsPhrase(skipped)}.
                   </span>
                 </span>
               </div>
@@ -847,6 +905,24 @@ export default function BankingPage() {
         )}
       </div>
 
+      {successSkipped.length > 0 && !preview && (
+        <div
+          className="flex items-start gap-2 rounded-lg border border-amber-300/55 bg-amber-400/20 px-3 py-2.5 text-sm font-medium text-amber-50 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.18)]"
+          role="status"
+        >
+          <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-200" aria-hidden />
+          <span>
+            <span className="font-semibold">
+              Skipped {successSkipped.length} bad row{successSkipped.length === 1 ? "" : "s"}
+            </span>{" "}
+            <span className="font-normal text-amber-100/90">
+              (valid rows were still imported — this note stays until the next Import CSV):{" "}
+              {skippedRowsPhrase(successSkipped)}.
+            </span>
+          </span>
+        </div>
+      )}
+
       {(error || success) && (
         <div
           className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
@@ -861,25 +937,7 @@ export default function BankingPage() {
           ) : (
             <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
           )}
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <span>{error ?? success}</span>
-            {!error && successSkipped.length > 0 && (
-              <p className="rounded-md border border-emerald-300/35 bg-emerald-950/40 px-2.5 py-1.5 text-xs font-medium text-emerald-50">
-                <span className="font-semibold">
-                  Skipped {successSkipped.length} bad row
-                  {successSkipped.length === 1 ? "" : "s"}
-                </span>{" "}
-                <span className="font-normal text-emerald-100/90">
-                  (valid rows still imported):{" "}
-                  {successSkipped
-                    .slice(0, 4)
-                    .map((s) => `line ${s.line} — ${s.reason}`)
-                    .join("; ")}
-                  {successSkipped.length > 4 ? "…" : ""}.
-                </span>
-              </p>
-            )}
-          </div>
+          <span>{error ?? success}</span>
         </div>
       )}
 
@@ -922,9 +980,9 @@ export default function BankingPage() {
               {categorised.length > 0 && (
                 <button
                   type="button"
-                  className="btn-secondary !px-3 !py-1.5 text-xs"
-                  onClick={resetCats}
-                  title="Undo Apply / Ask AI categorisations for this cheque account (demo sample and blank stay separate)"
+                  className="btn-quiet-danger !px-3 !py-1.5 text-xs"
+                  onClick={() => setPendingConfirm({ action: "reset", n: categorised.length })}
+                  title="Undo Apply / Ask AI categorisations for this cheque account — asks first (demo sample and blank stay separate)"
                 >
                   <RotateCcw size={14} />
                   Reset categorisations
@@ -933,12 +991,17 @@ export default function BankingPage() {
               {txns.some((t) => t.source === "import") && (
                 <button
                   type="button"
-                  className="btn-secondary !px-3 !py-1.5 text-xs"
-                  onClick={clearImports}
+                  className="btn-quiet-danger !px-3 !py-1.5 text-xs"
+                  onClick={() =>
+                    setPendingConfirm({
+                      action: "clearCsv",
+                      n: txns.filter((t) => t.source === "import").length,
+                    })
+                  }
                   title={
                     mode === "blank"
-                      ? "Remove CSV-imported rows (opening balance kept)"
-                      : "Remove CSV-imported rows (demo sample lines stay)"
+                      ? "Remove CSV-imported rows (opening kept) — asks first"
+                      : "Remove CSV-imported rows (demo sample lines stay) — asks first"
                   }
                 >
                   <Trash2 size={14} />
@@ -977,7 +1040,7 @@ export default function BankingPage() {
                 <th className="px-4 py-3 text-right">Amount</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Source</th>
-                <th className="px-4 py-3">Action</th>
+                <th className="doc-actions-col px-4 py-3">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -1068,7 +1131,7 @@ export default function BankingPage() {
                         <td className="px-4 py-3 text-xs text-slate-400">
                           {t.source === "import" ? "CSV import" : "Sample"}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="doc-actions-col px-4 py-3">
                           <button
                             type="button"
                             className={
@@ -1107,8 +1170,8 @@ export default function BankingPage() {
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Recently categorised</h2>
             <p className="text-xs text-slate-400">
-              Applied in this browser demo (including via Ask AI). Undo match below, or Reset categorisations
-              under More — demos are not one-way.
+              Applied in this browser demo (including via Ask AI). Undo match below is one click. Reset
+              categorisations under More asks what it removes.
             </p>
           </div>
           <ul className="divide-y divide-white/10 text-sm">
@@ -1144,6 +1207,16 @@ export default function BankingPage() {
               ))}
           </ul>
         </div>
+      )}
+      {confirmCopy && (
+        <ConfirmDialog
+          open
+          title={confirmCopy.title}
+          body={confirmCopy.body}
+          confirmLabel={confirmCopy.confirmLabel}
+          onCancel={() => setPendingConfirm(null)}
+          onConfirm={runPendingConfirm}
+        />
       )}
     </div>
   );

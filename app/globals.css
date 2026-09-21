@@ -107,15 +107,32 @@ body {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-slate-950;
   }
 
+  /* Same size as btn-secondary — colour only, so Delete is not mistaken for Mark paid / Undo paid. */
+  .btn-quiet-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-rose-400/45 bg-transparent px-4 py-2.5 text-sm font-semibold text-rose-100 shadow-sm backdrop-blur-sm transition hover:bg-rose-500/15 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 focus:ring-offset-slate-950;
+  }
+
   .doc-row-actions {
-    @apply flex min-w-[9rem] max-w-[17.5rem] flex-wrap content-start gap-1.5;
+    @apply flex min-w-0 max-w-[12rem] flex-wrap content-start gap-1.5;
   }
 
   /* Wide enough that overflow menu is off — let actions breathe in one or two rows */
+  @media (min-width: 640px) {
+    .doc-row-actions {
+      max-width: 17.5rem;
+    }
+  }
+
   @media (min-width: 900px) {
     .doc-row-actions {
       max-width: 26rem;
     }
+  }
+
+  /* Keep primary list actions on-screen when the table scrolls sideways. */
+  th.doc-actions-col,
+  td.doc-actions-col {
+    @apply sticky right-0 z-[1] bg-slate-950/90 pl-2 shadow-[-10px_0_12px_-8px_rgba(0,0,0,0.7)];
   }
 
   /* Overflow menu items: stretch compact buttons full-width for thumb taps */
@@ -242,7 +259,8 @@ body {
   [data-demo-banner],
   [data-ai-assistant],
   .btn-primary,
-  .btn-secondary {
+  .btn-secondary,
+  .btn-quiet-danger {
     display: none !important;
   }
   /* Keep the print document itself */

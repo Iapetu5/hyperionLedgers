@@ -41,12 +41,16 @@ export function MoreMenu({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const focusLastRef = useRef(false);
+  const restoreFocusRef = useRef(false);
   const menuId = useId();
 
   useEffect(() => {
     function onOther(e: Event) {
       const otherId = (e as CustomEvent<string>).detail;
-      if (otherId !== menuId) setOpen(false);
+      if (otherId !== menuId) {
+        restoreFocusRef.current = false;
+        setOpen(false);
+      }
     }
     window.addEventListener(MORE_OPEN_EVENT, onOther);
     return () => window.removeEventListener(MORE_OPEN_EVENT, onOther);
@@ -56,16 +60,32 @@ export function MoreMenu({
     window.dispatchEvent(new CustomEvent(MORE_OPEN_EVENT, { detail: menuId }));
   }
 
+  function closeMenu(restoreFocus: boolean) {
+    restoreFocusRef.current = restoreFocus;
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    if (open) return;
+    if (!restoreFocusRef.current) return;
+    restoreFocusRef.current = false;
+    buttonRef.current?.focus();
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      if (rootRef.current?.contains(e.target as Node)) return;
+      const t = e.target as HTMLElement | null;
+      const otherControl = Boolean(
+        t?.closest("a, button, input, select, textarea, [href], [tabindex]:not([tabindex='-1'])"),
+      );
+      closeMenu(!otherControl);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.preventDefault();
-        setOpen(false);
-        buttonRef.current?.focus();
+        closeMenu(true);
         return;
       }
       const menu = menuRef.current;
@@ -119,7 +139,7 @@ export function MoreMenu({
         title={title}
         onClick={() => {
           if (open) {
-            setOpen(false);
+            closeMenu(false);
             return;
           }
           focusLastRef.current = false;
@@ -160,7 +180,7 @@ export function MoreMenu({
                 key={isValidElement(node) && node.key != null ? String(node.key) : i}
                 role="none"
                 className="doc-row-actions-menu-item"
-                onClick={() => setOpen(false)}
+                onClick={() => closeMenu(false)}
               >
                 {isValidElement(node)
                   ? cloneElement(node as ReactElement, { role: "menuitem" })

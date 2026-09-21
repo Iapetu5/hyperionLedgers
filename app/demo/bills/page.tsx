@@ -2,10 +2,11 @@
 
 import { FormEvent, useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Banknote, Check, Package, Pencil, Plus, Receipt, Trash2, Undo2, X } from "lucide-react";
+import { Banknote, Check, Package, Pencil, Plus, Receipt, Undo2, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { DocRowActions } from "@/components/demo/DocRowActions";
+import { DocDeleteButton } from "@/components/demo/DocDeleteButton";
 import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
 import {
   LineItemsEditor,
@@ -552,7 +553,7 @@ export default function BillsPage() {
           </button>
         )}
       </div>
-      <p className="text-xs text-slate-400">Prefer a fresh number? Delete the row below and create again.</p>
+      <p className="text-xs text-slate-400">Prefer a fresh number? Delete the row below (asks first) and create again.</p>
     </form>
   );
   const showComposer = Boolean(editingId) || composerOpen || Boolean(lastCreatedId);
@@ -648,15 +649,7 @@ export default function BillsPage() {
           </button>
         )}
         {!paid && <PrintBillButton id={b.id} compact />}
-        <button
-          type="button"
-          className="btn-secondary !px-2 !py-1 text-xs"
-          onClick={() => onDelete(b.id)}
-          title="Remove from this browser — then recreate if you need a new id"
-        >
-          <Trash2 size={12} />
-          Delete
-        </button>
+        <DocDeleteButton id={b.id} kind="bill" onDelete={onDelete} />
       </DocRowActions>
     );
   }
@@ -673,7 +666,7 @@ export default function BillsPage() {
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Tax</th>
               <th className="px-4 py-3">Status</th>
-              <th className="min-w-[14rem] px-4 py-3">Actions</th>
+              <th className="doc-actions-col px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -707,7 +700,7 @@ export default function BillsPage() {
                 <td className="px-4 py-3">
                   <StatusBadge status={effectiveBillStatus(b)} />
                 </td>
-                <td className="px-4 py-3 align-top">{userActions(b)}</td>
+                <td className="doc-actions-col px-4 py-3 align-top">{userActions(b)}</td>
               </tr>
             ))}
           </tbody>
@@ -833,7 +826,7 @@ export default function BillsPage() {
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Tax</th>
               <th className="px-4 py-3">Status</th>
-              <th className="min-w-[12rem] px-4 py-3">Actions</th>
+              <th className="doc-actions-col px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -869,7 +862,7 @@ export default function BillsPage() {
                   <td className="px-4 py-3">
                     <StatusBadge status={st} />
                   </td>
-                  <td className="px-4 py-3 align-top">
+<td className="doc-actions-col px-4 py-3 align-top">
                     <DocRowActions
                       keep={
                         st === "Paid"

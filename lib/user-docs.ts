@@ -766,7 +766,9 @@ export function deleteUserBill(id: string): boolean {
   return true;
 }
 
-/** Drop browser-local invoices, quotes, and bills so a new blank org starts empty. */
+/** Drop browser-local invoices, quotes, and bills so a new blank org starts empty.
+ *  Onboarding / first-run only — never expose from Banking or invoice/quote/bill lists.
+ */
 export function clearUserOrganisationDocs(): void {
   if (!isBrowser()) return;
   try {
