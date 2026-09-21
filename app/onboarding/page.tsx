@@ -2,10 +2,11 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { AbnField } from "@/components/abn/AbnField";
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
+import { PENDING_ORG_NAME } from "@/lib/auth";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
 
 export default function OnboardingPage() {
@@ -15,7 +16,6 @@ export default function OnboardingPage() {
   const [method, setMethod] = useState<GstAccountingMethod>("accruals");
   const [fyEnd, setFyEnd] = useState("30 June");
   const [ledgerMode, setLedgerMode] = useState<LedgerMode>("blank");
-  const [abn, setAbn] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,7 +28,9 @@ export default function OnboardingPage() {
       router.replace("/demo");
       return;
     }
-    if (user.abn) setAbn(user.abn);
+    if (user.gstRegistered !== undefined) setGstRegistered(user.gstRegistered);
+    if (user.gstAccountingMethod) setMethod(user.gstAccountingMethod);
+    if (user.financialYearEnd) setFyEnd(user.financialYearEnd);
   }, [user, loading, needsOnboarding, router]);
 
   function goAfterSetup(mode: LedgerMode) {
@@ -43,7 +45,7 @@ export default function OnboardingPage() {
       gstAccountingMethod: gstRegistered ? method : undefined,
       financialYearEnd: fyEnd,
       ledgerMode,
-      abn,
+      abn: user?.abn,
     });
     if (!res.ok) {
       setError(res.error);
@@ -68,13 +70,37 @@ export default function OnboardingPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
-      <BrandLogo className="mb-8 justify-center" />
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+        <BrandLogo />
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-300">
+          <Link href="/" className="hover:text-white hover:underline">
+            Home
+          </Link>
+          <Link href="/add-company" className="hover:text-white hover:underline">
+            Add company
+          </Link>
+          <Link href="/demo/account" className="hover:text-white hover:underline">
+            Account
+          </Link>
+        </nav>
+      </div>
       <div className="card p-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 2 of 2 · Organisation setup</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 3 of 3 · Organisation setup</p>
         <h1 className="mt-1 text-xl font-bold text-white">Set up your organisation</h1>
         <p className="mt-1 text-sm text-slate-300">
-          A few preferences for {user.businessName}. Next you&apos;ll create a first invoice, quote, or bill — about two minutes total.
+          A few preferences for {user.businessName !== PENDING_ORG_NAME ? user.businessName : "your business"}. Next you&apos;ll create a first invoice, quote, or bill — about two minutes total.
         </p>
+        <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-slate-200">
+          <p className="font-semibold text-white">
+            {user.businessName !== PENDING_ORG_NAME ? user.businessName : "No company saved yet"}
+          </p>
+          {user.abn && <p className="mt-0.5 text-slate-300">ABN {user.abn}</p>}
+          {user.entityType && <p className="text-slate-300">{user.entityType}</p>}
+          {user.businessAddress && <p className="text-xs text-slate-400">{user.businessAddress}</p>}
+          <Link href="/add-company" className="mt-2 inline-block font-semibold text-brand-300 hover:underline">
+            {user.businessName !== PENDING_ORG_NAME ? "Change company" : "Add your business"}
+          </Link>
+        </div>
         <form className="mt-6 space-y-5" onSubmit={finish}>
           <fieldset>
             <legend className="label">Are you registered for GST?</legend>
@@ -128,8 +154,6 @@ export default function OnboardingPage() {
               <option>30 September</option>
             </select>
           </div>
-
-          <AbnField value={abn} onChange={setAbn} />
 
           <fieldset>
             <legend className="label">How would you like to start?</legend>

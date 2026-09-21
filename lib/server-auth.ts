@@ -3,9 +3,9 @@ import { promisify } from "util";
 import { cookies } from "next/headers";
 import { db, ensureSchema, isDbConfigured } from "@/lib/db";
 import { cookieSecure } from "@/lib/request-guard";
-import type { GstAccountingMethod, LedgerMode, OnboardingInput, PublicAccount } from "@/lib/auth";
+import type { GstAccountingMethod, LedgerMode, OnboardingInput, ProfilePatch, PublicAccount } from "@/lib/auth";
 import { formatAbn, validateAbnField } from "@/lib/abn";
-import { validateSignup } from "@/lib/auth";
+import { PENDING_ORG_NAME, validateSignup } from "@/lib/auth";
 
 const scrypt = promisify(scryptCb);
 export const SESSION_COOKIE = "hl_session";
@@ -32,6 +32,9 @@ type OrgRow = {
   created_at: string;
   has_paid_download?: boolean | null;
   subscription_status?: string | null;
+  entity_type?: string | null;
+  address?: string | null;
+  company_added?: boolean | null;
 };
 
 function sessionSecret(): string | null {
@@ -86,6 +89,9 @@ function toPublic(user: UserRow, org: OrgRow): PublicAccount {
     email: user.email,
     businessName: org.name,
     abn: org.abn || undefined,
+    entityType: org.entity_type || undefined,
+    businessAddress: org.address || undefined,
+    companyAdded: org.company_added ?? undefined,
     createdAt: new Date(user.created_at).toISOString(),
     onboardingComplete: org.onboarding_complete,
     gstRegistered: org.gst_registered ?? undefined,
@@ -172,7 +178,7 @@ export async function signUpServer(input: {
   fullName: string;
   email: string;
   password: string;
-  businessName: string;
+  businessName?: string;
   abn?: string;
 }): Promise<{ ok: true; account: PublicAccount } | { ok: false; error: string }> {
   await ensureSchema();
@@ -185,13 +191,16 @@ export async function signUpServer(input: {
   const orgId = crypto.randomUUID();
   const passwordHash = await hashPassword(input.password);
   const abn = input.abn?.trim() ? formatAbn(input.abn) : null;
+  const named = input.businessName?.trim() ?? "";
+  const businessName = named || PENDING_ORG_NAME;
+  const companyAdded = Boolean(named && named !== PENDING_ORG_NAME);
   await db()`
     INSERT INTO users (id, email, password_hash, full_name)
     VALUES (${userId}, ${email}, ${passwordHash}, ${input.fullName.trim()})
   `;
   await db()`
-    INSERT INTO organisations (id, user_id, name, abn, onboarding_complete, ledger_mode)
-    VALUES (${orgId}, ${userId}, ${input.businessName.trim()}, ${abn}, false, 'blank')
+    INSERT INTO organisations (id, user_id, name, abn, onboarding_complete, ledger_mode, company_added)
+    VALUES (${orgId}, ${userId}, ${businessName}, ${abn}, false, 'blank', ${companyAdded})
   `;
   await createSession(userId);
   const account = await getSessionAccount();
@@ -242,13 +251,9 @@ export async function completeOnboardingServer(
   return { ok: true, account: next };
 }
 
-export async function updateProfileServer(patch: {
-  abn?: string;
-  businessName?: string;
-  gstRegistered?: boolean;
-  gstAccountingMethod?: GstAccountingMethod;
-  financialYearEnd?: string;
-}): Promise<{ ok: true; account: PublicAccount } | { ok: false; error: string }> {
+export async function updateProfileServer(
+  patch: ProfilePatch
+): Promise<{ ok: true; account: PublicAccount } | { ok: false; error: string }> {
   await ensureSchema();
   const account = await getSessionAccount();
   if (!account) return { ok: false, error: "You need to be signed in." };
@@ -262,6 +267,13 @@ export async function updateProfileServer(patch: {
   const gstRegistered = patch.gstRegistered ?? account.gstRegistered ?? null;
   const gstMethod = patch.gstAccountingMethod ?? account.gstAccountingMethod ?? null;
   const fy = patch.financialYearEnd ?? account.financialYearEnd ?? null;
+  const entityType =
+    patch.entityType !== undefined ? patch.entityType.trim() || null : account.entityType ?? null;
+  const address =
+    patch.businessAddress !== undefined
+      ? patch.businessAddress.trim() || null
+      : account.businessAddress ?? null;
+  const companyAdded = patch.companyAdded ?? account.companyAdded ?? false;
   await db()`
     UPDATE organisations
     SET
@@ -269,7 +281,10 @@ export async function updateProfileServer(patch: {
       abn = ${abn},
       gst_registered = ${gstRegistered},
       gst_accounting_method = ${gstMethod},
-      financial_year_end = ${fy}
+      financial_year_end = ${fy},
+      entity_type = ${entityType},
+      address = ${address},
+      company_added = ${companyAdded}
     WHERE user_id = ${account.id}
   `;
   const next = await getSessionAccount();

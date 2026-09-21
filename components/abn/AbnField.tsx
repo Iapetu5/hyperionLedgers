@@ -46,9 +46,10 @@ export function AbnField({
         <div className="mt-2 rounded-lg border border-brand-400/30 bg-brand-500/10 px-3 py-2 text-xs text-slate-200">
           <p className="font-semibold text-white">{result.legalName}</p>
           <p>
-            Status: {result.entityStatus}
+            {result.entityType} · Status: {result.entityStatus}
             {result.gstRegistered ? " · GST registered" : " · Not GST registered"}
           </p>
+          {result.address && <p className="mt-0.5 text-slate-300">{result.address}</p>}
           <p className="mt-1 text-[11px] text-slate-400">
             Simulated ABR result for demo — not a live ABR lookup.
           </p>

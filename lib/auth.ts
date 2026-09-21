@@ -9,6 +9,20 @@ export const AUTH_SALT = "hyperionledgers-demo-v1";
 export type GstAccountingMethod = "accruals" | "cash";
 export type LedgerMode = "sample" | "blank";
 
+/** Placeholder org name until the user saves a company on /add-company. */
+export const PENDING_ORG_NAME = "Your organisation";
+
+export type ProfilePatch = {
+  abn?: string;
+  businessName?: string;
+  gstRegistered?: boolean;
+  gstAccountingMethod?: GstAccountingMethod;
+  financialYearEnd?: string;
+  entityType?: string;
+  businessAddress?: string;
+  companyAdded?: boolean;
+};
+
 export type DemoAccount = {
   id: string;
   fullName: string;
@@ -16,6 +30,9 @@ export type DemoAccount = {
   passwordHash: string;
   businessName: string;
   abn?: string;
+  entityType?: string;
+  businessAddress?: string;
+  companyAdded?: boolean;
   createdAt: string;
   onboardingComplete?: boolean;
   gstRegistered?: boolean;
@@ -75,7 +92,7 @@ export function validateSignup(input: {
   fullName: string;
   email: string;
   password: string;
-  businessName: string;
+  businessName?: string;
   abn?: string;
 }): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -84,7 +101,6 @@ export function validateSignup(input: {
   if (emailErr) errors.email = emailErr;
   const pwErr = validatePassword(input.password);
   if (pwErr) errors.password = pwErr;
-  if (!input.businessName.trim()) errors.businessName = "Enter your business name.";
   const abnErr = validateAbnField(input.abn ?? "", false);
   if (abnErr) errors.abn = abnErr;
   return errors;
@@ -144,6 +160,22 @@ export function needsOnboarding(account: PublicAccount | null | undefined): bool
   return account.onboardingComplete === false;
 }
 
+/** True when a new account has not saved a company on the Add company page yet. */
+export function needsCompany(account: PublicAccount | null | undefined): boolean {
+  if (!account || account.onboardingComplete !== false) return false;
+  if (account.companyAdded === true) return false;
+  const name = account.businessName?.trim() ?? "";
+  return !name || name === PENDING_ORG_NAME;
+}
+
+/** Next signed-in destination after signup, login, or saving a company. */
+export function nextSetupPath(account: PublicAccount | null | undefined): string {
+  if (!account) return "/signup";
+  if (needsCompany(account)) return "/add-company";
+  if (needsOnboarding(account)) return "/onboarding";
+  return "/demo";
+}
+
 export function usesSampleData(account: PublicAccount | null | undefined): boolean {
   if (!account) return true; // guests see Harbour & Co sample
   return account.ledgerMode !== "blank";
@@ -153,7 +185,7 @@ export async function signUp(input: {
   fullName: string;
   email: string;
   password: string;
-  businessName: string;
+  businessName?: string;
   abn?: string;
 }): Promise<AuthResult> {
   if (!isBrowser()) return { ok: false, error: "Sign-up is only available in the browser." };
@@ -165,13 +197,15 @@ export async function signUp(input: {
     return { ok: false, error: "An account with this email already exists. Try logging in." };
   }
   const passwordHash = await hashPassword(email, input.password);
+  const named = input.businessName?.trim() ?? "";
   const account: DemoAccount = {
     id: crypto.randomUUID(),
     fullName: input.fullName.trim(),
     email,
     passwordHash,
-    businessName: input.businessName.trim(),
+    businessName: named || PENDING_ORG_NAME,
     abn: input.abn?.trim() ? formatAbn(input.abn) : undefined,
+    companyAdded: Boolean(named && named !== PENDING_ORG_NAME),
     createdAt: new Date().toISOString(),
     onboardingComplete: false,
   };
@@ -236,13 +270,7 @@ export function skipOnboarding(): AuthResult {
   });
 }
 
-export function updateAccountProfile(patch: {
-  abn?: string;
-  businessName?: string;
-  gstRegistered?: boolean;
-  gstAccountingMethod?: GstAccountingMethod;
-  financialYearEnd?: string;
-}): AuthResult {
+export function updateAccountProfile(patch: ProfilePatch): AuthResult {
   if (!isBrowser()) return { ok: false, error: "Only available in the browser." };
   const session = getSession();
   if (!session) return { ok: false, error: "You need to be signed in." };
@@ -268,6 +296,11 @@ export function updateAccountProfile(patch: {
     ...(patch.financialYearEnd !== undefined
       ? { financialYearEnd: patch.financialYearEnd }
       : {}),
+    ...(patch.entityType !== undefined ? { entityType: patch.entityType.trim() || undefined } : {}),
+    ...(patch.businessAddress !== undefined
+      ? { businessAddress: patch.businessAddress.trim() || undefined }
+      : {}),
+    ...(patch.companyAdded !== undefined ? { companyAdded: patch.companyAdded } : {}),
   };
   accounts[idx] = updated;
   saveAccounts(accounts);

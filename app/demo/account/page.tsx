@@ -86,6 +86,19 @@ export default function AccountPage() {
         </div>
       )}
 
+      <div className="card max-w-xl p-5">
+        <p className="text-sm font-semibold text-white">Company</p>
+        <p className="mt-1 text-sm text-slate-300">
+          {user.businessName}
+          {user.abn ? ` · ABN ${user.abn}` : ""}
+        </p>
+        {user.entityType && <p className="text-sm text-slate-300">{user.entityType}</p>}
+        {user.businessAddress && <p className="text-xs text-slate-400">{user.businessAddress}</p>}
+        <Link href="/add-company?next=/demo/account" className="mt-3 inline-block font-semibold text-brand-300 hover:underline">
+          Add or change company
+        </Link>
+      </div>
+
       <form className="card max-w-xl space-y-4 p-6" onSubmit={onSave}>
         <div>
           <label className="label" htmlFor="bn">Business name</label>

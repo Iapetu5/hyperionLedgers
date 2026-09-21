@@ -23,6 +23,7 @@ import {
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { DEMO_BANNER, DEMO_CTA, DEMO_ORG_SHORT } from "@/lib/brand";
+import { nextSetupPath } from "@/lib/auth";
 import { AiAssistant } from "@/components/demo/AiAssistant";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import { loadUserBills, loadUserInvoices, loadUserQuotes } from "@/lib/user-docs";
@@ -54,7 +55,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
     if (user && needsOnboarding) {
-      router.replace("/onboarding");
+      router.replace(nextSetupPath(user));
     }
   }, [user, needsOnboarding, loading, router]);
 

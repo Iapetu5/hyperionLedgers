@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { needsOnboarding } from "@/lib/auth";
+import { nextSetupPath } from "@/lib/auth";
 
 export default function LoginPage() {
   const { logIn } = useAuth();
@@ -25,7 +25,7 @@ export default function LoginPage() {
       setError(res.error);
       return;
     }
-    router.push(needsOnboarding(res.account) ? "/onboarding" : "/demo");
+    router.push(nextSetupPath(res.account));
   }
 
   return (

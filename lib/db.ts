@@ -60,6 +60,9 @@ export async function ensureSchema() {
   await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS subscription_status text`;
   await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS stripe_checkout_session_id text`;
   await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS stripe_subscription_id text`;
+  await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS entity_type text`;
+  await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS address text`;
+  await sql`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS company_added boolean NOT NULL DEFAULT false`;
   await sql`
     CREATE TABLE IF NOT EXISTS stripe_events (
       id text PRIMARY KEY,
