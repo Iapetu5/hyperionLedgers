@@ -8,7 +8,7 @@ import { getSessionAccount } from "@/lib/server-auth";
 import { grantDownloadFromSession, hasDownloadAccess, readEntitlementCookie } from "@/lib/entitlements";
 import { isCheckoutSessionId, retrieveCheckoutSession, sessionGrantsDownload } from "@/lib/stripe";
 import { isStripeConfigured, PLAN } from "@/lib/billing";
-import { PRODUCT_NAME, WINDOWS_INSTALLER_FILE } from "@/lib/brand";
+import { MARKETING_LIMITS, PRODUCT_NAME, WINDOWS_INSTALLER_FILE } from "@/lib/brand";
 import { issueDownloadToken } from "@/lib/download-token";
 import { rateLimit } from "@/lib/request-guard";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
@@ -45,12 +45,12 @@ export default async function DownloadsPage({
     <div>
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
-        <p className="marketing-kicker">Australian bookkeeping · Windows app</p>
+        <p className="marketing-kicker">Australian bookkeeping · Windows installer</p>
         <h1 className="marketing-title max-w-3xl">Download {PRODUCT_NAME} for Windows</h1>
         <p className="marketing-lead">
           {allowed
-            ? `Your ${PLAN.trialDays}-day trial or $69 a month plan is active. This page is the Windows installer download. Mac is coming soon.`
-            : `Start the HyperionInvoices free trial. ${PLAN.trialDays} days free, then $69 a month. After checkout, this page is where the Windows installer download appears. Mac is coming soon.`}
+            ? `Your ${PLAN.trialDays}-day trial or $69 a month plan is active. This page is the Windows installer download — not a live bank feed. Mac is coming soon.`
+            : `Start the HyperionInvoices free trial. ${PLAN.trialDays} days free, then $69 a month. After checkout, return here for the Windows installer when it is ready. Not a live bank feed. Mac is coming soon.`}
         </p>
         {!allowed ? (
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -106,9 +106,7 @@ export default async function DownloadsPage({
             </div>
           </div>
         )}
-        <p className="mt-14 max-w-2xl text-base leading-7 text-slate-50">
-          HyperionInvoices does not send forms to the tax office. Mac is coming soon.
-        </p>
+        <p className="mt-14 max-w-2xl text-base leading-7 text-slate-50">{MARKETING_LIMITS}</p>
       </main>
       <MarketingFooter />
     </div>

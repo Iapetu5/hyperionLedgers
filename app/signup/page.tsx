@@ -9,11 +9,12 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { validateSignup } from "@/lib/auth";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
 import { addCompanyHref, SETUP_STEP } from "@/lib/company-pickup";
+import { MARKETING_LIMITS } from "@/lib/brand";
 
 const NEXT_STEPS = [
   "Name, email, and password only on this page",
-  "Next you add your company",
-  "14 days free. Then $69 a month",
+  "Next you add your company — that does not register you with the tax office",
+  "The plan is 14 days free, then $69 a month. You can stop anytime",
 ];
 
 export default function SignupPage() {
@@ -102,9 +103,7 @@ export default function SignupPage() {
                 See the $69 plan
               </Link>
             </aside>
-            <p className="mt-10 marketing-copy">
-              HyperionInvoices does not send forms to the tax office. Mac is coming soon.
-            </p>
+            <p className="mt-10 marketing-copy">{MARKETING_LIMITS}</p>
           </div>
 
           <form className="card h-fit space-y-4 p-6 sm:p-8" onSubmit={onSubmit} noValidate>

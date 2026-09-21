@@ -8,6 +8,7 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { nextSetupPath } from "@/lib/auth";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { MARKETING_LIMITS } from "@/lib/brand";
 
 export default function LoginPage() {
   const { logIn } = useAuth();
@@ -57,9 +58,8 @@ export default function LoginPage() {
                 account.
               </p>
             </GuestOnly>
-            <p className="mt-10 marketing-copy">
-              HyperionInvoices does not send forms to the tax office. Mac is coming soon.
-            </p>
+            <p className="mt-10 marketing-copy">{MARKETING_LIMITS}</p>
+            <p className="mt-3 marketing-copy">Your session stays in this browser.</p>
           </div>
 
           <div className="card h-fit p-6 sm:p-8">
