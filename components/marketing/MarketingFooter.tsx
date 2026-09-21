@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
-import { TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { GoToAppLink, TryDemoLink } from "@/components/marketing/TryDemoCta";
+
+const EXPLORE = [
+  { href: "/product", label: "Product" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/downloads", label: "Downloads" },
+  { href: "/try", label: "How it works" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
+];
 
 export function MarketingFooter() {
   return (
@@ -18,20 +27,25 @@ export function MarketingFooter() {
         <nav aria-label="Footer" className="grid gap-8 sm:grid-cols-2">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">Explore</p>
-            <div className="mt-3 flex flex-col gap-2.5 text-base text-slate-50">
-              <Link href="/pricing" className="hover:text-white hover:underline">Pricing</Link>
-              <Link href="/product" className="hover:text-white hover:underline">Product</Link>
-              <Link href="/try" className="hover:text-white hover:underline">How it works</Link>
-              <Link href="/downloads" className="hover:text-white hover:underline">Downloads</Link>
+            <div className="mt-3 flex flex-col gap-2.5">
+              {EXPLORE.map((item) => (
+                <Link key={item.href} href={item.href} className="link-quiet w-fit">
+                  {item.label}
+                </Link>
+              ))}
             </div>
           </div>
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">Account</p>
-            <div className="mt-3 flex flex-col gap-2.5 text-base text-slate-50">
-              <Link href="/signup" className="hover:text-white hover:underline">Sign up</Link>
-              <Link href="/about" className="hover:text-white hover:underline">About</Link>
-              <Link href="/contact" className="hover:text-white hover:underline">Contact</Link>
-              <TryDemoLink className="hover:text-white hover:underline" />
+            <div className="mt-3 flex flex-col gap-2.5">
+              <Link href="/signup" className="link-quiet w-fit">
+                Sign up
+              </Link>
+              <Link href="/login" className="link-quiet w-fit">
+                Log in
+              </Link>
+              <TryDemoLink className="link-quiet w-fit" />
+              <GoToAppLink className="link-quiet w-fit">Go to app</GoToAppLink>
             </div>
           </div>
         </nav>

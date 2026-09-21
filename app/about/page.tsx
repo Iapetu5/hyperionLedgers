@@ -1,56 +1,69 @@
 import Link from "next/link";
-import { Eye, ArrowRight } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+
+const GLANCE = [
+  "Quotes, invoices, bills, and reports in one place",
+  "Your session stays in this browser",
+  "Start with your own organisation, or look around first",
+  "Not a tax agent, BAS agent, or financial adviser",
+];
 
 export default function AboutPage() {
   return (
     <div>
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
+        <div className="grid items-start gap-10 lg:grid-cols-[1.4fr_1fr] lg:gap-14">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs font-semibold text-fuchsia-200">
-              <Eye size={12} />
-              $69 a month · 14-day free trial
-            </div>
-            <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">About HyperionInvoices</h1>
-            <p className="mt-4 text-lg text-white/80">
-              Accounting software for Australian small businesses that want clarity first — accurate books and an explanation of what&apos;s going on.
+            <p className="marketing-kicker">Australian bookkeeping · who we are</p>
+            <h1 className="marketing-title">About HyperionInvoices</h1>
+            <p className="marketing-lead">
+              HyperionInvoices keeps the books for a small Australian business.
+              See cash, GST, and invoices in plain English.
             </p>
-            <div className="mt-6 space-y-4 text-white/75">
-              <p>
-                HyperionInvoices is built around the realities of Australian small business: GST, BAS, super, cash flow, sales, inventory and payroll —
-                presented in plain English so you always know what to do next.
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <StartTrialButton className="btn-marketing-primary" />
+              <Link href="/signup" className="link-quiet">
+                Sign up
+              </Link>
+              <Link href="/pricing" className="link-quiet">
+                Pricing
+              </Link>
+              <TryDemoLink className="link-quiet" />
+            </div>
+            <div className="mt-10 space-y-4">
+              <p className="marketing-copy">
+                HyperionInvoices is made for Australian small business: GST, BAS, super, cash flow,
+                sales, stock, and pay — written so you know what to do next.
               </p>
-              <p>
-                The /demo path is a walkthrough with sample data — not a real HyperionInvoices account.
-                ATO lodgements and bank feeds are simulated. We use Australian English and AUD throughout.
+              <p className="marketing-copy">
+                We use Australian English and Australian dollars. HyperionInvoices does not send
+                forms to the tax office.
+                <GuestOnly>
+                  {" "}
+                  Try a demo first if you want to look around — that path uses sample data, not your
+                  real account.
+                </GuestOnly>
               </p>
             </div>
           </div>
 
           <aside className="card h-fit p-6">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">At a glance</p>
-            <ul className="mt-4 space-y-3 text-sm text-slate-200">
-              {[
-                "Full suite UI for Australian SMB bookkeeping",
-                "Your session stays in this browser",
-                "Start with your own organisation, or look around first",
-                "Not a tax agent, BAS agent, or financial adviser",
-              ].map((item, i) => (
-                <li key={item} className="flex items-start gap-2">
-                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${i % 2 === 0 ? "bg-brand-400" : "bg-fuchsia-500"}`} />
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">At a glance</p>
+            <ul className="mt-4 space-y-3 text-base leading-7 text-slate-50">
+              {GLANCE.map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <span className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-brand-300" aria-hidden="true" />
                   {item}
                 </li>
               ))}
             </ul>
-            <Link href="/signup" className="btn-primary mt-6 w-full">
-              Start free trial
-              <ArrowRight size={16} />
-            </Link>
-            <Link href="/pricing" className="mt-3 block text-center text-sm font-medium text-white/70 underline-offset-4 hover:text-white hover:underline">
-              See pricing — $69 a month
+            <StartTrialButton className="btn-marketing-primary mt-6 w-full" />
+            <Link href="/pricing" className="link-quiet mt-4 block text-center">
+              See the $69 plan
             </Link>
           </aside>
         </div>

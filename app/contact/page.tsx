@@ -2,10 +2,11 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { Mail, MapPin, Clock } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { TryDemoLink } from "@/components/marketing/TryDemoCta";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
@@ -18,48 +19,47 @@ export default function ContactPage() {
   return (
     <div>
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">Contact</h1>
-        <p className="mt-3 max-w-2xl text-lg text-white/75">
-          Questions about the product? Send a note. This preview does not deliver email.
+      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
+        <p className="marketing-kicker">Australian bookkeeping · get in touch</p>
+        <h1 className="marketing-title">Contact</h1>
+        <p className="marketing-lead">
+          Questions about HyperionInvoices? Send a note. This preview does not deliver email.
         </p>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Link href="/signup" className="btn-primary">
-            Start free trial
-            <ArrowRight size={16} />
+        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <StartTrialButton className="btn-marketing-primary" />
+          <Link href="/signup" className="link-quiet">
+            Sign up
           </Link>
-          <Link
-            href="/pricing"
-            className="text-sm font-medium text-white/70 underline-offset-4 transition hover:text-white hover:underline"
-          >
-            Pricing — $69 a month
+          <Link href="/pricing" className="link-quiet">
+            Pricing
           </Link>
+          <TryDemoLink className="link-quiet" />
         </div>
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-          <aside className="rounded-xl border border-white/15 bg-black/35 p-6 text-white backdrop-blur-md">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Reach us</p>
-            <ul className="mt-5 space-y-4 text-sm text-white/80">
+        <div className="mt-16 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+          <aside className="card h-fit p-6">
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">Reach us</p>
+            <ul className="mt-5 space-y-5 text-base leading-7 text-slate-50">
               <li className="flex gap-3">
-                <Mail className="mt-0.5 shrink-0 text-brand-400" size={18} />
+                <Mail className="mt-1 shrink-0 text-brand-200" size={20} aria-hidden="true" />
                 <span>
-                  <strong className="text-white">Email</strong>
+                  <strong className="font-semibold text-white">Email</strong>
                   <br />
                   Use the form on this page.
                 </span>
               </li>
               <li className="flex gap-3">
-                <MapPin className="mt-0.5 shrink-0 text-fuchsia-400" size={18} />
+                <MapPin className="mt-1 shrink-0 text-brand-200" size={20} aria-hidden="true" />
                 <span>
-                  <strong className="text-white">Based in Australia</strong>
+                  <strong className="font-semibold text-white">Based in Australia</strong>
                   <br />
                   Conceptually Sydney / Australia — AUD, AEST/AEDT.
                 </span>
               </li>
               <li className="flex gap-3">
-                <Clock className="mt-0.5 shrink-0 text-brand-400" size={18} />
+                <Clock className="mt-1 shrink-0 text-brand-200" size={20} aria-hidden="true" />
                 <span>
-                  <strong className="text-white">Response time</strong>
+                  <strong className="font-semibold text-white">Response time</strong>
                   <br />
                   We aim to reply within one business day.
                 </span>
@@ -69,24 +69,32 @@ export default function ContactPage() {
 
           <form onSubmit={onSubmit} className="card space-y-4 p-6">
             {sent ? (
-              <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-4 py-3 text-sm text-emerald-100">
+              <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-4 py-3 text-base leading-7 text-emerald-50">
                 Thanks — this preview does not send email. Your note stayed in this browser.
               </div>
             ) : null}
             <div>
-              <label className="label" htmlFor="name">Name</label>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="name">
+                Name
+              </label>
               <input id="name" name="name" required className="input" placeholder="Alex Morgan" />
             </div>
             <div>
-              <label className="label" htmlFor="email">Email</label>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="email">
+                Email
+              </label>
               <input id="email" name="email" type="email" required className="input" placeholder="alex@example.com.au" />
             </div>
             <div>
-              <label className="label" htmlFor="business">Business (optional)</label>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="business">
+                Business (optional)
+              </label>
               <input id="business" name="business" className="input" placeholder="Example Pty Ltd" />
             </div>
             <div>
-              <label className="label" htmlFor="topic">Topic</label>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="topic">
+                Topic
+              </label>
               <select id="topic" name="topic" className="input" defaultValue="Product questions">
                 <option>Product questions</option>
                 <option>Pricing</option>
@@ -94,10 +102,14 @@ export default function ContactPage() {
               </select>
             </div>
             <div>
-              <label className="label" htmlFor="message">Message</label>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="message">
+                Message
+              </label>
               <textarea id="message" name="message" required rows={4} className="input" placeholder="How can we help?" />
             </div>
-            <button type="submit" className="btn-primary">Send message</button>
+            <button type="submit" className="btn-primary">
+              Send message
+            </button>
           </form>
         </div>
       </main>
