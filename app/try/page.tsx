@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { UserPlus, SlidersHorizontal, LayoutDashboard } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
-import { StartTrialButton } from "@/components/marketing/StartTrialButton";
-import { TryPageDemoLink } from "@/components/marketing/TryDemoCard";
+import { MarketingPageActions } from "@/components/marketing/MarketingPageActions";
 import { GuestOnly } from "@/components/marketing/TryDemoCta";
 import { MARKETING_LIMITS } from "@/lib/brand";
 
@@ -39,18 +37,9 @@ export default function TryPage() {
           Start the HyperionInvoices free trial. Answer a few setup questions. Then make your first invoice.
           <GuestOnly> Or try a demo first if you want to look around with sample data.</GuestOnly>
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <StartTrialButton className="btn-marketing-primary" />
-          <Link href="/signup" className="link-quiet">
-            Sign up
-          </Link>
-          <Link href="/pricing" className="link-quiet">
-            See the $69 plan
-          </Link>
-          <TryPageDemoLink className="link-quiet" />
-        </div>
+        <MarketingPageActions pricingLabel="See the $69 plan" />
         <GuestOnly>
-          <p className="mt-4 text-sm leading-7 text-slate-200">
+          <p className="marketing-note mt-4">
             Demo · sample data — not your real account
           </p>
         </GuestOnly>

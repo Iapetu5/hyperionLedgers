@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { MarketingPageActions } from "@/components/marketing/MarketingPageActions";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
-import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { GuestOnly } from "@/components/marketing/TryDemoCta";
 import { MARKETING_LIMITS } from "@/lib/brand";
 
 const GLANCE = [
@@ -24,16 +25,7 @@ export default function AboutPage() {
               HyperionInvoices keeps the books for a small Australian business.
               See cash, GST, and invoices in plain English.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <StartTrialButton className="btn-marketing-primary" />
-              <Link href="/signup" className="link-quiet">
-                Sign up
-              </Link>
-              <Link href="/pricing" className="link-quiet">
-                Pricing
-              </Link>
-              <TryDemoLink className="link-quiet" />
-            </div>
+            <MarketingPageActions />
             <div className="mt-10 space-y-4">
               <p className="marketing-copy">
                 HyperionInvoices is made for Australian small business: GST, BAS, cash flow,
@@ -63,7 +55,7 @@ export default function AboutPage() {
               ))}
             </ul>
             <StartTrialButton className="btn-marketing-primary mt-6 w-full" />
-            <Link href="/pricing" className="link-quiet mt-4 block text-center">
+            <Link href="/pricing" className="link-quiet marketing-tap-link mt-4 w-full justify-center">
               See the $69 plan
             </Link>
           </aside>

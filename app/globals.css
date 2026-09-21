@@ -71,11 +71,11 @@ body {
 
   /* Marketing pages only — brighter primary, larger type. Do not use in the app. */
   .btn-marketing-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-300 px-5 py-3 text-base font-bold text-slate-950 shadow-glow transition hover:bg-brand-200 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-60;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-300 px-5 py-3 text-base font-bold text-slate-950 shadow-glow transition hover:bg-brand-200 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-60;
   }
 
   .btn-marketing-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/40 bg-transparent px-4 py-2.5 text-base font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:ring-offset-2 focus:ring-offset-slate-950;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/40 bg-transparent px-4 py-2.5 text-base font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:ring-offset-2 focus:ring-offset-slate-950;
   }
 
   .marketing-kicker {
@@ -83,24 +83,60 @@ body {
   }
 
   .marketing-title {
-    @apply mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl;
+    @apply mt-3 text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl;
   }
 
   .marketing-lead {
-    @apply mt-5 max-w-2xl text-lg leading-8 text-white sm:text-xl sm:leading-8;
+    @apply mt-5 max-w-2xl text-pretty text-lg leading-8 text-white sm:text-xl sm:leading-8;
   }
 
   .marketing-copy {
-    @apply text-base leading-7 text-slate-50;
+    @apply text-pretty text-base leading-7 text-slate-50;
   }
 
   .marketing-section-title {
-    @apply text-2xl font-semibold tracking-tight text-white sm:text-3xl;
+    @apply text-balance text-2xl font-semibold tracking-tight text-white sm:text-3xl;
+  }
+
+  .marketing-note {
+    @apply text-pretty text-sm leading-7 text-slate-100;
+  }
+
+  /* Sticky marketing chrome — opaque enough to sit over nebula content. */
+  .marketing-header {
+    @apply sticky top-0 z-50 border-b border-white/10 bg-slate-950/92 shadow-[0_8px_24px_rgba(0,0,0,0.28)] backdrop-blur-xl;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .marketing-icon-button {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/25 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:ring-offset-2 focus:ring-offset-slate-950;
+  }
+
+  .marketing-nav-link {
+    @apply flex min-h-11 items-center rounded-lg px-3 text-base text-white hover:bg-white/10;
+  }
+
+  /* Trial is the button. Demo / signup stay text. Do not enlarge buttons. */
+  .marketing-cta-row {
+    @apply mt-8 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2;
+  }
+
+  .marketing-cta-row > .btn-marketing-primary {
+    @apply max-sm:w-full;
+  }
+
+  /* Extra hit area on text CTAs only — visual size stays a link. */
+  .marketing-tap-link {
+    @apply inline-flex min-h-11 items-center;
   }
 
   /* Secondary links stay underlined so they are easy to find. Do not enlarge buttons. */
   .link-quiet {
-    @apply text-base font-medium text-white underline decoration-white/45 underline-offset-4 transition hover:decoration-white;
+    @apply text-base font-medium text-white underline decoration-white/55 underline-offset-4 transition hover:decoration-white;
+  }
+
+  footer .link-quiet {
+    @apply inline-flex min-h-11 items-center;
   }
 
   .btn-secondary {
@@ -254,6 +290,7 @@ body {
   }
   .no-print,
   .page-hero,
+  .marketing-header,
   aside,
   nav,
   [data-demo-banner],

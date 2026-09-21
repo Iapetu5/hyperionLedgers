@@ -4,7 +4,7 @@ import Link from "next/link";
 import { TryDemoLink, useShowTryDemo } from "@/components/marketing/TryDemoCta";
 
 export function PricingCardDemoLink() {
-  return <TryDemoLink className="link-quiet text-center" />;
+  return <TryDemoLink className="link-quiet marketing-tap-link justify-center text-center" />;
 }
 
 export function PricingFooterDemoLine() {

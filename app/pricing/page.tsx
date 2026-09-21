@@ -62,7 +62,7 @@ export default function PricingPage() {
             </ul>
             <div className="mt-8 flex flex-col gap-4">
               <StartTrialButton className="btn-marketing-primary w-full" />
-              <Link href="/signup" className="link-quiet text-center">
+              <Link href="/signup" className="link-quiet marketing-tap-link justify-center">
                 Sign up
               </Link>
               <PricingCardDemoLink />

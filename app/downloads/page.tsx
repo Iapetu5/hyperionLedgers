@@ -76,16 +76,18 @@ export default async function DownloadsPage({
             : `Start the HyperionInvoices free trial. ${PLAN.trialDays} days free, then $69 AUD a month. After checkout, this page unlocks the Windows installer when it is published. Not a finished desktop app.`}
         </p>
         {!allowed && !sessionId ? (
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="marketing-cta-row">
             <StartTrialButton className="btn-marketing-primary" email={account?.email} />
-            <Link href="/signup" className="link-quiet">
-              Sign up
-            </Link>
-            <Link href="/pricing" className="link-quiet">
-              Pricing
-            </Link>
-            <TryDemoLink className="link-quiet" />
-            <GoToAppLink className="link-quiet" />
+            <div className="flex flex-wrap items-center gap-x-5">
+              <Link href="/signup" className="link-quiet marketing-tap-link">
+                Sign up
+              </Link>
+              <Link href="/pricing" className="link-quiet marketing-tap-link">
+                Pricing
+              </Link>
+              <TryDemoLink className="link-quiet marketing-tap-link" />
+              <GoToAppLink className="link-quiet marketing-tap-link" />
+            </div>
           </div>
         ) : null}
 
@@ -104,16 +106,16 @@ export default async function DownloadsPage({
                 can keep using HyperionInvoices in the browser.
               </p>
             )}
-            <GoToAppLink className="link-quiet mt-4 block">Open your ledger in the browser</GoToAppLink>
+            <GoToAppLink className="link-quiet marketing-tap-link mt-4">Open your ledger in the browser</GoToAppLink>
             {!account ? (
-              <p className="mt-4 text-sm text-slate-300">
+              <p className="marketing-note mt-4">
                 Sign in to keep this download on your account.{" "}
                 <Link href="/login" className="link-quiet">
                   Sign in
                 </Link>
               </p>
             ) : null}
-            <p className="mt-4 text-sm leading-7 text-slate-200">
+            <p className="marketing-note mt-4">
               {installerReady
                 ? "This download is only for your account. The link expires in 10 minutes and is not a public file. Not a finished desktop app."
                 : WINDOWS_INSTALLER_NOTE}
@@ -135,7 +137,7 @@ export default async function DownloadsPage({
                   <Link href="/login" className="btn-marketing-primary w-full text-center">
                     Sign in to unlock the installer
                   </Link>
-                  <Link href={SIGNUP_FOR_TRIAL} className="link-quiet text-center">
+                  <Link href={SIGNUP_FOR_TRIAL} className="link-quiet marketing-tap-link justify-center">
                     Create an account
                   </Link>
                 </div>
@@ -158,7 +160,7 @@ export default async function DownloadsPage({
                 ) : null}
                 <div className="mt-6 flex flex-col gap-4">
                   <StartTrialButton className="btn-marketing-primary w-full" email={account?.email} />
-                  <Link href="/pricing" className="link-quiet text-center">
+                  <Link href="/pricing" className="link-quiet marketing-tap-link justify-center">
                     Back to pricing
                   </Link>
                 </div>
