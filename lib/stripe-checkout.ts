@@ -3,8 +3,11 @@ import { CHECKOUT_PAYMENT_METHOD_TYPES, getAppUrl, isStripeConfigured, PLAN } fr
 import { isDbConfigured } from "@/lib/db";
 import { checkoutOriginAllowed, clientIp, rateLimit } from "@/lib/request-guard";
 import { getSessionAccount } from "@/lib/server-auth";
-import { resolveAudMonthlyPriceId } from "@/lib/stripe-price";
+import { applyAudLineItems, resolveAudMonthlyPrice } from "@/lib/stripe-price";
 import { SIGNUP_FOR_TRIAL } from "@/lib/trial-next";
+
+/** API version that supports adaptive_pricing[enabled]=false. */
+const STRIPE_API_VERSION = "2025-03-31.acacia";
 
 type CheckoutBody = {
   email?: string;
@@ -35,6 +38,7 @@ async function postCheckoutSession(secret: string, params: URLSearchParams) {
     headers: {
       Authorization: `Bearer ${secret}`,
       "Content-Type": "application/x-www-form-urlencoded",
+      "Stripe-Version": STRIPE_API_VERSION,
     },
     body: params,
   });
@@ -46,17 +50,16 @@ async function postCheckoutSession(secret: string, params: URLSearchParams) {
 }
 
 function buildCheckoutParams(input: {
-  priceId: string;
+  price: Awaited<ReturnType<typeof resolveAudMonthlyPrice>>;
   appUrl: string;
   email: string;
   accountId?: string;
   methods: readonly string[];
-  disableAdaptivePricing: boolean;
+  includeCurrency: boolean;
 }) {
   const params = new URLSearchParams();
   params.set("mode", "subscription");
-  params.set("line_items[0][price]", input.priceId);
-  params.set("line_items[0][quantity]", "1");
+  applyAudLineItems(params, input.price);
   params.set("subscription_data[trial_period_days]", String(PLAN.trialDays));
   params.set("success_url", `${input.appUrl}/downloads?session_id={CHECKOUT_SESSION_ID}`);
   params.set("cancel_url", `${input.appUrl}/pricing?checkout=cancelled`);
@@ -64,9 +67,9 @@ function buildCheckoutParams(input: {
   params.set("allow_promotion_codes", "true");
   params.set("locale", "en-AU");
   params.set("payment_method_collection", "always");
-  if (input.disableAdaptivePricing) {
-    params.set("adaptive_pricing[enabled]", "false");
-  }
+  // Dashboard Adaptive Pricing defaults to ON — never omit this, never retry with it enabled.
+  params.set("adaptive_pricing[enabled]", "false");
+  if (input.includeCurrency) params.set("currency", "aud");
   input.methods.forEach((method, i) => {
     params.set(`payment_method_types[${i}]`, method);
   });
@@ -111,25 +114,25 @@ export async function createCheckoutSession(req: Request) {
   }
 
   const secret = process.env.STRIPE_SECRET_KEY!.trim();
-  const priceId = await resolveAudMonthlyPriceId(process.env.STRIPE_PRICE_ID!.trim());
+  const price = await resolveAudMonthlyPrice(process.env.STRIPE_PRICE_ID!.trim());
 
-  const attempts: { methods: readonly string[]; disableAdaptivePricing: boolean }[] = [
-    { methods: CHECKOUT_PAYMENT_METHOD_TYPES, disableAdaptivePricing: true },
-    { methods: ["card"], disableAdaptivePricing: true },
-    { methods: CHECKOUT_PAYMENT_METHOD_TYPES, disableAdaptivePricing: false },
-    { methods: ["card"], disableAdaptivePricing: false },
+  const attempts: { methods: readonly string[]; includeCurrency: boolean }[] = [
+    { methods: CHECKOUT_PAYMENT_METHOD_TYPES, includeCurrency: true },
+    { methods: ["card"], includeCurrency: true },
+    { methods: CHECKOUT_PAYMENT_METHOD_TYPES, includeCurrency: false },
+    { methods: ["card"], includeCurrency: false },
   ];
 
   try {
     let lastMessage = "Stripe Checkout could not start. Check the test price ID and secret key.";
     for (const attempt of attempts) {
       const params = buildCheckoutParams({
-        priceId,
+        price,
         appUrl,
         email,
         accountId: account?.id,
         methods: attempt.methods,
-        disableAdaptivePricing: attempt.disableAdaptivePricing,
+        includeCurrency: attempt.includeCurrency,
       });
       const { stripeRes, session } = await postCheckoutSession(secret, params);
       if (stripeRes.ok && session.url) {
@@ -137,9 +140,8 @@ export async function createCheckoutSession(req: Request) {
       }
       lastMessage = stripeErrorMessage(session);
       const err = `${session.error?.message ?? ""} ${session.error?.param ?? ""}`.toLowerCase();
-      const linkIssue = err.includes("link");
-      const adaptiveIssue = err.includes("adaptive");
-      if (!linkIssue && !adaptiveIssue) break;
+      const retryable = err.includes("link") || err.includes("currency") || err.includes("adaptive");
+      if (!retryable) break;
     }
     return NextResponse.json(
       {

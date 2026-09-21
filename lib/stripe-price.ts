@@ -99,6 +99,36 @@ async function ensureProduct(existingProductId: string): Promise<string | null> 
   return created?.id?.startsWith("prod_") ? created.id : null;
 }
 
+/** Never send a USD (or other) Price id to Checkout — fall back to inline AUD $69. */
+export function applyAudLineItems(
+  params: URLSearchParams,
+  price: StripePrice | null | undefined,
+): "price" | "price_data" {
+  if (isAudMonthlyPlanPrice(price) && price?.id) {
+    params.set("line_items[0][price]", price.id);
+    params.set("line_items[0][quantity]", "1");
+    return "price";
+  }
+  params.set("line_items[0][price_data][currency]", "aud");
+  params.set("line_items[0][price_data][unit_amount]", String(PLAN_AMOUNT_CENTS));
+  params.set("line_items[0][price_data][recurring][interval]", "month");
+  params.set("line_items[0][price_data][recurring][interval_count]", "1");
+  params.set("line_items[0][price_data][product_data][name]", PLAN.name);
+  params.set(
+    "line_items[0][price_data][product_data][description]",
+    `${PLAN.trialDays}-day trial, then $${PLAN.amountAud} ${PLAN.currency} ${PLAN.intervalLabel}.`,
+  );
+  params.set("line_items[0][quantity]", "1");
+  return "price_data";
+}
+
+export async function resolveAudMonthlyPrice(preferredId: string): Promise<StripePrice | null> {
+  const id = await resolveAudMonthlyPriceId(preferredId);
+  if (!id.startsWith("price_")) return null;
+  const price = await stripeGet<StripePrice>(`prices/${encodeURIComponent(id)}`);
+  return isAudMonthlyPlanPrice(price) ? price : null;
+}
+
 /**
  * Prefer the env Price when it is already $69 AUD / month.
  * Otherwise reuse an existing AUD monthly Price, or create one in this Stripe account.

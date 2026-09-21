@@ -35,9 +35,11 @@ import {
 } from "@/lib/books-client";
 import { effectiveQuoteStatus, type UserQuote } from "@/lib/user-docs";
 import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
+import { booksListHint, booksSampleHint, booksStoredHint, usesServerBooksUi } from "@/lib/books-copy";
 
 export default function QuotesPage() {
-  const { usesSampleData, user } = useAuth();
+  const { usesSampleData, user, persistence } = useAuth();
+  const serverBooks = usesServerBooksUi(persistence, user);
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
@@ -755,7 +757,7 @@ export default function QuotesPage() {
               {" · "}
               {expiredQuotes.length} expired
               {" · "}
-              browser-local only
+              {booksListHint(serverBooks)}
             </>
           ),
         )}
@@ -803,7 +805,7 @@ export default function QuotesPage() {
           {" · "}
           {sampleExpired.length} expired
           {" · "}
-          sample + your browser-local creates below
+          {booksSampleHint(serverBooks)}
         </>,
       )}
 
@@ -813,7 +815,7 @@ export default function QuotesPage() {
         <div className="card overflow-x-auto">
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Your created quotes</h2>
-            <p className="text-xs text-slate-400">Stored in this browser · not part of the demo sample</p>
+            <p className="text-xs text-slate-400">{booksStoredHint(serverBooks)}</p>
           </div>
           <table className="min-w-full text-left text-sm">
             <thead className="table-head">

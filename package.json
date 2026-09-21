@@ -12,7 +12,8 @@
     "test:iso-date": "node scripts/test-iso-date.mjs",
     "test:checkout-aud": "node scripts/test-checkout-aud.mjs",
     "test:books-mode": "node scripts/test-books-mode.mjs",
-    "test": "node scripts/test-abn.mjs && node --experimental-strip-types scripts/verify-abn.ts && node scripts/test-iso-date.mjs && node scripts/test-checkout-aud.mjs && node scripts/test-books-mode.mjs"
+    "test:trial-gate": "node scripts/test-trial-gate.mjs",
+    "test": "node scripts/test-abn.mjs && node --experimental-strip-types scripts/verify-abn.ts && node scripts/test-iso-date.mjs && node scripts/test-checkout-aud.mjs && node scripts/test-books-mode.mjs && node scripts/test-trial-gate.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

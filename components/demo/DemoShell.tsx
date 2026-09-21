@@ -27,6 +27,8 @@ import { nextSetupPath } from "@/lib/auth";
 import { AiAssistant } from "@/components/demo/AiAssistant";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import { loadBills, loadInvoices, loadQuotes } from "@/lib/books-client";
+import { booksLedgerBanner, usesServerBooksUi } from "@/lib/books-copy";
+import { SIGNUP_FOR_TRIAL } from "@/lib/trial-next";
 import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
 
 const NAV = [
@@ -219,9 +221,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               </strong>
               <span className="text-white/50"> — </span>
               {hasUserDocs
-                ? persistence === "server"
-                  ? "Invoices, quotes, and bills are saved to your organisation. No live bank feeds, payments, or ATO lodgement."
-                  : "Invoices, quotes, and bills you create stay in this browser. No live bank feeds, payments, or ATO lodgement."
+                ? booksLedgerBanner(usesServerBooksUi(persistence, user))
                 : `${orgName} has no documents yet. Create an invoice, quote, or bill to get started.`}
             </p>
             {!user ? (
@@ -267,7 +267,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
                   </Link>
                 </>
               ) : null}
-              <Link href="/signup" onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-white hover:bg-white/5">
+              <Link href={SIGNUP_FOR_TRIAL} onClick={() => setMobileOpen(false)} className="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-white hover:bg-white/5">
                 Start free trial
               </Link>
             </div>
