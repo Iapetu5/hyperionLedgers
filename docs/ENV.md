@@ -56,7 +56,7 @@ Create a product in the Stripe Dashboard (test mode) with one recurring price: *
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_test_…` | Vercel (public) |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | Vercel secret |
 
-Webhook URL: `https://www.hyperioninvoices.com.au/api/stripe/webhook` (event: `checkout.session.completed`).
+Webhook URL: `https://www.hyperioninvoices.com.au/api/stripe/webhook` (events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`).
 
 Apple Pay / Google Pay Dashboard steps, including domain verification for `www.hyperioninvoices.com.au` and the apex: [STRIPE_APPLE_PAY.md](./STRIPE_APPLE_PAY.md).
 

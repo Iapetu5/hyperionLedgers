@@ -61,6 +61,7 @@ export async function createCheckoutSession(req: Request) {
   if (account?.id) {
     params.set("client_reference_id", account.id);
     params.set("metadata[userId]", account.id);
+    params.set("subscription_data[metadata][userId]", account.id);
   }
 
   try {

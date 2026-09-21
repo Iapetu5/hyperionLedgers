@@ -35,24 +35,7 @@ export default function SignupPage() {
       setError(res.error);
       return;
     }
-    try {
-      const checkout = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = (await checkout.json()) as {
-        configured?: boolean;
-        url?: string;
-      };
-      if (data.configured && data.url?.startsWith("http")) {
-        window.location.assign(data.url);
-        return;
-      }
-    } catch {
-      // Local sign-up already succeeded — continue without Stripe.
-    }
-    setBusy(false);
+    // Books setup first — Stripe trial checkout stays on Pricing / Downloads.
     router.push(addCompanyHref("/onboarding"));
   }
 
@@ -141,7 +124,13 @@ export default function SignupPage() {
           <button type="submit" className="btn-primary w-full" disabled={busy}>
             {busy ? "Creating…" : "Next: add your company"}
           </button>
-          <p className="text-center text-xs text-slate-400">14-day trial, then $69 a month.</p>
+          <p className="text-center text-xs text-slate-400">
+            14-day trial on{" "}
+            <Link href="/pricing" className="text-brand-300 hover:underline">
+              Pricing
+            </Link>
+            , then $69 a month.
+          </p>
           <GuestOnly>
             <p className="text-center text-xs text-slate-400">
               Prefer to look first?{" "}

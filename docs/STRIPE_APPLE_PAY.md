@@ -43,7 +43,7 @@ Same names as `.env.example`. Set values in the Vercel project — never in Git:
 | `STRIPE_SECRET_KEY` | Server-only Checkout + retrieve |
 | `STRIPE_PRICE_ID` | $69 AUD / month Price |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (Checkout / future Payment Element) |
-| `STRIPE_WEBHOOK_SECRET` | `checkout.session.completed` |
+| `STRIPE_WEBHOOK_SECRET` | `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated` |
 | `NEXT_PUBLIC_APP_URL` | `https://www.hyperioninvoices.com.au` |
 
 Webhook: `https://www.hyperioninvoices.com.au/api/stripe/webhook`.
