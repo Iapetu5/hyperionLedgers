@@ -16,8 +16,9 @@ Signup collects **name, email, and password only**. Company name and ABN are col
 
 ## Add company (`/add-company`)
 - Step: `Step 2 of 3 · Add company`
-- Dedicated search → pick → confirm page (Nicholas). Simulated ABR is fine.
-- Plain empty / no-results / error copy. Confirm company is the only primary.
+- Search is optional. The confirm form is always visible: **Business name**, optional **ABN**, **Business type**.
+- Confirm company is the only primary. A register match is not required to continue to `/onboarding`.
+- Live ABR only if `ABR_GUID` is set; otherwise the practice register. Never claim the Australian Business Register unless the GUID is set and the payload is live.
 
 ## Organisation wizard (`/onboarding`)
 - Step: `Step 3 of 3 · Organisation setup` plus inner `Step X of Y`
@@ -57,6 +58,7 @@ Do not redo the step labels, one-question wizard, or Confirm company primary. Re
 - Confirm fields: **Business name**, **Business type** (options unchanged).
 - Empty name: `Enter the business name.`
 - ABN help: `11 digits. Spaces are fine. You can leave this blank.`
+- Short ABN: `That ABN needs 11 digits. Spaces are fine.`
 - Bad ABN: `That ABN does not look right. Check the 11 digits and try again.`
 - Account Save: **Save changes**, then `Saved your business details.`
 

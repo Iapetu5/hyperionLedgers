@@ -66,8 +66,8 @@ async function fetchAbr(url: string): Promise<Record<string, unknown> | null> {
 
 /** Live ABR JSON lookup when ABR_GUID is set. Returns null if unconfigured or the call fails. */
 export async function searchAbrLive(query: string, limit = 8): Promise<AbrCompany[] | null> {
+  if (!isLiveAbrConfigured()) return null;
   const guid = abrGuid();
-  if (!guid) return null;
   const q = query.trim();
   if (q.length < 2) return [];
 
@@ -117,16 +117,24 @@ export type AbrSearchPayload = {
   results: AbrCompany[];
   simulated: boolean;
   source: "abr" | "demo";
+  liveConfigured: boolean;
 };
 
-/** Live ABR when ABR_GUID is set and the call succeeds; otherwise simulated directory. */
+/**
+ * Live ABR only when ABR_GUID (or ABR_GUID_KEY) is set *and* the ABR call succeeds.
+ * If the GUID is missing, never call ABR and never claim a live register.
+ */
 export async function resolveAbrSearch(query: string, limit = 8): Promise<AbrSearchPayload> {
   const q = query.trim().slice(0, 120);
-  if (isLiveAbrConfigured()) {
+  const liveConfigured = isLiveAbrConfigured();
+  if (q.length < 2) {
+    return { query: q, results: [], simulated: true, source: "demo", liveConfigured };
+  }
+  if (liveConfigured) {
     const live = await searchAbrLive(q, limit);
     if (live) {
-      return { query: q, results: live, simulated: false, source: "abr" };
+      return { query: q, results: live, simulated: false, source: "abr", liveConfigured: true };
     }
   }
-  return { query: q, results: searchAbr(q, limit), simulated: true, source: "demo" };
+  return { query: q, results: searchAbr(q, limit), simulated: true, source: "demo", liveConfigured };
 }

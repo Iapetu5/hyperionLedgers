@@ -6,6 +6,7 @@ export {
   addCompanyHref,
   SETUP_STEP,
   isRealCompanyName,
+  validateBusinessName,
   clearSelectedCompany,
   readSelectedCompany,
   safeAddCompanyReturn,

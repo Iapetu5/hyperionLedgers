@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import type { AbrCompany } from "@/lib/abn";
+import { describeAbrLookup, type AbrCompany } from "@/lib/abn";
 import { enrichAbrCompany, useAbrSearch } from "@/components/company/useAbrSearch";
 
 type Props = {
@@ -27,7 +27,8 @@ export function BusinessNameTypeahead({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [picked, setPicked] = useState<AbrCompany | null>(null);
-  const { results, busy, error, simulated } = useAbrSearch(value, open);
+  const { results, busy, error, simulated, liveConfigured } = useAbrSearch(value, open);
+  const copy = describeAbrLookup(liveConfigured, simulated);
 
   async function pick(company: AbrCompany) {
     onChange(company.legalName);
@@ -92,10 +93,7 @@ export function BusinessNameTypeahead({
         }}
       />
       <p className="mt-1 text-xs text-slate-400">
-        {hint ||
-          (simulated
-            ? "Type the name or ABN. Pick a practice-register match, or keep typing it yourself."
-            : "Type the name or ABN. Pick a live Australian Business Register match to fill the company.")}
+        {hint || copy.typeaheadHint}
       </p>
       {picked && picked.legalName === value && (
         <p className="mt-1 text-xs text-slate-300">
