@@ -20,6 +20,7 @@ export default async function CheckoutPage({
   const configured = isStripeConfigured();
   const cancelled = searchParams.reason === "cancelled";
   const stripeError = searchParams.reason === "stripe-error";
+  const unconfigured = searchParams.reason === "unconfigured";
 
   return (
     <div>
@@ -37,6 +38,8 @@ export default async function CheckoutPage({
               ? "Checkout was cancelled. You can try again, or create an account first."
               : stripeError
                 ? "Stripe Checkout could not start. Check the test keys and price ID in Vercel, then try again."
+                : unconfigured
+                  ? "Stripe test keys are not set in this environment. Sign up still works; add the keys in Vercel and redeploy to open Checkout."
                 : configured
                   ? `You will go to Stripe Checkout (test mode) for the $69 monthly plan with a 14-day free trial. ${CHECKOUT_PAY_COPY}. Google Pay shows on the same Checkout when Stripe supports it on that device. After payment you land on Downloads for the Windows app.`
                   : "The buy path is ready. Stripe test keys are not in this environment yet, so Checkout cannot open. Sign up still works, and Nicholas can add the keys in Vercel without changing DNS."}

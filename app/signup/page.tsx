@@ -36,13 +36,16 @@ export default function SignupPage() {
       return;
     }
     try {
-      const checkout = await fetch("/api/checkout", {
+      const checkout = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const data = (await checkout.json()) as { configured?: boolean; url?: string };
-      if (data.configured && data.url) {
+      const data = (await checkout.json()) as {
+        configured?: boolean;
+        url?: string;
+      };
+      if (data.configured && data.url?.startsWith("http")) {
         window.location.assign(data.url);
         return;
       }

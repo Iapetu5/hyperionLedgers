@@ -15,7 +15,9 @@ Production: [https://www.hyperioninvoices.com.au](https://www.hyperioninvoices.c
 | `/product` | Product overview |
 | `/checkout` | Stripe Checkout stub if keys are missing (success redirects to Downloads) |
 | `/downloads` | After a valid Stripe session or paid account — unlock Windows `.exe` |
-| `/api/checkout` | Creates a Stripe Checkout subscription (`$69` / 14-day trial) |
+| `/api/checkout` | Creates a Stripe Checkout subscription (`$69` / 14-day trial) — legacy alias |
+| `/api/stripe/checkout` | Creates a Stripe Checkout subscription (`$69` / 14-day trial) |
+| `/api/stripe/status` | Stripe + persistence env diagnostics (no secrets) |
 | `/api/stripe/webhook` | Verifies `checkout.session.completed` and records entitlement |
 | `/api/downloads/windows` | Gated stream of `HyperionInvoices-Setup.exe` |
 | `/demo` | Optional **Try a demo** walkthrough (banner: sample data — not your real account) |
@@ -23,7 +25,7 @@ Production: [https://www.hyperioninvoices.com.au](https://www.hyperioninvoices.c
 
 The homepage does **not** dump visitors into the demo.
 
-**Stripe:** Start free trial / Buy posts to `/api/checkout` (server-only). Checkout is `card` so customers can **pay with card or Apple Pay** (Google Pay on the same hosted page when Stripe shows it). Success URL is `/downloads?session_id={CHECKOUT_SESSION_ID}`. The Downloads page **retrieves the session from Stripe** (or a signed `hl_entitlement` cookie / `has_paid_download`). `?success=1` is ignored. The `.exe` is **not** in `public/` — `/api/downloads/windows` streams `private/downloads/HyperionInvoices-Setup.exe` after a 10-minute single-use token or an httpOnly session/entitlement.
+**Stripe:** Start free trial / Buy posts to `/api/stripe/checkout` (server-only; `/api/checkout` remains as an alias). Checkout is `card` so customers can **pay with card or Apple Pay** (Google Pay on the same hosted page when Stripe shows it). Success URL is `/downloads?session_id={CHECKOUT_SESSION_ID}`. The Downloads page **retrieves the session from Stripe** (or a signed `hl_entitlement` cookie / `has_paid_download`). `?success=1` is ignored. The `.exe` is **not** in `public/` — `/api/downloads/windows` streams `private/downloads/HyperionInvoices-Setup.exe` after a 10-minute single-use token, a verified `session_id`, or an httpOnly session/entitlement.
 
 Apple Pay domain verification for `www.hyperioninvoices.com.au` and the apex: [docs/STRIPE_APPLE_PAY.md](docs/STRIPE_APPLE_PAY.md).
 

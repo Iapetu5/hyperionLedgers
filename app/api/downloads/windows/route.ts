@@ -6,6 +6,11 @@ import { WINDOWS_INSTALLER_FILE } from "@/lib/brand";
 import { consumeDownloadToken } from "@/lib/download-token";
 import { hasDownloadAccess } from "@/lib/entitlements";
 import { clientIp, rateLimit } from "@/lib/request-guard";
+import {
+  isCheckoutSessionId,
+  retrieveCheckoutSession,
+  sessionGrantsDownload,
+} from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,9 +37,13 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const token = url.searchParams.get("token") ?? "";
+  const sessionId = url.searchParams.get("session_id") ?? "";
   let allowed = false;
   if (token) {
     allowed = await consumeDownloadToken(token);
+  } else if (isCheckoutSessionId(sessionId)) {
+    const session = await retrieveCheckoutSession(sessionId);
+    allowed = sessionGrantsDownload(session);
   } else {
     allowed = await hasDownloadAccess();
   }
