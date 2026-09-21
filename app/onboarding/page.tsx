@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { AbnField } from "@/components/abn/AbnField";
-import { BusinessNameTypeahead } from "@/components/company/BusinessNameTypeahead";
 import type { GstAccountingMethod, LedgerMode } from "@/lib/auth";
 import { PENDING_ORG_NAME } from "@/lib/auth";
-import { ABR_ENTITY_TYPES, type AbrCompany, type AbrEntityType } from "@/lib/abn";
-import { addCompanyHref, readSelectedCompany } from "@/lib/company-pickup";
+import { addCompanyHref } from "@/lib/company-pickup";
 import { clearUserOrganisationDocs } from "@/lib/user-docs";
 
 type WizardStep = "gst" | "method" | "fy" | "start";
@@ -22,10 +19,6 @@ export default function OnboardingPage() {
   const [gstRegistered, setGstRegistered] = useState(true);
   const [method, setMethod] = useState<GstAccountingMethod>("accruals");
   const [fyEnd, setFyEnd] = useState("30 June");
-  const [businessName, setBusinessName] = useState("");
-  const [abn, setAbn] = useState("");
-  const [entityType, setEntityType] = useState<AbrEntityType | "">("");
-  const [address, setAddress] = useState("");
   const [ledgerMode, setLedgerMode] = useState<LedgerMode>("blank");
   const [error, setError] = useState<string | null>(null);
 
@@ -42,22 +35,6 @@ export default function OnboardingPage() {
     if (user.gstRegistered !== undefined) setGstRegistered(user.gstRegistered);
     if (user.gstAccountingMethod) setMethod(user.gstAccountingMethod);
     if (user.financialYearEnd) setFyEnd(user.financialYearEnd);
-    if (user.businessName && user.businessName !== PENDING_ORG_NAME) setBusinessName(user.businessName);
-    if (user.abn) setAbn(user.abn);
-    if (user.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(user.entityType)) {
-      setEntityType(user.entityType as AbrEntityType);
-    }
-    if (user.businessAddress) setAddress(user.businessAddress);
-    const picked = readSelectedCompany();
-    if (picked) {
-      if (!user.businessName || user.businessName === PENDING_ORG_NAME) setBusinessName(picked.legalName);
-      if (!user.abn) setAbn(picked.abn);
-      setGstRegistered(picked.gstRegistered);
-      if (picked.entityType && (ABR_ENTITY_TYPES as readonly string[]).includes(picked.entityType)) {
-        setEntityType(picked.entityType as AbrEntityType);
-      }
-      if (picked.address) setAddress(picked.address);
-    }
   }, [user, loading, needsOnboarding, router]);
 
   const steps = useMemo<WizardStep[]>(
@@ -81,10 +58,7 @@ export default function OnboardingPage() {
       gstAccountingMethod: gstRegistered ? method : undefined,
       financialYearEnd: fyEnd,
       ledgerMode,
-      abn,
-      businessName: businessName || undefined,
-      entityType: entityType || undefined,
-      businessAddress: address || undefined,
+      abn: user?.abn,
     });
     if (!res.ok) {
       setError(res.error);
@@ -123,22 +97,14 @@ export default function OnboardingPage() {
     return <div className="p-8 text-center text-white">Loading…</div>;
   }
 
-  const savedName = businessName || (user.businessName !== PENDING_ORG_NAME ? user.businessName : "");
+  const savedName = user.businessName !== PENDING_ORG_NAME ? user.businessName : "";
   const orgName = savedName || "your business";
   const titles: Record<WizardStep, string> = {
     gst: "Are you registered for GST?",
     method: "GST accounting method",
-    fy: "Company, year end and ABN",
+    fy: "Financial year end",
     start: "How would you like to start?",
   };
-
-  function applyCompany(company: AbrCompany) {
-    setBusinessName(company.legalName);
-    setAbn(company.abn);
-    setEntityType(company.entityType);
-    setAddress(company.address ?? "");
-    if (company.gstRegistered !== undefined) setGstRegistered(company.gstRegistered);
-  }
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
@@ -167,14 +133,12 @@ export default function OnboardingPage() {
           <p className="font-semibold text-white">
             {savedName || "No company saved yet"}
           </p>
-          {(abn || user.abn) && <p className="mt-0.5 text-slate-300">ABN {abn || user.abn}</p>}
-          {(entityType || user.entityType) && <p className="text-slate-300">{entityType || user.entityType}</p>}
-          {(address || user.businessAddress) && (
-            <p className="text-xs text-slate-400">{address || user.businessAddress}</p>
-          )}
+          {user.abn && <p className="mt-0.5 text-slate-300">ABN {user.abn}</p>}
+          {user.entityType && <p className="text-slate-300">{user.entityType}</p>}
+          {user.businessAddress && <p className="text-xs text-slate-400">{user.businessAddress}</p>}
           <p className="mt-1 text-xs text-slate-400">
-            {gstRegistered ? "GST registered" : "Not GST registered"}
-            {abn || user.abn ? "" : " — confirm when you add the company"}
+            {(user.gstRegistered ?? gstRegistered) ? "GST registered" : "Not GST registered"}
+            {user.abn ? "" : " — add the company on the Add company page"}
           </p>
           <Link
             href={addCompanyHref("/onboarding")}
@@ -233,64 +197,15 @@ export default function OnboardingPage() {
           )}
 
           {step === "fy" && (
-            <>
-              <BusinessNameTypeahead
-                value={businessName}
-                onChange={setBusinessName}
-                onSelect={applyCompany}
-              />
-              <AbnField
-                value={abn}
-                onChange={setAbn}
-                onLookup={(company) => {
-                  if (!company) return;
-                  if (!businessName.trim()) setBusinessName(company.legalName);
-                  if (!entityType) setEntityType(company.entityType);
-                  if (!address && company.address) setAddress(company.address);
-                  if (company.gstRegistered !== undefined) setGstRegistered(company.gstRegistered);
-                }}
-              />
-              {(entityType || address) && (
-                <>
-                  <div>
-                    <label className="label" htmlFor="entityType">Entity type</label>
-                    <select
-                      id="entityType"
-                      className="input"
-                      value={entityType}
-                      onChange={(e) => setEntityType(e.target.value as AbrEntityType)}
-                    >
-                      <option value="">Choose if you know it</option>
-                      {ABR_ENTITY_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label" htmlFor="onboardingAddress">Address</label>
-                    <input
-                      id="onboardingAddress"
-                      className="input"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Street, suburb, state and postcode"
-                      autoComplete="street-address"
-                    />
-                  </div>
-                </>
-              )}
-              <div>
-                <label className="label" htmlFor="fy">Financial year end</label>
-                <select id="fy" className="input" value={fyEnd} onChange={(e) => setFyEnd(e.target.value)}>
-                  <option>30 June</option>
-                  <option>31 March</option>
-                  <option>31 December</option>
-                  <option>30 September</option>
-                </select>
-              </div>
-            </>
+            <div>
+              <label className="label" htmlFor="fy">Financial year end</label>
+              <select id="fy" className="input" value={fyEnd} onChange={(e) => setFyEnd(e.target.value)}>
+                <option>30 June</option>
+                <option>31 March</option>
+                <option>31 December</option>
+                <option>30 September</option>
+              </select>
+            </div>
           )}
 
           {step === "start" && (
