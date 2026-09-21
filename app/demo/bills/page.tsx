@@ -553,7 +553,7 @@ export default function BillsPage() {
         {!showComposer && (
           <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
             <Plus size={16} />
-            New bill
+            Add bill
           </button>
         )}
       </div>
@@ -704,17 +704,17 @@ export default function BillsPage() {
         <EmptyState
           icon={Receipt}
           title="No bills yet"
-          description="Create a supplier bill, or start from a ready-made example you can approve or mark paid."
+          description="Next: Add bill. Create sample bill makes a ready-made example you can Approve or Mark paid."
           showExploreSample
           actions={[
             {
-              label: "Create sample bill",
+              label: "Add bill",
               primary: true,
-              onClick: () => createMixedTaxSample(),
+              onClick: () => openComposer(),
             },
             {
-              label: "New bill",
-              onClick: () => openComposer(),
+              label: "Create sample bill",
+              onClick: () => createMixedTaxSample(),
             },
             { label: "Back to overview", href: "/demo" },
           ]}
@@ -729,7 +729,7 @@ export default function BillsPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Add a supplier bill, edit lines later, Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically. Or explore Harbour &amp; Co for sample payables.
+              Next: Add bill, then Approve or Mark paid in back office (no public pay). Past-due unpaid bills show Overdue automatically. Or explore Harbour &amp; Co for sample payables.
             </>
           ) : (
             <>

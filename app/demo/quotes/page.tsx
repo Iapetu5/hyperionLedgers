@@ -502,7 +502,7 @@ export default function QuotesPage() {
         {!showComposer && (
           <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
             <Plus size={16} />
-            New quote
+            Create quote
           </button>
         )}
       </div>
@@ -566,17 +566,17 @@ export default function QuotesPage() {
         <EmptyState
           icon={FileSignature}
           title="No quotes yet"
-          description="Create your first quote, or start from a ready-made example with a customer link."
+          description="Next: Create quote. Create sample quote makes a ready-made example with a customer link."
           showExploreSample
           actions={[
             {
-              label: "Create sample quote",
+              label: "Create quote",
               primary: true,
-              onClick: () => createMixedTaxSample(),
+              onClick: () => openComposer(),
             },
             {
-              label: "New quote",
-              onClick: () => openComposer(),
+              label: "Create sample quote",
+              onClick: () => createMixedTaxSample(),
             },
             { label: "Back to overview", href: "/demo" },
           ]}
@@ -634,7 +634,7 @@ export default function QuotesPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Create a basic quote (saved in this browser), or explore Harbour &amp; Co for the full sample list. Sent quotes past expiry show Expired automatically.
+              Next: Create quote (saved in this browser), or explore Harbour &amp; Co for the full sample list. Sent quotes past expiry show Expired automatically.
             </>
           ) : (
             <>

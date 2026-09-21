@@ -27,7 +27,9 @@ export function DocRowActions({
   return (
     <div className="doc-row-actions relative">
       {visible}
-      <MoreMenu>{overflow}</MoreMenu>
+      <div className="ml-auto">
+        <MoreMenu>{overflow}</MoreMenu>
+      </div>
     </div>
   );
 }

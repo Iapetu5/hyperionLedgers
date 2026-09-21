@@ -507,7 +507,7 @@ export default function InvoicesPage() {
         {!showComposer && (
           <button type="button" className="btn-primary shrink-0" onClick={() => openComposer()}>
             <Plus size={16} />
-            New invoice
+            Create invoice
           </button>
         )}
       </div>
@@ -573,17 +573,17 @@ export default function InvoicesPage() {
         <EmptyState
           icon={FileText}
           title="No invoices yet"
-          description="Create your first invoice, or start from a ready-made example with a customer pay link."
+          description="Next: Create invoice. Create sample invoice makes a ready-made example with a pay link."
           showExploreSample
           actions={[
             {
-              label: "Create sample invoice",
+              label: "Create invoice",
               primary: true,
-              onClick: () => createMixedTaxSample(),
+              onClick: () => openComposer(),
             },
             {
-              label: "New invoice",
-              onClick: () => openComposer(),
+              label: "Create sample invoice",
+              onClick: () => createMixedTaxSample(),
             },
             { label: "Back to overview", href: "/demo" },
           ]}
@@ -641,7 +641,7 @@ export default function InvoicesPage() {
         {pageHeader(
           userRows.length === 0 ? (
             <>
-              Create a basic invoice (saved in this browser), or explore Harbour &amp; Co for the full sample list. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
+              Next: Create invoice (saved in this browser), or explore Harbour &amp; Co for the full sample list. Past-due unpaid invoices show Overdue automatically (Draft stays Draft).
             </>
           ) : (
             <>
