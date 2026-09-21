@@ -23,14 +23,22 @@ export function StartTrialButton({
   async function startTrial() {
     setBusy(true);
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(email ? { email } : {}),
       });
-      const data = (await res.json()) as { url?: string };
-      if (data.url) {
+      const data = (await res.json()) as {
+        url?: string;
+        configured?: boolean;
+        message?: string;
+      };
+      if (data.url?.startsWith("http")) {
         window.location.assign(data.url);
+        return;
+      }
+      if (data.url?.startsWith("/")) {
+        router.push(data.url);
         return;
       }
       router.push("/checkout?reason=unconfigured");

@@ -22,23 +22,29 @@ export default async function DownloadsPage({
 }) {
   const account = await getSessionAccount();
   const sessionId = searchParams.session_id ?? "";
+  let sessionEntitled = false;
   // Never trust ?success=1 — only a retrieved Stripe session or stored entitlement.
   if (isCheckoutSessionId(sessionId)) {
     const ip = headers().get("x-forwarded-for")?.split(",")[0]?.trim() || "page";
     if (rateLimit(`cs-retrieve:${ip}`, 20, 15 * 60 * 1000)) {
       const session = await retrieveCheckoutSession(sessionId);
       if (sessionGrantsDownload(session)) {
+        sessionEntitled = true;
         await grantDownloadFromSession(session!);
       }
     }
   }
-  const allowed = await hasDownloadAccess();
+  const allowed = sessionEntitled || (await hasDownloadAccess());
   const installerReady = existsSync(
     path.join(process.cwd(), "private", "downloads", WINDOWS_INSTALLER_FILE)
   );
-  const subject = account?.id || readEntitlementCookie() || "entitled";
+  const subject = account?.id || readEntitlementCookie() || sessionId || "entitled";
   const token = allowed && installerReady ? await issueDownloadToken(subject) : null;
-  const downloadHref = token ? `/api/downloads/windows?token=${encodeURIComponent(token)}` : "/api/downloads/windows";
+  const downloadHref = token
+    ? `/api/downloads/windows?token=${encodeURIComponent(token)}`
+    : sessionEntitled && sessionId
+      ? `/api/downloads/windows?session_id=${encodeURIComponent(sessionId)}`
+      : "/api/downloads/windows";
 
   return (
     <div>
