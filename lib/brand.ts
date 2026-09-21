@@ -10,3 +10,7 @@ export const DEMO_ORG_SHORT = "Demo company";
 /** Shared marketing limits. Do not claim ATO lodgement, live bank feeds, or a shipped Mac app. */
 export const MARKETING_LIMITS =
   "HyperionInvoices does not send forms to the tax office. Not a live bank feed. Mac is coming soon.";
+
+/** Windows download honesty. Do not call this a finished desktop app. */
+export const WINDOWS_INSTALLER_NOTE =
+  "This is a Windows installer, not a finished desktop app. The books also run in the browser.";
