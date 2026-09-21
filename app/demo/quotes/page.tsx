@@ -700,7 +700,7 @@ export default function QuotesPage() {
                 <th className="px-4 py-3">Expiry</th>
                 <th className="px-4 py-3">Amount</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="min-w-[14rem] px-4 py-3">Actions</th>
+                <th className="doc-actions-col px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -729,7 +729,7 @@ export default function QuotesPage() {
                       })}
                     />
                   </td>
-                  <td className="px-4 py-3">{userActions(q)}</td>
+                  <td className="doc-actions-col px-4 py-3">{userActions(q)}</td>
                 </tr>
               ))}
             </tbody>
@@ -831,7 +831,7 @@ export default function QuotesPage() {
                 <th className="px-4 py-3">Expiry</th>
                 <th className="px-4 py-3">Amount</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="min-w-[14rem] px-4 py-3">Actions</th>
+                <th className="doc-actions-col px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -860,7 +860,7 @@ export default function QuotesPage() {
                         })}
                       />
                   </td>
-                  <td className="px-4 py-3">{userActions(q)}</td>
+                  <td className="doc-actions-col px-4 py-3">{userActions(q)}</td>
                 </tr>
               ))}
             </tbody>
@@ -883,7 +883,7 @@ export default function QuotesPage() {
               <th className="px-4 py-3">Expiry</th>
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="doc-actions-col px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -915,7 +915,7 @@ export default function QuotesPage() {
                     })}
                   />
                 </td>
-                <td className="px-4 py-3">
+                <td className="doc-actions-col px-4 py-3">
                   <DocRowActions keep={2}>
                     <button
                       type="button"
