@@ -21,6 +21,8 @@ export default function AccountPage() {
   const [fyEnd, setFyEnd] = useState("30 June");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -35,7 +37,16 @@ export default function AccountPage() {
     setFyEnd(user.financialYearEnd ?? "30 June");
   }, [user]);
 
-  if (loading) return <p className="text-white">Loading…</p>;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-white">Your account</h1>
+        <div className="card max-w-xl p-6 text-sm text-white" role="status" aria-live="polite">
+          Loading…
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -59,6 +70,13 @@ export default function AccountPage() {
     e.preventDefault();
     setMessage(null);
     setError(null);
+    if (!businessName.trim()) {
+      setNameError("Enter the business name.");
+      document.getElementById("bn")?.focus();
+      return;
+    }
+    setNameError(null);
+    setBusy(true);
     const res = await updateProfile({
       businessName,
       abn,
@@ -69,6 +87,7 @@ export default function AccountPage() {
       financialYearEnd: fyEnd,
       companyAdded: Boolean(businessName.trim()),
     });
+    setBusy(false);
     if (!res.ok) {
       setError(res.error);
       return;
@@ -117,7 +136,7 @@ export default function AccountPage() {
         </Link>
       </div>
 
-      <form className="card max-w-xl space-y-4 p-6" onSubmit={onSave}>
+        <form className="card max-w-xl space-y-4 p-6" onSubmit={onSave} noValidate>
         <div>
           <p className="text-sm font-semibold text-white">Company name and ABN</p>
           <p className="mt-1 text-sm text-slate-300">
@@ -128,18 +147,33 @@ export default function AccountPage() {
           id="bn"
           label="Business name"
           value={businessName}
-          onChange={setBusinessName}
+          invalid={Boolean(nameError)}
+          onChange={(name) => {
+            setBusinessName(name);
+            if (nameError) setNameError(null);
+            if (message) setMessage(null);
+          }}
           onSelect={(company: AbrCompany) => {
             setBusinessName(company.legalName);
             setAbn(company.abn);
             setEntityType(company.entityType);
             setAddress(company.address ?? "");
             setGstRegistered(company.gstRegistered);
+            setNameError(null);
+            setMessage(null);
           }}
         />
+        {nameError && (
+          <p className="-mt-2 text-sm text-rose-300" role="alert">
+            {nameError}
+          </p>
+        )}
         <AbnField
           value={abn}
-          onChange={setAbn}
+          onChange={(v) => {
+            setAbn(v);
+            if (message) setMessage(null);
+          }}
           onLookup={(company) => {
             if (!company) return;
             if (!businessName.trim()) setBusinessName(company.legalName);
@@ -147,37 +181,42 @@ export default function AccountPage() {
             if (!address && company.address) setAddress(company.address);
           }}
         />
-        {(entityType || address) && (
-          <>
-            <div>
-              <label className="label" htmlFor="entityType">Business type</label>
-              <select
-                id="entityType"
-                className="input"
-                value={entityType}
-                onChange={(e) => setEntityType(e.target.value as AbrEntityType)}
-              >
-                <option value="">Choose if you know it</option>
-                {ABR_ENTITY_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="accountAddress">Address</label>
-              <input
-                id="accountAddress"
-                className="input"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Street, suburb, state and postcode"
-                autoComplete="street-address"
-              />
-            </div>
-          </>
-        )}
+        <div>
+          <label className="label" htmlFor="entityType">Business type</label>
+          <select
+            id="entityType"
+            className="input"
+            value={entityType}
+            onChange={(e) => {
+              setEntityType(e.target.value as AbrEntityType);
+              if (message) setMessage(null);
+            }}
+          >
+            <option value="">Choose if you know it</option>
+            {ABR_ENTITY_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-slate-400">
+            Company, sole trader, or partnership — pick the closest match.
+          </p>
+        </div>
+        <div>
+          <label className="label" htmlFor="accountAddress">Address</label>
+          <input
+            id="accountAddress"
+            className="input"
+            value={address}
+            onChange={(e) => {
+              setAddress(e.target.value);
+              if (message) setMessage(null);
+            }}
+            placeholder="Street, suburb, state and postcode"
+            autoComplete="street-address"
+          />
+        </div>
         <div>
           <p className="text-sm font-semibold text-white">GST and year end</p>
           <p className="mt-1 text-sm text-slate-300">
@@ -192,7 +231,10 @@ export default function AccountPage() {
                 key={String(v)}
                 className={`choice-card ${gstRegistered === v ? "choice-card-active" : ""}`}
               >
-                <input type="radio" name="gstRegistered" checked={gstRegistered === v} onChange={() => setGstRegistered(v)} />
+                <input type="radio" name="gstRegistered" checked={gstRegistered === v} onChange={() => {
+                  setGstRegistered(v);
+                  if (message) setMessage(null);
+                }} />
                 <span>
                   <strong className="text-white">{v ? "Yes" : "No"}</strong>
                   <span className="mt-0.5 block text-xs text-slate-400">
@@ -217,7 +259,10 @@ export default function AccountPage() {
                   key={val}
                   className={`choice-card ${method === val ? "choice-card-active" : ""}`}
                 >
-                  <input type="radio" name="gstMethod" checked={method === val} onChange={() => setMethod(val)} />
+                  <input type="radio" name="gstMethod" checked={method === val} onChange={() => {
+                    setMethod(val);
+                    if (message) setMessage(null);
+                  }} />
                   <span>
                     <strong className="text-white">{label}</strong>
                     <span className="mt-0.5 block text-xs text-slate-400">{hint}</span>
@@ -229,7 +274,10 @@ export default function AccountPage() {
         )}
         <div>
           <label className="label" htmlFor="fy">Financial year end</label>
-          <select id="fy" className="input" value={fyEnd} onChange={(e) => setFyEnd(e.target.value)}>
+          <select id="fy" className="input" value={fyEnd} onChange={(e) => {
+            setFyEnd(e.target.value);
+            if (message) setMessage(null);
+          }}>
             <option>30 June</option>
             <option>31 March</option>
             <option>31 December</option>
@@ -262,8 +310,8 @@ export default function AccountPage() {
             {message}
           </p>
         )}
-        <button type="submit" className="btn-primary">
-          Save changes
+        <button type="submit" className="btn-primary" disabled={busy} aria-busy={busy}>
+          {busy ? "Saving…" : "Save changes"}
         </button>
       </form>
     </div>

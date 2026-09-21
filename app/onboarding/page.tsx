@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
@@ -20,6 +20,9 @@ export default function OnboardingPage() {
   const [fyEnd, setFyEnd] = useState("30 June");
   const [ledgerMode, setLedgerMode] = useState<LedgerMode>("blank");
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const lastFocusedStep = useRef<WizardStep | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -60,6 +63,8 @@ export default function OnboardingPage() {
       setError("Add your company first — search, pick a match, then confirm.");
       return;
     }
+    setSaving(true);
+    setError(null);
     const res = await completeOnboarding({
       gstRegistered,
       gstAccountingMethod: gstRegistered ? method : undefined,
@@ -68,6 +73,7 @@ export default function OnboardingPage() {
       abn: user?.abn,
     });
     if (!res.ok) {
+      setSaving(false);
       setError(res.error);
       return;
     }
@@ -76,8 +82,11 @@ export default function OnboardingPage() {
   }
 
   async function onSkip() {
+    setSaving(true);
+    setError(null);
     const res = await skipOnboarding();
     if (!res.ok) {
+      setSaving(false);
       setError(res.error);
       return;
     }
@@ -104,8 +113,26 @@ export default function OnboardingPage() {
     setStep(steps[stepIndex - 1]);
   }
 
+  useEffect(() => {
+    if (loading || !user) return;
+    if (lastFocusedStep.current === step) return;
+    if (lastFocusedStep.current === null) {
+      lastFocusedStep.current = step;
+      return;
+    }
+    lastFocusedStep.current = step;
+    headingRef.current?.focus();
+  }, [step, loading, user]);
+
   if (loading || !user) {
-    return <div className="p-8 text-center text-white">Loading…</div>;
+    return (
+      <div className="mx-auto max-w-xl px-4 py-12">
+        <BrandLogo />
+        <div className="card mt-8 p-8 text-center text-sm text-white" role="status" aria-live="polite">
+          Loading…
+        </div>
+      </div>
+    );
   }
 
   const hasCompany = isRealCompanyName(user.businessName);
@@ -184,7 +211,13 @@ export default function OnboardingPage() {
             So far: {recapParts.join(" · ")}. Back changes an earlier answer.
           </p>
         )}
-        <h1 className="mt-4 text-xl font-bold text-white">{titles[step]}</h1>
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="mt-4 text-xl font-bold text-white outline-none"
+        >
+          {titles[step]}
+        </h1>
         <p className="mt-1 text-sm text-slate-300">{intros[step]}</p>
 
         <p className="mt-4 text-sm text-slate-300">
@@ -321,8 +354,9 @@ export default function OnboardingPage() {
               {stepIndex > 0 ? (
                 <button
                   type="button"
-                  className="self-start text-sm font-semibold text-slate-200 hover:underline"
+                  className="self-start text-sm font-semibold text-slate-200 hover:underline disabled:opacity-40"
                   onClick={goBack}
+                  disabled={saving}
                 >
                   Back
                 </button>
@@ -334,8 +368,13 @@ export default function OnboardingPage() {
                   Back to add company
                 </Link>
               )}
-              <button type="submit" className="btn-primary w-full sm:w-auto" disabled={!hasCompany}>
-                {nextLabel()}
+              <button
+                type="submit"
+                className="btn-primary w-full sm:w-auto"
+                disabled={!hasCompany || saving}
+                aria-busy={saving}
+              >
+                {saving && isLast ? "Saving…" : nextLabel()}
               </button>
             </div>
             {!hasCompany && (
@@ -346,9 +385,19 @@ export default function OnboardingPage() {
                 </Link>
               </p>
             )}
-            <button type="button" className="self-start text-sm font-medium text-slate-400 hover:text-white hover:underline" onClick={onSkip}>
-              Skip — use sample data
+            <button
+              type="button"
+              className="self-start text-sm font-medium text-slate-400 hover:text-white hover:underline disabled:opacity-40"
+              onClick={onSkip}
+              disabled={saving}
+            >
+              {step === "start"
+                ? "Skip and open sample books"
+                : "Skip remaining questions — use sample data"}
             </button>
+            <p className="text-xs text-slate-400">
+              Skip fills any unanswered questions with GST yes, Accruals, 30 June, and sample data.
+            </p>
           </div>
         </form>
         <p className="mt-4 text-xs text-slate-400">

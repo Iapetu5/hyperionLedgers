@@ -25,7 +25,14 @@ import {
 } from "@/lib/company-pickup";
 
 function AddCompanyLoading() {
-  return <div className="p-8 text-center text-white">Loading…</div>;
+  return (
+    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-4 py-8">
+      <BrandLogo />
+      <div className="card mt-6 p-8 text-center text-sm text-white" role="status" aria-live="polite">
+        Loading…
+      </div>
+    </div>
+  );
 }
 
 function AddCompanyForm() {
@@ -443,25 +450,36 @@ function AddCompanyForm() {
                 </p>
               )}
               <div className="space-y-2">
+                {!isRealCompanyName(legalName) && (
+                  <p id="confirm-hint" className="text-sm text-slate-300">
+                    Enter the business name to confirm.
+                  </p>
+                )}
                 <button
                   type="submit"
                   className="btn-primary w-full"
                   disabled={busy || !isRealCompanyName(legalName)}
+                  aria-busy={busy}
+                  aria-describedby={
+                    !isRealCompanyName(legalName) ? "confirm-hint" : undefined
+                  }
                 >
                   {busy ? "Saving…" : "Confirm company"}
                 </button>
-                <button
-                  type="button"
-                  className="text-sm font-medium text-slate-400 hover:text-white hover:underline"
-                  onClick={() => applyCompany(null)}
-                >
-                  Clear and search again
-                </button>
+                {!selected && (
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-slate-400 hover:text-white hover:underline"
+                    onClick={() => applyCompany(null)}
+                  >
+                    Clear and search again
+                  </button>
+                )}
               </div>
             </form>
           )}
 
-          {!manual && (
+          {!manual && !selected && (
             <p className="text-sm text-slate-300">
               Can&apos;t find the business?{" "}
               <button
