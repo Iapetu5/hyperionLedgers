@@ -108,14 +108,26 @@ body {
   }
 
   .doc-row-actions {
-    @apply flex min-w-[9rem] max-w-[17.5rem] flex-wrap content-start gap-1.5;
+    @apply flex min-w-0 max-w-[12rem] flex-wrap content-start gap-1.5;
   }
 
   /* Wide enough that overflow menu is off — let actions breathe in one or two rows */
+  @media (min-width: 640px) {
+    .doc-row-actions {
+      max-width: 17.5rem;
+    }
+  }
+
   @media (min-width: 900px) {
     .doc-row-actions {
       max-width: 26rem;
     }
+  }
+
+  /* Keep primary list actions on-screen when the table scrolls sideways. */
+  th.doc-actions-col,
+  td.doc-actions-col {
+    @apply sticky right-0 z-[1] bg-slate-950/90 pl-2 shadow-[-10px_0_12px_-8px_rgba(0,0,0,0.7)];
   }
 
   /* Overflow menu items: stretch compact buttons full-width for thumb taps */

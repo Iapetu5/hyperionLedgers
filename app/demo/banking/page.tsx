@@ -390,22 +390,19 @@ export default function BankingPage() {
       setSuccessSkipped([]);
       return;
     }
-    setTxns((prev) => {
-      const next = prev.map((row) => (row.id === updated.id ? { ...row, ...updated } : row));
-      return next.some((row) => row.id === updated.id) ? next : loadBankTransactions(mode);
-    });
+    const nextTxns = loadBankTransactions(mode);
+    setTxns(nextTxns);
     setError(null);
     setSuccessSkipped([]);
-    const remaining = unmatchedForAccount(
-      loadBankTransactions(mode),
-      chequeAccountId,
-    ).length;
+    const remaining = unmatchedForAccount(nextTxns, chequeAccountId).length;
+    const left =
+      remaining === 0 ? "Nothing left to Apply." : `${linesToApplyLabel(remaining)} still marked Needs category.`;
     setSuccess(
       `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
-        remaining > 0
-          ? `Next: ${steps.applyN} Apply the next line below (${remaining} left).`
-          : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)} Undo match below.`
-      }`,
+        remaining === 0
+          ? `${left} ${morePowerHint(true, hasImport)} Undo match below.`
+          : `${left} Next: ${steps.applyN} Apply the next line.`
+      }`.replace(/\s+/g, " ").trim(),
     );
   }
 
@@ -417,20 +414,21 @@ export default function BankingPage() {
       if (suggestion.confidence !== "high") continue;
       if (applyCategoryToTransaction(t.id, suggestion)) applied += 1;
     }
-    setTxns(loadBankTransactions(mode));
+    const nextTxns = loadBankTransactions(mode);
+    setTxns(nextTxns);
     setError(null);
     setSuccessSkipped([]);
-    const remaining = unmatchedForAccount(loadBankTransactions(mode), chequeAccountId).length;
+    const remaining = unmatchedForAccount(nextTxns, chequeAccountId).length;
+    const left =
+      remaining === 0 ? "Nothing left to Apply." : `${linesToApplyLabel(remaining)} still marked Needs category.`;
     setSuccess(
       applied === 0
-        ? remaining > 0
-          ? `Nothing left to Apply automatically. Next: Ask AI under More, or ${steps.importN} Import CSV.`
-          : `Nothing left to Apply automatically. Next: ${steps.importN} Import CSV.`
-        : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${
-            remaining > 0
-              ? `Next: ${steps.applyN} Apply the rest, or Ask AI under More (${remaining} left).`
-              : `${steps.applyN} Apply — done. You’re done. ${morePowerHint(true, hasImport)}`
-          }`,
+        ? remaining === 0
+          ? `Nothing left to Apply. Next: ${steps.importN} Import CSV.`
+          : `Nothing left to Apply automatically. ${left} Next: Ask AI under More, or ${steps.applyN} Apply on a remaining line.`
+        : remaining === 0
+          ? `Applied ${applied} line${applied === 1 ? "" : "s"}. ${left} ${morePowerHint(true, hasImport)}`.trim()
+          : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${left} Next: ${steps.applyN} Apply, or Ask AI under More.`,
     );
   }
 
@@ -963,7 +961,7 @@ export default function BankingPage() {
                 <th className="px-4 py-3 text-right">Amount</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Source</th>
-                <th className="px-4 py-3">Action</th>
+                <th className="doc-actions-col px-4 py-3">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -1054,7 +1052,7 @@ export default function BankingPage() {
                         <td className="px-4 py-3 text-xs text-slate-400">
                           {t.source === "import" ? "CSV import" : "Sample"}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="doc-actions-col px-4 py-3">
                           <button
                             type="button"
                             className={

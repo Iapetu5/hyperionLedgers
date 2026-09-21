@@ -681,7 +681,7 @@ export default function InvoicesPage() {
                 <th className="px-4 py-3">Due</th>
                 <th className="px-4 py-3">Amount</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="min-w-[14rem] px-4 py-3">Actions</th>
+                <th className="doc-actions-col px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -710,7 +710,7 @@ export default function InvoicesPage() {
                       })}
                     />
                   </td>
-                  <td className="px-4 py-3">{userActions(inv)}</td>
+                  <td className="doc-actions-col px-4 py-3">{userActions(inv)}</td>
                 </tr>
               ))}
             </tbody>
@@ -790,7 +790,7 @@ export default function InvoicesPage() {
                 <th className="px-4 py-3">Due</th>
                 <th className="px-4 py-3">Amount</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="min-w-[14rem] px-4 py-3">Actions</th>
+                <th className="doc-actions-col px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -819,7 +819,7 @@ export default function InvoicesPage() {
                         })}
                       />
                   </td>
-                  <td className="px-4 py-3">{userActions(inv)}</td>
+                  <td className="doc-actions-col px-4 py-3">{userActions(inv)}</td>
                 </tr>
               ))}
             </tbody>
@@ -842,7 +842,7 @@ export default function InvoicesPage() {
               <th className="px-4 py-3">Due</th>
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="doc-actions-col px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -874,7 +874,7 @@ export default function InvoicesPage() {
                     })}
                   />
                 </td>
-                <td className="px-4 py-3">
+                <td className="doc-actions-col px-4 py-3">
                   {(() => {
                     const st = effectiveInvoiceStatus({
                       status: inv.status as UserInvoice["status"],

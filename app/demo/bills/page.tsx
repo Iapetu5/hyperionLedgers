@@ -661,7 +661,7 @@ export default function BillsPage() {
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Tax</th>
               <th className="px-4 py-3">Status</th>
-              <th className="min-w-[14rem] px-4 py-3">Actions</th>
+              <th className="doc-actions-col px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -695,7 +695,7 @@ export default function BillsPage() {
                 <td className="px-4 py-3">
                   <StatusBadge status={effectiveBillStatus(b)} />
                 </td>
-                <td className="px-4 py-3 align-top">{userActions(b)}</td>
+                <td className="doc-actions-col px-4 py-3 align-top">{userActions(b)}</td>
               </tr>
             ))}
           </tbody>
@@ -821,7 +821,7 @@ export default function BillsPage() {
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Tax</th>
               <th className="px-4 py-3">Status</th>
-              <th className="min-w-[12rem] px-4 py-3">Actions</th>
+              <th className="doc-actions-col px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -857,7 +857,7 @@ export default function BillsPage() {
                   <td className="px-4 py-3">
                     <StatusBadge status={st} />
                   </td>
-                  <td className="px-4 py-3 align-top">
+<td className="doc-actions-col px-4 py-3 align-top">
                     <DocRowActions
                       keep={
                         st === "Paid"
