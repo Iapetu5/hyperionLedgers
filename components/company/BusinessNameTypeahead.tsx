@@ -12,6 +12,7 @@ type Props = {
   onChange: (name: string) => void;
   onSelect?: (company: AbrCompany) => void;
   placeholder?: string;
+  invalid?: boolean;
 };
 
 export function BusinessNameTypeahead({
@@ -22,6 +23,7 @@ export function BusinessNameTypeahead({
   onChange,
   onSelect,
   placeholder = "Sunrise Cafe Pty Ltd",
+  invalid = false,
 }: Props) {
   const listId = useId();
   const [open, setOpen] = useState(false);
@@ -65,6 +67,7 @@ export function BusinessNameTypeahead({
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={results.length > 0}
+        aria-invalid={invalid}
         aria-controls={listId}
         aria-activedescendant={results[activeIndex] ? `${listId}-${activeIndex}` : undefined}
         onChange={(e) => {

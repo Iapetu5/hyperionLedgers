@@ -12,6 +12,16 @@ export type AbrSearchState = {
   liveConfigured: boolean;
 };
 
+/** Empty-list copy for name vs ABN-like queries (spaces ignored). */
+export function abrEmptyResultsMessage(query: string): string {
+  const q = query.trim();
+  const digits = digitsOnlyAbn(q);
+  if (/^\d{8,11}$/.test(digits)) {
+    return "No business matches that ABN. Check the 11 digits, or enter the details yourself.";
+  }
+  return `We could not find a business matching “${q}”. Check the spelling, try the ABN, or enter the details yourself.`;
+}
+
 export function useAbrSearch(query: string, enabled = true): AbrSearchState {
   const [results, setResults] = useState<AbrCompany[]>([]);
   const [busy, setBusy] = useState(false);

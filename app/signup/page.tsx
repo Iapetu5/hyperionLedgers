@@ -3,13 +3,21 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
-import { BrandLogo } from "@/components/marketing/BrandLogo";
+import { SiteHeader } from "@/components/marketing/SiteHeader";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { addCompanyHref, SETUP_STEP } from "@/lib/company-pickup";
 import { validateSignup } from "@/lib/auth";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { MARKETING_LIMITS } from "@/lib/brand";
 import { LOGIN_FOR_TRIAL, wantsTrialCheckout } from "@/lib/trial-next";
 import { markTrialIntent } from "@/lib/start-trial";
+
+const NEXT_STEPS = [
+  "Name, email, and password only on this page",
+  "Next you add your company — that does not register you with the tax office",
+  "The plan is 14 days free, then $69 AUD a month. You can stop anytime",
+];
 
 export default function SignupPage() {
   return (
@@ -19,31 +27,18 @@ export default function SignupPage() {
   );
 }
 
-function SignupShell({
-  children,
-  loginHref = "/login",
-}: {
-  children?: React.ReactNode;
-  loginHref?: string;
-}) {
+function SignupShell({ children }: { children?: React.ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-4 py-12">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <BrandLogo />
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-300">
-          <Link href="/" className="hover:text-white hover:underline">
-            Home
-          </Link>
-          <Link href={loginHref} className="hover:text-white hover:underline">
-            Log in
-          </Link>
-        </nav>
-      </div>
-      {children ?? (
-        <div className="card p-6">
-          <p className="text-sm text-slate-300">Loading…</p>
-        </div>
-      )}
+    <div>
+      <SiteHeader />
+      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
+        {children ?? (
+          <div className="card max-w-lg p-6">
+            <p className="text-sm text-slate-300">Loading…</p>
+          </div>
+        )}
+      </main>
+      <MarketingFooter />
     </div>
   );
 }
@@ -53,6 +48,7 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const trialNext = wantsTrialCheckout(searchParams.get("next"));
+  const loginHref = trialNext ? LOGIN_FOR_TRIAL : "/login";
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,12 +56,23 @@ function SignupForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
+  function clearFieldError(key: string) {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     const local = validateSignup({ fullName, email, password });
     setFieldErrors(local);
     if (Object.keys(local).length > 0) {
       setError(null);
+      const first = (["fullName", "email", "password"] as const).find((key) => local[key]);
+      if (first) document.getElementById(first)?.focus();
       return;
     }
     setBusy(true);
@@ -82,16 +89,56 @@ function SignupForm() {
   }
 
   return (
-    <SignupShell loginHref={trialNext ? LOGIN_FOR_TRIAL : "/login"}>
-      <div className="card p-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">{SETUP_STEP.account}</p>
-        <h1 className="mt-1 text-xl font-bold text-white">Create your account</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          Enter your name, email, and password. Next you will add your company.
-        </p>
-        <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate>
+    <SignupShell>
+      <div className="grid items-start gap-10 lg:grid-cols-[1.4fr_1fr] lg:gap-14">
+        <div>
+          <p className="marketing-kicker">Australian bookkeeping · your account</p>
+          <h1 className="marketing-title">Create your account</h1>
+          <p className="marketing-lead">
+            Enter your name, email, and password. Next you will add your company.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link href={loginHref} className="link-quiet">
+              Log in
+            </Link>
+            <Link href="/pricing" className="link-quiet">
+              Pricing
+            </Link>
+            <TryDemoLink className="link-quiet" />
+          </div>
+          <aside className="card mt-10 h-fit p-6">
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">What happens next</p>
+            <ul className="mt-4 space-y-3 text-base leading-7 text-slate-50">
+              {NEXT_STEPS.map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <span className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-brand-300" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <GuestOnly>
+              <p className="mt-6 marketing-copy">
+                Prefer to look first?{" "}
+                <TryDemoLink className="link-quiet" />
+                {" "}
+                with sample data, not your real account.
+              </p>
+            </GuestOnly>
+            <Link href="/pricing" className="link-quiet mt-4 block">
+              See the $69 AUD plan
+            </Link>
+          </aside>
+          <p className="mt-10 marketing-copy">{MARKETING_LIMITS}</p>
+        </div>
+
+        <form className="card h-fit space-y-4 p-6 sm:p-8" onSubmit={onSubmit} noValidate>
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">
+            {SETUP_STEP.account}
+          </p>
           <div>
-            <label className="label" htmlFor="fullName">Full name</label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="fullName">
+              Full name
+            </label>
             <input
               id="fullName"
               className="input"
@@ -100,16 +147,22 @@ function SignupForm() {
               placeholder="Alex Nguyen"
               value={fullName}
               aria-invalid={Boolean(fieldErrors.fullName)}
-              onChange={(e) => setFullName(e.target.value)}
+              aria-describedby={fieldErrors.fullName ? "fullName-error" : undefined}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                clearFieldError("fullName");
+              }}
             />
             {fieldErrors.fullName && (
-              <p className="mt-1 text-sm text-rose-300" role="alert">
+              <p id="fullName-error" className="mt-1 text-sm text-rose-300" role="alert">
                 {fieldErrors.fullName}
               </p>
             )}
           </div>
           <div>
-            <label className="label" htmlFor="email">Email</label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="email">
+              Email
+            </label>
             <input
               id="email"
               className="input"
@@ -119,16 +172,23 @@ function SignupForm() {
               placeholder="you@business.com.au"
               value={email}
               aria-invalid={Boolean(fieldErrors.email)}
-              onChange={(e) => setEmail(e.target.value)}
+              aria-describedby={fieldErrors.email ? "email-error" : undefined}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearFieldError("email");
+                if (error) setError(null);
+              }}
             />
             {fieldErrors.email && (
-              <p className="mt-1 text-sm text-rose-300" role="alert">
+              <p id="email-error" className="mt-1 text-sm text-rose-300" role="alert">
                 {fieldErrors.email}
               </p>
             )}
           </div>
           <div>
-            <label className="label" htmlFor="password">Password</label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-100" htmlFor="password">
+              Password
+            </label>
             <input
               id="password"
               className="input"
@@ -138,11 +198,21 @@ function SignupForm() {
               autoComplete="new-password"
               value={password}
               aria-invalid={Boolean(fieldErrors.password)}
-              onChange={(e) => setPassword(e.target.value)}
+              aria-describedby={
+                fieldErrors.password ? "password-error" : "password-hint"
+              }
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearFieldError("password");
+              }}
             />
-            <p className="mt-1 text-xs text-slate-400">Use at least 8 characters.</p>
+            {!fieldErrors.password && (
+              <p id="password-hint" className="mt-1 text-sm leading-7 text-slate-200">
+                Use at least 8 characters.
+              </p>
+            )}
             {fieldErrors.password && (
-              <p className="mt-1 text-sm text-rose-300" role="alert">
+              <p id="password-error" className="mt-1 text-sm text-rose-300" role="alert">
                 {fieldErrors.password}
               </p>
             )}
@@ -152,35 +222,19 @@ function SignupForm() {
               {error}
             </p>
           )}
-          <button type="submit" className="btn-primary w-full" disabled={busy}>
+          <button type="submit" className="btn-primary w-full" disabled={busy} aria-busy={busy}>
             {busy ? "Creating…" : "Next: add your company"}
           </button>
-          <p className="text-center text-xs text-slate-400">
-            14-day trial on{" "}
-            <Link href="/pricing" className="text-brand-300 hover:underline">
-              Pricing
-            </Link>
-            , then $69 AUD a month.
+          <p className="text-center text-sm leading-7 text-slate-200">
+            14-day trial, then $69 AUD a month.
           </p>
-          <GuestOnly>
-            <p className="text-center text-xs text-slate-400">
-              Prefer to look first?{" "}
-              <TryDemoLink className="font-semibold text-brand-300 hover:underline">
-                Look at the sample
-              </TryDemoLink>
-              .
-            </p>
-          </GuestOnly>
+          <p className="text-center text-base text-slate-50">
+            Already have an account?{" "}
+            <Link href={loginHref} className="link-quiet">
+              Log in
+            </Link>
+          </p>
         </form>
-        <p className="mt-4 text-center text-sm text-slate-300">
-          Already have an account?{" "}
-          <Link
-            href={trialNext ? LOGIN_FOR_TRIAL : "/login"}
-            className="font-semibold text-brand-300 hover:underline"
-          >
-            Log in
-          </Link>
-        </p>
       </div>
     </SignupShell>
   );
