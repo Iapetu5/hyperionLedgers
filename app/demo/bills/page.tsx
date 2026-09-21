@@ -566,10 +566,11 @@ export default function BillsPage() {
 
   function userActions(b: UserBill) {
     const paid = effectiveBillStatus(b) === "Paid";
+    const awaiting = b.status === "Awaiting approval";
+    const keep = paid ? 1 : awaiting ? 3 : 2;
     return (
-      <DocRowActions keep={3}>
-        {paid && <PrintBillButton id={b.id} compact primary />}
-        {b.status === "Awaiting approval" && (
+      <DocRowActions keep={keep}>
+        {awaiting && (
           <button
             type="button"
             className="btn-secondary !px-2 !py-1 text-xs"
@@ -578,17 +579,6 @@ export default function BillsPage() {
           >
             <Check size={12} />
             Approve
-          </button>
-        )}
-        {(b.status === "Approved" || b.status === "Overdue") && !paid && (
-          <button
-            type="button"
-            className="btn-secondary !px-2 !py-1 text-xs"
-            onClick={() => onSetStatus(b.id, "Awaiting approval")}
-            title="Undo approve — back to Awaiting approval"
-          >
-            <Undo2 size={12} />
-            Undo Approve
           </button>
         )}
         {!paid && (
@@ -602,6 +592,26 @@ export default function BillsPage() {
             Mark paid
           </button>
         )}
+        <button
+          type="button"
+          className="btn-secondary !px-2 !py-1 text-xs"
+          onClick={() => onEdit(b)}
+          title="Edit supplier, lines, dates, and status"
+        >
+          <Pencil size={12} />
+          Edit
+        </button>
+        {(b.status === "Approved" || b.status === "Overdue") && !paid && (
+          <button
+            type="button"
+            className="btn-secondary !px-2 !py-1 text-xs"
+            onClick={() => onSetStatus(b.id, "Awaiting approval")}
+            title="Undo approve — back to Awaiting approval"
+          >
+            <Undo2 size={12} />
+            Undo Approve
+          </button>
+        )}
         {paid && (
           <button
             type="button"
@@ -613,16 +623,7 @@ export default function BillsPage() {
             Undo paid
           </button>
         )}
-        <button
-          type="button"
-          className="btn-secondary !px-2 !py-1 text-xs"
-          onClick={() => onEdit(b)}
-          title="Edit supplier, lines, dates, and status"
-        >
-          <Pencil size={12} />
-          Edit
-        </button>
-        {!paid && <PrintBillButton id={b.id} compact />}
+        <PrintBillButton id={b.id} compact primary={paid} />
         <button
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
@@ -795,7 +796,7 @@ export default function BillsPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Line amounts before GST; choose GST or GST-free per line. Approve awaiting rows, then mark paid (saved in this browser). Print is an internal summary only — no public supplier pay link. Past-due unpaid rows show Overdue.
+            Line amounts before GST; choose GST or GST-free per line. Approve awaiting rows, then Mark paid (saved in this browser). Undo and Print sit under More. Print is an internal summary only — no public supplier pay link. Past-due unpaid rows show Overdue.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">
@@ -844,8 +845,16 @@ export default function BillsPage() {
                     <StatusBadge status={st} />
                   </td>
                   <td className="px-4 py-3 align-top">
-                    <DocRowActions keep={3}>
-                      {st === "Paid" && <PrintBillButton id={b.id} compact primary />}
+                    <DocRowActions
+                      keep={
+                        st === "Paid"
+                          ? 1
+                          : sampleBillStored(b.id, b.status) === "Awaiting approval" ||
+                              st === "Awaiting approval"
+                            ? 2
+                            : 1
+                      }
+                    >
                       {(sampleBillStored(b.id, b.status) === "Awaiting approval" ||
                         st === "Awaiting approval") &&
                         st !== "Paid" && (
@@ -859,6 +868,18 @@ export default function BillsPage() {
                           Approve
                         </button>
                       )}
+                      {st !== "Paid" && (
+                        <button
+                          type="button"
+                          className="btn-primary !px-2 !py-1 text-xs"
+                          onClick={() => onSampleStatus(b.id, "Paid")}
+                          title="Record payment in demo back office"
+                        >
+                          <Banknote size={12} />
+                          Mark paid
+                        </button>
+                      )}
+                      {st === "Paid" && <PrintBillButton id={b.id} compact primary />}
                       {(sampleBillStored(b.id, b.status) === "Approved" ||
                         sampleBillStored(b.id, b.status) === "Overdue" ||
                         st === "Approved" ||
@@ -873,17 +894,6 @@ export default function BillsPage() {
                         >
                           <Undo2 size={12} />
                           Undo Approve
-                        </button>
-                      )}
-                      {st !== "Paid" && (
-                        <button
-                          type="button"
-                          className="btn-primary !px-2 !py-1 text-xs"
-                          onClick={() => onSampleStatus(b.id, "Paid")}
-                          title="Record payment in demo back office"
-                        >
-                          <Banknote size={12} />
-                          Mark paid
                         </button>
                       )}
                       {st === "Paid" && (

@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Copy, ExternalLink, FileSignature, Mail, Package, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ExternalLink, FileSignature, Mail, Package, Pencil, Plus, Send, Trash2, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
@@ -92,7 +92,7 @@ export default function QuotesPage() {
       setCopied(id);
       setTimeout(() => setCopied(null), 1500);
     } catch {
-      setFormError("Could not copy link — use View / View as customer and copy the URL from the address bar.");
+      setFormError("Could not copy link — use View and copy the URL from the address bar.");
     }
   }
 
@@ -438,22 +438,22 @@ export default function QuotesPage() {
       {lastCreatedId && !editingId && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-3 py-2 text-xs text-cyan-50">
           <span className="font-semibold text-white">{lastCreatedId}</span>
-          <span className="text-cyan-100/80">ready — send email, or open the customer quote page</span>
+          <span className="text-cyan-100/80">ready — View, Send quote, or print the customer quote page</span>
           <Link
             href={publicQuoteUrl(lastCreatedId)}
             target="_blank"
             className="btn-primary !px-2.5 !py-1 text-xs"
           >
             <ExternalLink size={12} />
-            View quote link
+            View
           </Link>
           <button
             type="button"
             className="btn-secondary !px-2.5 !py-1 text-xs"
             onClick={() => copyLink(lastCreatedId)}
           >
-            <Copy size={12} />
-            {copied === lastCreatedId ? "Copied" : "Copy link"}
+            <Send size={12} />
+            {copied === lastCreatedId ? "Copied" : "Send quote"}
           </button>
           <PrintDocButton kind="quote" id={lastCreatedId} compact />
           <button
@@ -500,7 +500,7 @@ export default function QuotesPage() {
               Tip: <strong className="text-white">Create sample</strong> is enough for a{" "}
               <strong className="text-white">GST on Income</strong> +{" "}
               <strong className="text-white">GST Free Income</strong> demo — then{" "}
-              <strong className="text-white">View quote link</strong> for the nebula quote header.
+              <strong className="text-white">View</strong> for the nebula quote header.
             </p>
           )}
         </div>
@@ -598,9 +598,10 @@ export default function QuotesPage() {
           type="button"
           className="btn-secondary !px-2 !py-1 text-xs"
           onClick={() => copyLink(q.id)}
+          title="Copy the customer quote link to send"
         >
-          <Copy size={12} />
-          {copied === q.id ? "Copied" : "Copy link"}
+          <Send size={12} />
+          {copied === q.id ? "Copied" : "Send quote"}
         </button>
         <Link
           href={publicQuoteUrl(q.id)}
@@ -845,7 +846,7 @@ export default function QuotesPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Copy a customer quote link or open the public page. QU-210 is a mixed GST + GST Free example — View as customer to confirm the nebula quote header.
+            Send quote copies the customer link. View opens the public page. Print sits under More. QU-210 is a mixed GST + GST Free example.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">
@@ -856,7 +857,7 @@ export default function QuotesPage() {
               <th className="px-4 py-3">Expiry</th>
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Customer link</th>
+              <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -894,9 +895,10 @@ export default function QuotesPage() {
                       type="button"
                       className="btn-secondary !px-2 !py-1 text-xs"
                       onClick={() => copyLink(q.id)}
+                      title="Copy the customer quote link to send"
                     >
-                      <Copy size={12} />
-                      {copied === q.id ? "Copied" : "Copy link"}
+                      <Send size={12} />
+                      {copied === q.id ? "Copied" : "Send quote"}
                     </button>
                     <Link
                       href={publicQuoteUrl(q.id)}
@@ -904,7 +906,7 @@ export default function QuotesPage() {
                       className="btn-secondary !px-2 !py-1 text-xs"
                     >
                       <ExternalLink size={12} />
-                      View as customer
+                      View
                     </Link>
                     <PrintDocButton kind="quote" id={q.id} compact />
                     <button
