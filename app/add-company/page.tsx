@@ -399,7 +399,7 @@ function AddCompanyForm() {
             </form>
           )}
 
-          {!manual && (
+          {!manual && !selected && (
             <p className="text-sm text-slate-300">
               Can&apos;t find the business?{" "}
               <button

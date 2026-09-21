@@ -80,6 +80,7 @@ Do not redo recap, Back to add company, Business name/type, Save changes, or sig
 - Business type and address always visible. Empty name uses `Enter the business name.`
 - Save changes shows **Saving…**, then `Saved your business details.` (unchanged success copy).
 - Typeahead empty/error states match Add company. ABN helper/errors match Add company.
+- Typeahead opens only while typing, not on focus of an already-saved name.
 
 ### Onboarding
 - Next/Skip show a saving state. Skip copy names sample defaults. After Next, focus moves to the question heading.

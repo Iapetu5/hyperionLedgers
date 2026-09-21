@@ -26,7 +26,7 @@ export function BusinessNameTypeahead({
   value,
   onChange,
   onSelect,
-  placeholder = "Sunrise Cafe Pty Ltd",
+  placeholder = "e.g. Example Cafe Pty Ltd",
   invalid = false,
 }: Props) {
   const listId = useId();
@@ -81,9 +81,6 @@ export function BusinessNameTypeahead({
           setPicked(null);
           setOpen(true);
           setActiveIndex(0);
-        }}
-        onFocus={() => {
-          if (value.trim().length >= 2) setOpen(true);
         }}
         onKeyDown={(e) => {
           if (!results.length || !open) return;
