@@ -68,20 +68,18 @@ function bankingWhereNext(opts: {
 }) {
   const step1Done = opts.mode === "sample" || opts.openingSet;
   if (!step1Done) {
-    return "1 Save opening — next. Then 2 Import CSV → 3 Apply.";
+    return "Next: 1 Save opening. Then 2 Import CSV → 3 Apply.";
   }
   if (opts.unmatchedCount > 0) {
-    if (opts.mode === "sample") {
-      return "1 Save opening — done. Next: 3 Apply on a line below, or 2 Import CSV for more.";
+    if (opts.hasImport || opts.mode === "sample") {
+      return "Next: 3 Apply on a line below. Or 2 Import CSV for more.";
     }
-    return opts.hasImport
-      ? "1 Save opening — done. 2 Import CSV — done. Next: 3 Apply on a line below."
-      : "1 Save opening — done. Next: 2 Import CSV, then 3 Apply.";
+    return "Next: 2 Import CSV, then 3 Apply.";
   }
   if (opts.categorisedCount > 0) {
-    return "1–3 done. You’re done. Use More for Reset or Clear CSV.";
+    return "You’re done. Use More for Reset categorisations or Clear CSV imports.";
   }
-  return "1 Save opening — done. Next: 2 Import CSV, then 3 Apply.";
+  return "Next: 2 Import CSV, then 3 Apply.";
 }
 
 export default function BankingPage() {
@@ -363,7 +361,7 @@ export default function BankingPage() {
       `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
         remaining > 0
           ? `Next: 3 Apply the next line below (${remaining} left).`
-          : "3 Apply — done. You’re done. Use More for Reset or Clear CSV, or Undo match below."
+          : "3 Apply — done. You’re done. Use More for Reset categorisations or Clear CSV imports, or Undo match below."
       }`,
     );
   }
@@ -386,7 +384,7 @@ export default function BankingPage() {
         : `Applied ${applied} line${applied === 1 ? "" : "s"}. ${
             remaining > 0
               ? `Next: 3 Apply the rest, or Ask AI under More (${remaining} left).`
-              : "3 Apply — done. You’re done. Use More for Reset or Clear CSV."
+              : "3 Apply — done. You’re done. Use More for Reset categorisations or Clear CSV imports."
           }`,
     );
   }
@@ -566,7 +564,7 @@ export default function BankingPage() {
                     ? `${categorised.length} line${categorised.length === 1 ? " is" : "s are"} categorised. ${
                         unmatched.length > 0
                           ? "Next: 3 Apply the next line."
-                          : "1–3 done. You’re done — Reset and Clear CSV are under More."
+                          : "You’re done — Reset categorisations and Clear CSV imports are under More."
                       }`
                     : "Use Apply on a suggested account code below. Undo match puts a line back."}
                 </span>
@@ -613,8 +611,8 @@ export default function BankingPage() {
           <strong className="text-white">Where next?</strong> {whereNext}
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          Path: 1 Save opening → 2 Import CSV → 3 Apply. Debit/credit samples and Reset / Clear CSV live under{" "}
-          <strong className="text-slate-300">More</strong>. No live bank feed.
+          Path: 1 Save opening → 2 Import CSV → 3 Apply. Debit/credit samples, Reset categorisations, and Clear CSV
+          imports live under <strong className="text-slate-300">More</strong>. No live bank feed.
         </p>
       </div>
 
@@ -811,7 +809,8 @@ export default function BankingPage() {
                 ) : (
                   <>
                     You’re done — nothing left to Apply. Next:{" "}
-                    <strong className="text-slate-300">Import CSV</strong>, or use More for Reset or Clear CSV.
+                    <strong className="text-slate-300">Import CSV</strong>, or use More for Reset categorisations or
+                    Clear CSV imports.
                   </>
                 )
               ) : (
@@ -910,7 +909,7 @@ export default function BankingPage() {
                       {mode === "blank" && txns.length === 0
                         ? "Next: 1 Save opening above, then 2 Import CSV. Try starter CSV adds a few generic demo lines. Nothing from the guest sample is mixed in."
                         : categorised.length > 0
-                          ? "1–3 done. Nothing left to Apply. Use More for Reset or Clear CSV, or Undo match below. Next: 2 Import CSV if you have another statement."
+                          ? "Nothing left to Apply. Use More for Reset categorisations or Clear CSV imports, or Undo match below. Next: 2 Import CSV if you have another statement."
                           : "Nothing left to Apply. Next: 2 Import CSV or Try sample CSV above, then 3 Apply."}
                     </p>
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
