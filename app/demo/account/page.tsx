@@ -119,9 +119,9 @@ export default function AccountPage() {
 
       <form className="card max-w-xl space-y-4 p-6" onSubmit={onSave}>
         <div>
-          <p className="text-sm font-semibold text-white">GST and year end</p>
+          <p className="text-sm font-semibold text-white">Company name and ABN</p>
           <p className="mt-1 text-sm text-slate-300">
-            These are the same choices you made during setup. Change them if needed, then Save.
+            You can also change these from Add company above. Press Save when you finish.
           </p>
         </div>
         <BusinessNameTypeahead
@@ -177,6 +177,12 @@ export default function AccountPage() {
             </div>
           </>
         )}
+        <div>
+          <p className="text-sm font-semibold text-white">GST and year end</p>
+          <p className="mt-1 text-sm text-slate-300">
+            These are the same choices you made during setup. Change them if needed, then Save.
+          </p>
+        </div>
         <fieldset>
           <legend className="label">Are you registered for GST?</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
