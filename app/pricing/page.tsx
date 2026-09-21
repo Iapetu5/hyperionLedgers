@@ -14,7 +14,7 @@ export default function PricingPage() {
     "See GST on each line, and BAS due dates",
     "See profit and loss, and what you own and owe",
     "Import a bank CSV. Not a live bank feed.",
-    "Keep contacts and products in one place",
+    "Keep products and prices in one list",
     "14 days free. Then $69 a month.",
     windowsDownloadLabel(windowsInstallerReady),
   ];
