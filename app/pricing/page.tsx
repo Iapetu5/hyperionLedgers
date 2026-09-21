@@ -4,18 +4,20 @@ import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { PricingCardDemoLink, PricingFooterDemoLine } from "@/components/marketing/PricingDemoLinks";
-
-const FEATURES = [
-  "Make quotes, invoices, and bills",
-  "See GST on each line, and BAS due dates",
-  "See profit and loss, and what you own and owe",
-  "Bring in bank transactions",
-  "Keep contacts and products in one place",
-  "14 days free. Then $69 a month.",
-  "Download the Windows app after you pay. Mac is coming soon.",
-];
+import { getPlatformStatus, windowsDownloadLabel } from "@/lib/platform-status.server";
 
 export default function PricingPage() {
+  const { windowsInstallerReady } = getPlatformStatus();
+  const features = [
+    "Make quotes, invoices, and bills",
+    "See GST on each line, and BAS due dates",
+    "See profit and loss, and what you own and owe",
+    "Bring in bank transactions",
+    "Keep contacts and products in one place",
+    "14 days free. Then $69 a month.",
+    windowsDownloadLabel(windowsInstallerReady),
+  ];
+
   return (
     <div>
       <SiteHeader />
@@ -48,7 +50,7 @@ export default function PricingPage() {
               What is included
             </p>
             <ul className="mt-3 flex-1 space-y-3">
-              {FEATURES.map((f) => (
+              {features.map((f) => (
                 <li key={f} className="flex items-start gap-3 text-base leading-7 text-slate-50">
                   <Check size={20} className="mt-0.5 shrink-0 text-brand-200" aria-hidden="true" />
                   {f}

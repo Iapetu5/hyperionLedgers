@@ -1,18 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
+import { AbrRegisterNote } from "@/components/company/AbrRegisterNote";
 import { CompanySearch } from "@/components/company/CompanySearch";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   ABR_ENTITY_TYPES,
   type AbrCompany,
+  digitsOnlyAbn,
   formatAbn,
   validateAbnField,
 } from "@/lib/abn";
 import { PENDING_ORG_NAME, nextSetupPath } from "@/lib/auth";
+import { validateCompanySave, type CompanyFieldErrors } from "@/lib/company-save";
 import {
   SETUP_STEP,
   isRealCompanyName,
@@ -20,6 +23,10 @@ import {
   safeAddCompanyReturn,
   saveSelectedCompany,
 } from "@/lib/company-pickup";
+
+function AddCompanyLoading() {
+  return <div className="p-8 text-center text-white">Loading…</div>;
+}
 
 function AddCompanyForm() {
   const { user, loading, updateProfile, needsOnboarding } = useAuth();
@@ -38,8 +45,12 @@ function AddCompanyForm() {
   );
   const [address, setAddress] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<CompanyFieldErrors>({});
+  const [abnHint, setAbnHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
+  const confirmHeadingRef = useRef<HTMLHeadingElement>(null);
+  const detailsReady = Boolean(selected || manual);
 
   useEffect(() => {
     if (prefilled) return;
@@ -91,7 +102,12 @@ function AddCompanyForm() {
   function applyCompany(company: AbrCompany | null) {
     setSelected(company);
     setError(null);
-    if (!company) return;
+    setFieldErrors({});
+    setAbnHint(null);
+    if (!company) {
+      setManual(false);
+      return;
+    }
     setLegalName(company.legalName);
     setAbn(company.abn);
     setEntityType(company.entityType);
@@ -103,6 +119,8 @@ function AddCompanyForm() {
     setManual(true);
     setSelected(null);
     setError(null);
+    setFieldErrors({});
+    setAbnHint(null);
     setLegalName((current) =>
       current || (user && user.businessName !== PENDING_ORG_NAME ? user.businessName : "")
     );
@@ -110,22 +128,81 @@ function AddCompanyForm() {
     setAddress((current) => current || user?.businessAddress || "");
   }
 
+  useEffect(() => {
+    if (loading || !detailsReady) return;
+    confirmHeadingRef.current?.focus();
+  }, [detailsReady, loading]);
+
+  useEffect(() => {
+    if (!manual || selected) {
+      setAbnHint(null);
+      return;
+    }
+    const digits = digitsOnlyAbn(abn);
+    if (digits.length !== 11 || validateAbnField(abn, false)) {
+      setAbnHint(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/abr/search?q=${encodeURIComponent(digits)}`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        const data = (await res.json()) as { results?: AbrCompany[]; simulated?: boolean };
+        const row = data.results?.[0];
+        if (!row) {
+          setAbnHint("Valid ABN checksum — no register match. Enter the legal name yourself.");
+          return;
+        }
+        if (!legalName.trim()) {
+          setLegalName(row.legalName);
+          setEntityType(row.entityType);
+          if (row.address) setAddress(row.address);
+        }
+        setAbnHint(
+          data.simulated === false
+            ? `Matched ${row.legalName} from the live register — check the name before you confirm.`
+            : `Practice register match for ${row.legalName} — edit any field if needed.`
+        );
+      } catch {
+        setAbnHint("Valid ABN checksum — confirm the legal name before you save.");
+      }
+    }, 320);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [abn, manual, selected, legalName]);
+
+  function formatAbnField() {
+    if (!abn.trim() || validateAbnField(abn, false)) return;
+    setAbn(formatAbn(abn));
+  }
+
   async function save(e?: FormEvent) {
     e?.preventDefault();
-    const name = legalName.trim();
-    if (!name) {
-      setError("Enter the business name.");
+    const validated = validateCompanySave({
+      legalName,
+      abn,
+      requireAbn: manual && !selected,
+    });
+    if (!validated.ok) {
+      setFieldErrors(validated.errors);
+      setError(null);
+      document.getElementById(validated.errors.legalName ? "legalName" : "confirmAbn")?.focus();
       return;
     }
-    const abnErr = validateAbnField(abn, false);
-    if (abnErr) {
-      setError(abnErr);
-      return;
-    }
+    setFieldErrors({});
+    const { legalName: name, formattedAbn } = validated.value;
+
     if (!user) {
       saveSelectedCompany({
         legalName: name,
-        abn: abn.trim() ? formatAbn(abn) : "",
+        abn: formattedAbn,
         gstRegistered: selected?.gstRegistered ?? false,
         entityType,
         address: address.trim(),
@@ -138,7 +215,7 @@ function AddCompanyForm() {
     setError(null);
     const res = await updateProfile({
       businessName: name,
-      abn: abn.trim() ? formatAbn(abn) : "",
+      abn: formattedAbn,
       entityType,
       businessAddress: address.trim(),
       gstRegistered: selected?.gstRegistered ?? user.gstRegistered,
@@ -151,7 +228,7 @@ function AddCompanyForm() {
     }
     saveSelectedCompany({
       legalName: name,
-      abn: abn.trim() ? formatAbn(abn) : "",
+      abn: formattedAbn,
       gstRegistered: selected?.gstRegistered ?? res.account.gstRegistered ?? false,
       entityType,
       address: address.trim(),
@@ -160,10 +237,8 @@ function AddCompanyForm() {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-white">Loading…</div>;
+    return <AddCompanyLoading />;
   }
-
-  const detailsReady = Boolean(selected || manual);
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-4 py-8">
@@ -202,21 +277,27 @@ function AddCompanyForm() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">{stepLabel}</p>
         <h1 className="mt-1 text-2xl font-bold text-white">{pageTitle}</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Type the business name or ABN. Pick a match, check the details, then confirm. If you
-          cannot find it, you can type the details yourself.
+          Type the business name or ABN, pick a match, then confirm. Or enter your legal name and
+          real ABN yourself — we validate the ABN checksum before saving.
         </p>
+        <AbrRegisterNote className="mt-3 text-xs text-slate-400" />
         <ol className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-300">
           {[
-            ["1", "Search"],
-            ["2", "Pick a match"],
-            ["3", "Confirm"],
-          ].map(([n, label]) => (
+            { n: "1", label: "Search", current: !detailsReady },
+            { n: "2", label: "Pick a match", current: false },
+            { n: "3", label: "Confirm", current: detailsReady },
+          ].map((chip) => (
             <li
-              key={n}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/25 px-2.5 py-1"
+              key={chip.n}
+              aria-current={chip.current ? "step" : undefined}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
+                chip.current
+                  ? "border-brand-400/40 bg-brand-500/10 text-white"
+                  : "border-white/10 bg-black/25"
+              }`}
             >
-              <span className="text-brand-300">{n}</span>
-              {label}
+              <span className="text-brand-300">{chip.n}</span>
+              {chip.label}
             </li>
           ))}
         </ol>
@@ -225,10 +306,28 @@ function AddCompanyForm() {
           <CompanySearch selected={selected} onSelect={applyCompany} />
 
           {detailsReady && (
-            <form className="space-y-4 rounded-xl border border-brand-400/25 bg-brand-500/5 p-4" onSubmit={save}>
-              <h2 className="text-sm font-semibold text-white">
-                {selected ? "Company details" : "Enter company details"}
+            <form
+              className="space-y-4 rounded-xl border border-brand-400/25 bg-brand-500/5 p-4"
+              onSubmit={save}
+              noValidate
+            >
+              <h2
+                ref={confirmHeadingRef}
+                tabIndex={-1}
+                className="text-sm font-semibold text-white outline-none"
+              >
+                {selected ? "Confirm these details" : "Enter company details"}
               </h2>
+              <p className="text-sm text-slate-300">
+                {selected
+                  ? "Check the name, ABN, and type, then confirm."
+                  : "Enter your legal name and 11-digit ABN. We check the ABN checksum before saving."}
+              </p>
+              {selected?.entityStatus === "Cancelled" && (
+                <p className="text-sm text-amber-200" role="status">
+                  This record is cancelled. Check you picked the right business before you confirm.
+                </p>
+              )}
               <div>
                 <label className="label" htmlFor="legalName">
                   Business name
@@ -238,27 +337,63 @@ function AddCompanyForm() {
                   className="input"
                   required
                   value={legalName}
-                  onChange={(e) => setLegalName(e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.legalName)}
+                  aria-describedby={fieldErrors.legalName ? "legalName-error" : "legalName-hint"}
+                  onChange={(e) => {
+                    setLegalName(e.target.value);
+                    if (fieldErrors.legalName) {
+                      setFieldErrors((prev) => ({ ...prev, legalName: undefined }));
+                    }
+                  }}
                   autoComplete="organization"
                 />
-                <p className="mt-1 text-xs text-slate-400">The official name on the ABN record.</p>
+                {fieldErrors.legalName ? (
+                  <p id="legalName-error" className="mt-1 text-sm text-rose-300" role="alert">
+                    {fieldErrors.legalName}
+                  </p>
+                ) : (
+                  <p id="legalName-hint" className="mt-1 text-xs text-slate-400">
+                    The official name on the ABN record.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="label" htmlFor="confirmAbn">
-                  ABN
+                  ABN {manual && !selected ? "" : "(optional if unknown)"}
                 </label>
                 <input
                   id="confirmAbn"
                   className="input"
                   inputMode="numeric"
                   value={abn}
-                  onChange={(e) => setAbn(e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.abn)}
+                  aria-describedby={fieldErrors.abn ? "confirmAbn-error" : "confirmAbn-hint"}
+                  onChange={(e) => {
+                    setAbn(e.target.value);
+                    if (fieldErrors.abn) {
+                      setFieldErrors((prev) => ({ ...prev, abn: undefined }));
+                    }
+                  }}
+                  onBlur={formatAbnField}
                   placeholder="11 digits, spaces optional"
                   autoComplete="off"
                 />
-                <p className="mt-1 text-xs text-slate-400">
-                  11 digits. Spaces are fine. You can leave this blank.
-                </p>
+                {fieldErrors.abn ? (
+                  <p id="confirmAbn-error" className="mt-1 text-sm text-rose-300" role="alert">
+                    {fieldErrors.abn}
+                  </p>
+                ) : (
+                  <p id="confirmAbn-hint" className="mt-1 text-xs text-slate-400">
+                    {manual && !selected
+                      ? "Must be a valid 11-digit ABN. Spaces are fine."
+                      : "11 digits. Spaces are fine. Leave blank only if you do not have an ABN yet."}
+                  </p>
+                )}
+                {abnHint && !fieldErrors.abn && (
+                  <p className="mt-1 text-xs text-brand-200" role="status">
+                    {abnHint}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="label" htmlFor="entityType">
@@ -298,8 +433,8 @@ function AddCompanyForm() {
                   Status: {selected.entityStatus}
                   {selected.gstRegistered ? " · GST registered" : " · Not GST registered"}
                   {selected.simulated
-                    ? ". Practice match — you can edit any field."
-                    : ". From the Australian Business Register."}
+                    ? ". Practice register result — you can edit any field."
+                    : ". From the live Australian Business Register."}
                 </p>
               )}
               {error && (
@@ -334,7 +469,7 @@ function AddCompanyForm() {
                 className="font-semibold text-brand-300 hover:underline"
                 onClick={openManual}
               >
-                Enter the details yourself
+                Enter your legal name and ABN
               </button>
               .
             </p>
@@ -365,13 +500,16 @@ function AddCompanyForm() {
           </div>
         </div>
       </div>
+      <p className="mt-4 text-center text-xs text-slate-500">
+        HyperionInvoices does not lodge BAS or other forms with the ATO.
+      </p>
     </div>
   );
 }
 
 export default function AddCompanyPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-white">Loading…</div>}>
+    <Suspense fallback={<AddCompanyLoading />}>
       <AddCompanyForm />
     </Suspense>
   );

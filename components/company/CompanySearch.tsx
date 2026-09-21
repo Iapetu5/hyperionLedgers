@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { AbrCompany } from "@/lib/abn";
+import { AbrRegisterNote } from "@/components/company/AbrRegisterNote";
 import { enrichAbrCompany, useAbrSearch } from "@/components/company/useAbrSearch";
 
 type Props = {
@@ -41,8 +42,8 @@ export function CompanySearch({ selected, onSelect }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-slate-300">
           {selected.simulated
-            ? "Selected from the practice list. Check the details below, then confirm."
-            : "Selected from the Australian Business Register. Check the details below, then confirm."}
+            ? "Selected from the practice register. Check the details below, then confirm."
+            : "Selected from the live Australian Business Register. Check the details below, then confirm."}
         </p>
         <button
           type="button"
@@ -94,11 +95,9 @@ export function CompanySearch({ selected, onSelect }: Props) {
           }
         }}
       />
-      <p className="mt-2 text-xs text-slate-400">
-        Type at least two letters, then pick your business from the list.
-        {simulated
-          ? " This is a practice register — you can still enter the details yourself."
-          : " Matches come from the Australian Business Register."}
+      <AbrRegisterNote searchSimulated={simulated} className="mt-2 text-xs text-slate-400" />
+      <p className="mt-1 text-xs text-slate-500">
+        Type at least two letters to search, or use manual entry below.
       </p>
       {query.trim().length === 0 && (
         <p className="mt-3 text-sm text-slate-300">

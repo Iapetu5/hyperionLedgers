@@ -94,8 +94,8 @@ export function AbnField({
           {remote.address && <p className="mt-0.5 text-slate-300">{remote.address}</p>}
           <p className="mt-1 text-[11px] text-slate-400">
             {simulated
-              ? "Practice match — you can edit the name and details yourself."
-              : "From the Australian Business Register."}
+              ? "Practice register result — you can edit the name and details yourself."
+              : "From the live Australian Business Register."}
           </p>
         </div>
       )}

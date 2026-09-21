@@ -94,8 +94,8 @@ export function BusinessNameTypeahead({
       <p className="mt-1 text-xs text-slate-400">
         {hint ||
           (simulated
-            ? "Type the name or ABN. Pick a match to fill the company, or keep typing it yourself."
-            : "Type the name or ABN. Pick an Australian Business Register match to fill the company.")}
+            ? "Type the name or ABN. Pick a practice-register match, or keep typing it yourself."
+            : "Type the name or ABN. Pick a live Australian Business Register match to fill the company.")}
       </p>
       {picked && picked.legalName === value && (
         <p className="mt-1 text-xs text-slate-300">
