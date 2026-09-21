@@ -864,7 +864,7 @@ export default function QuotesPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Send quote copies the customer link. View opens the public page. Email quote and Print sit under More. QU-210 is a mixed GST + GST Free example.
+            Send quote copies the customer link. View opens the public page. Email quote and Print sit under More. Delete is not on sample rows. QU-210 is a mixed GST + GST Free example.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">

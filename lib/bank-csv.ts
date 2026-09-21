@@ -15,7 +15,7 @@ export type ParseBankCsvSkip = {
 
 export type ParseBankCsvResult =
   | { ok: true; rows: ParsedBankRow[]; skipped: ParseBankCsvSkip[] }
-  | { ok: false; error: string };
+  | { ok: false; error: string; skipped?: ParseBankCsvSkip[] };
 
 const DATE_ALIASES = [
   "date",
@@ -208,7 +208,9 @@ export function parseBankCsv(text: string): ParseBankCsvResult {
   if (!cleaned) {
     return {
       ok: false,
-      error: "This file is empty. Upload a CSV with date, description and amount columns.",
+      error:
+        "Nothing was imported. This file is empty. Upload a CSV with date, description and amount columns.",
+      skipped: [],
     };
   }
 
@@ -217,7 +219,8 @@ export function parseBankCsv(text: string): ParseBankCsvResult {
     return {
       ok: false,
       error:
-        "CSV needs a header row and at least one transaction. Download the sample CSV to see the format.",
+        "Nothing was imported. This CSV needs a header row and at least one transaction. Download the sample CSV to see the format.",
+      skipped: [],
     };
   }
 
@@ -226,7 +229,8 @@ export function parseBankCsv(text: string): ParseBankCsvResult {
     return {
       ok: false,
       error:
-        "Could not find CSV headers. Include date, description, and either amount or debit/credit columns (balance optional). Australian dates: DD/MM/YYYY. Account metadata rows above the header are OK.",
+        "Nothing was imported. Could not find CSV headers. Include date, description, and either amount or debit/credit columns (balance optional). Australian dates: DD/MM/YYYY. Account metadata rows above the header are OK.",
+      skipped: [],
     };
   }
 
@@ -267,14 +271,15 @@ export function parseBankCsv(text: string): ParseBankCsvResult {
   if (rows.length === 0) {
     const hint =
       skipped.length > 0
-        ? ` No valid transactions found. Skipped: ${skipped
-            .slice(0, 3)
+        ? `Nothing was imported. Every row was skipped: ${skipped
+            .slice(0, 4)
             .map((s) => `line ${s.line} (${s.reason})`)
-            .join("; ")}${skipped.length > 3 ? "…" : ""}. Use DD/MM/YYYY dates and AUD amounts like -42.50, ($42.50), or separate debit/credit columns.`
-        : " No transaction rows found in this file.";
+            .join("; ")}${skipped.length > 4 ? "…" : ""}. Use DD/MM/YYYY dates and AUD amounts like -42.50, ($42.50), or separate debit/credit columns.`
+        : "Nothing was imported. No transaction rows found in this file.";
     return {
       ok: false,
-      error: hint.trim(),
+      error: hint,
+      skipped,
     };
   }
 
