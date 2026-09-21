@@ -2,11 +2,12 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { ExternalLink, FileSignature, Mail, Package, Pencil, Plus, Send, Trash2, X } from "lucide-react";
+import { ExternalLink, FileSignature, Mail, Package, Pencil, Plus, Send, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { DocRowActions } from "@/components/demo/DocRowActions";
+import { DocDeleteButton } from "@/components/demo/DocDeleteButton";
 import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
 import { SendQuotePanel, type SendQuoteTarget } from "@/components/demo/SendQuotePanel";
 import {
@@ -565,7 +566,7 @@ export default function QuotesPage() {
         )}
       </div>
       <p className="text-xs text-slate-400">
-        Prefer a fresh number? Delete the row below and create again — customer links use the document id.
+        Prefer a fresh number? Delete the row below (asks first) and create again — customer links use the document id.
       </p>
     </form>
   );
@@ -647,15 +648,7 @@ export default function QuotesPage() {
           Email quote
         </button>
         <PrintDocButton kind="quote" id={q.id} compact />
-        <button
-          type="button"
-          className="btn-secondary !px-2 !py-1 text-xs"
-          onClick={() => onDelete(q.id)}
-          title="Remove from this browser — then recreate if you need a new id"
-        >
-          <Trash2 size={12} />
-          Delete
-        </button>
+        <DocDeleteButton id={q.id} kind="quote" onDelete={onDelete} />
       </DocRowActions>
     );
   }

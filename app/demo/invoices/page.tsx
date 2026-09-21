@@ -2,11 +2,12 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Banknote, ExternalLink, FileText, Package, Pencil, Plus, Send, Trash2, Undo2, X } from "lucide-react";
+import { Banknote, ExternalLink, FileText, Package, Pencil, Plus, Send, Undo2, X } from "lucide-react";
 import { PrintDocButton } from "@/components/pay/PrintDocButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { DocRowActions } from "@/components/demo/DocRowActions";
+import { DocDeleteButton } from "@/components/demo/DocDeleteButton";
 import { BooksSectionNav } from "@/components/demo/BooksSectionNav";
 import {
   LineItemsEditor,
@@ -534,7 +535,7 @@ export default function InvoicesPage() {
         )}
       </div>
       <p className="text-xs text-slate-400">
-        Prefer a fresh number? Delete the row below and create again — pay links use the document id.
+        Prefer a fresh number? Delete the row below (asks first) and create again — pay links use the document id.
       </p>
     </form>
   );
@@ -637,15 +638,7 @@ export default function InvoicesPage() {
           </button>
         )}
         {!paid && <PrintDocButton kind="invoice" id={inv.id} compact />}
-        <button
-          type="button"
-          className="btn-secondary !px-2 !py-1 text-xs"
-          onClick={() => onDelete(inv.id)}
-          title="Remove from this browser — then recreate if you need a new id"
-        >
-          <Trash2 size={12} />
-          Delete
-        </button>
+        <DocDeleteButton id={inv.id} kind="invoice" onDelete={onDelete} />
       </DocRowActions>
     );
   }
@@ -842,7 +835,7 @@ export default function InvoicesPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Send invoice copies the customer pay link. View opens the public page. Mark paid is on unpaid rows. After Paid, Print is on the row; Undo paid sits under More. INV-1042 is a mixed GST + GST Free example.
+            Send invoice copies the customer pay link. View opens the public page. Mark paid is on unpaid rows. After Paid, Print is on the row; Undo paid sits under More. Delete is not on sample rows. INV-1042 is a mixed GST + GST Free example.
           </p>
         </div>
         <table className="min-w-full text-left text-sm">
