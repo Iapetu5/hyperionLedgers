@@ -10,7 +10,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ configured: false, error: "Postgres is not attached yet." }, { status: 503 });
   }
   const body = (await req.json().catch(() => ({}))) as OnboardingInput;
-  const result = await completeOnboardingServer(body);
+  const result = await completeOnboardingServer({
+    ...body,
+    financialYearEnd: body.financialYearEnd ?? "30 June",
+  });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
   return NextResponse.json({ account: result.account });
 }

@@ -23,6 +23,7 @@ import {
   safeAddCompanyReturn,
   saveSelectedCompany,
 } from "@/lib/company-pickup";
+import { continueTrialCheckout, hasTrialIntent } from "@/lib/start-trial";
 
 function AddCompanyLoading() {
   return (
@@ -240,7 +241,13 @@ function AddCompanyForm() {
       entityType,
       address: address.trim(),
     });
-    router.push(nextUrl || nextSetupPath(res.account));
+    const dest = nextUrl || nextSetupPath(res.account);
+    if (hasTrialIntent() && dest === "/demo") {
+      const checkoutUrl = await continueTrialCheckout(res.account.email);
+      if (checkoutUrl?.startsWith("/")) router.push(checkoutUrl);
+      return;
+    }
+    router.push(dest);
   }
 
   if (loading) {

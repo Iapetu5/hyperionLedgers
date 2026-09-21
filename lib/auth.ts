@@ -257,7 +257,7 @@ export function completeOnboarding(input: OnboardingInput): AuthResult {
     gstAccountingMethod: input.gstRegistered
       ? input.gstAccountingMethod ?? "accruals"
       : undefined,
-    financialYearEnd: input.financialYearEnd.trim() || "30 June",
+    financialYearEnd: (input.financialYearEnd ?? "30 June").trim() || "30 June",
     ledgerMode: input.ledgerMode,
     abn: input.abn?.trim() ? formatAbn(input.abn) : accounts[idx].abn,
     ...(input.businessName?.trim()

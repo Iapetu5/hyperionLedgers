@@ -61,14 +61,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await readJson(res);
       if (data.configured && data.account) {
         setPersistence("server");
-        setBooksPersistence("server");
+        setBooksPersistence("server", { hasAccount: true });
         setUser(data.account);
         setLoading(false);
         return;
       }
       if (data.configured) {
         setPersistence("server");
-        setBooksPersistence("server");
+        setBooksPersistence("server", { hasAccount: false });
         setUser(null);
         setLoading(false);
         return;
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fall through to browser-local demo accounts when the API is unavailable.
     }
     setPersistence("local");
-    setBooksPersistence("local");
+    setBooksPersistence("local", { hasAccount: false });
     setUser(getCurrentAccount());
     setLoading(false);
   }, []);
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = await readJson(res);
           if (res.ok && data.account) {
             setPersistence("server");
-            setBooksPersistence("server");
+            setBooksPersistence("server", { hasAccount: true });
             setUser(data.account);
             return { ok: true, account: data.account };
           }
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const local = await signUpLib(input);
         if (local.ok) {
           setPersistence("local");
-          setBooksPersistence("local");
+          setBooksPersistence("local", { hasAccount: true });
           setUser(local.account);
         }
         return local;
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = await readJson(res);
           if (res.ok && data.account) {
             setPersistence("server");
-            setBooksPersistence("server");
+            setBooksPersistence("server", { hasAccount: true });
             setUser(data.account);
             return { ok: true, account: data.account };
           }
@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const local = await logInLib(email, password);
         if (local.ok) {
           setPersistence("local");
-          setBooksPersistence("local");
+          setBooksPersistence("local", { hasAccount: true });
           setUser(local.account);
         }
         return local;
@@ -160,6 +160,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Cookie clear is best-effort.
         }
         logOutLib();
+        setBooksPersistence("local", { hasAccount: false });
+        setPersistence("local");
         setUser(null);
       },
       completeOnboarding: async (input) => {

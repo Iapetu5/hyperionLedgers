@@ -21,11 +21,13 @@ Production: [https://www.hyperioninvoices.com.au](https://www.hyperioninvoices.c
 | `/api/stripe/webhook` | Verifies `checkout.session.completed` and records entitlement |
 | `/api/downloads/windows` | Gated stream of `HyperionInvoices-Setup.exe` |
 | `/demo` | Optional **Try a demo** walkthrough (banner: sample data — not your real account) |
-| `/api/quotes/send` | Send a quote email (To, subject, optional note). Uses `EMAIL_*` / Gmail placeholders. |
+| `/api/quotes/send` | Email a quote when `EMAIL_*` / Gmail is set on Vercel. Without those vars the quote stays **Sent**; copy the customer link or print/PDF instead. |
 
 The homepage does **not** dump visitors into the demo.
 
-**Stripe:** Start free trial / Buy posts to `/api/stripe/checkout` (server-only; `/api/checkout` remains as an alias). Checkout is `card` so customers can **pay with card or Apple Pay** (Google Pay on the same hosted page when Stripe shows it). Success URL is `/downloads?session_id={CHECKOUT_SESSION_ID}`. The Downloads page **retrieves the session from Stripe** (or a signed `hl_entitlement` cookie / `has_paid_download`). `?success=1` is ignored. The `.exe` is **not** in `public/` — `/api/downloads/windows` streams `private/downloads/HyperionInvoices-Setup.exe` after a 10-minute single-use token, a verified `session_id`, or an httpOnly session/entitlement.
+Signed-in `/demo` books (invoices, quotes, bills, products) use `/api/books/*` when `/api/auth/me` returns `persistence: "server"`. Guest demo stays in this browser.
+
+**Stripe:** Start free trial / Buy posts to `/api/stripe/checkout` (server-only; `/api/checkout` remains as an alias). Signed-out visitors are sent to **sign up** (or log in) before Checkout when Postgres is attached. Checkout is `card` + `link` so customers can **pay with card, Apple Pay, or Link** (Google Pay on the same hosted page when Stripe shows it). Amount is **$69 AUD / month** (adaptive pricing off). Success URL is `/downloads?session_id={CHECKOUT_SESSION_ID}`. The Downloads page **retrieves the session from Stripe** (or a signed `hl_entitlement` cookie / `has_paid_download`). It does **not** set cookies during page render. `?success=1` is ignored. The `.exe` is **not** in `public/` — `/api/downloads/windows` streams `private/downloads/HyperionInvoices-Setup.exe` after a 10-minute single-use token, a verified `session_id`, or an httpOnly session/entitlement.
 
 Apple Pay domain verification for `www.hyperioninvoices.com.au` and the apex: [docs/STRIPE_APPLE_PAY.md](docs/STRIPE_APPLE_PAY.md).
 
@@ -53,6 +55,14 @@ STRIPE_WEBHOOK_SECRET=
 ```
 
 **Accounts:** attach Neon on the Vercel project (`Storage → Create Database → Neon`) so `DATABASE_URL` is set, then add `SESSION_SECRET` and redeploy. Schema is in `docs/schema.sql` and is applied on first sign-up.
+
+**Quote email (optional):** `POST /api/quotes/send` needs one of these on the Vercel project (Production + Preview) — never commit real values:
+
+- `GMAIL_USER` + `GMAIL_APP_PASSWORD` (smtp.gmail.com), or
+- `EMAIL_SMTP_HOST` + `EMAIL_SMTP_USER` + `EMAIL_SMTP_PASS` (optional `EMAIL_SMTP_PORT`, `EMAIL_FROM`), or
+- `EMAIL_API_KEY` (Resend)
+
+Until those are set, Send quote shows **Copy customer link** and **Print / PDF**. New quotes stay **Sent**, not Draft. Details: [docs/ENV.md](docs/ENV.md).
 
 **Stripe:** set the test keys on Vercel project `hyperion-ledgers` to enable Checkout. Without them, the UI buy path still ships.
 

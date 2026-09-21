@@ -8,10 +8,10 @@ export const PLAN = {
   currency: "AUD",
 } as const;
 
-/** Hosted Checkout: `card` covers debit, credit, Apple Pay, and Google Pay. */
-export const CHECKOUT_PAYMENT_METHOD_TYPES = ["card"] as const;
+/** Hosted Checkout: `card` covers debit, credit, Apple Pay, and Google Pay. `link` is Stripe Link. */
+export const CHECKOUT_PAYMENT_METHOD_TYPES = ["card", "link"] as const;
 
-export const CHECKOUT_PAY_COPY = "Pay with card or Apple Pay";
+export const CHECKOUT_PAY_COPY = "Pay with card, Apple Pay, or Link";
 
 export function getAppUrl(): string {
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();

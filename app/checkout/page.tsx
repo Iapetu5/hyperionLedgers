@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { CHECKOUT_PAY_COPY, PLAN, isStripeConfigured } from "@/lib/billing";
 import { getPlatformStatus, windowsDownloadLabel } from "@/lib/platform-status.server";
+import { SIGNUP_FOR_TRIAL } from "@/lib/trial-next";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function CheckoutPage({
                 : unconfigured
                   ? "Stripe test keys are not set in this environment. Sign up still works; add the keys in Vercel and redeploy to open Checkout."
                 : configured
-                  ? `You will go to Stripe Checkout (test mode) for the $69 monthly plan with a 14-day free trial. ${CHECKOUT_PAY_COPY}. Google Pay shows on the same Checkout when Stripe supports it on that device. ${windowsDownloadLabel(windowsInstallerReady)}`
+                  ? `You will go to Stripe Checkout (test mode) for the $69 AUD monthly plan with a 14-day free trial. ${CHECKOUT_PAY_COPY}. Google Pay shows on the same Checkout when Stripe supports it on that device. ${windowsDownloadLabel(windowsInstallerReady)}`
                   : "The buy path is ready. Stripe test keys are not in this environment yet, so Checkout cannot open. Sign up still works, and Nicholas can add the keys in Vercel without changing DNS."}
           </p>
           {!configured ? (
@@ -72,7 +73,7 @@ export default async function CheckoutPage({
             </div>
           ) : null}
           <div className="mt-6 flex flex-col gap-2">
-            <Link href="/signup" className="btn-primary">
+            <Link href={SIGNUP_FOR_TRIAL} className="btn-primary">
               Continue to sign up
               <ArrowRight size={16} />
             </Link>

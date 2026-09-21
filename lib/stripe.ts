@@ -28,7 +28,7 @@ export function stripeSecret(): string {
 }
 
 export function isCheckoutSessionId(value: string): boolean {
-  return /^cs_(test|live)_[A-Za-z0-9]{8,128}$/.test(value);
+  return /^cs_(test|live)_[A-Za-z0-9]{8,255}$/.test(value);
 }
 
 export function isStripeEventId(value: string): boolean {
@@ -62,12 +62,16 @@ export function verifyStripeSignature(rawBody: string, header: string | null): b
 
 export async function retrieveCheckoutSession(sessionId: string): Promise<StripeCheckoutSession | null> {
   if (!/^sk_(test|live)_/.test(stripeSecret()) || !isCheckoutSessionId(sessionId)) return null;
-  const res = await fetch(
-    `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=subscription`,
-    { headers: { Authorization: `Bearer ${stripeSecret()}` } }
-  );
-  if (!res.ok) return null;
-  return (await res.json()) as StripeCheckoutSession;
+  try {
+    const res = await fetch(
+      `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=subscription`,
+      { headers: { Authorization: `Bearer ${stripeSecret()}` } }
+    );
+    if (!res.ok) return null;
+    return (await res.json()) as StripeCheckoutSession;
+  } catch {
+    return null;
+  }
 }
 
 export function sessionGrantsDownload(session: StripeCheckoutSession | null): boolean {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Landmark,
@@ -27,6 +27,7 @@ import { nextSetupPath } from "@/lib/auth";
 import { AiAssistant } from "@/components/demo/AiAssistant";
 import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import { loadBills, loadInvoices, loadQuotes } from "@/lib/books-client";
+import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
 
 const NAV = [
   { href: "/demo", label: "Overview", icon: LayoutDashboard },
@@ -70,24 +71,12 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("hl-open-assistant", handler);
   }, []);
 
-  useEffect(() => {
-    if (usesSampleData || loading || persistence === "unknown") {
-      if (usesSampleData) setHasUserDocs(false);
-      return;
-    }
-    const reload = async () => {
-      const [invoices, quotes, bills] = await Promise.all([loadInvoices(), loadQuotes(), loadBills()]);
-      setHasUserDocs(invoices.length + quotes.length + bills.length > 0);
-    };
-    void reload();
-    const onUpdate = () => void reload();
-    window.addEventListener("hl-user-docs-updated", onUpdate);
-    window.addEventListener("hl-doc-status", onUpdate);
-    return () => {
-      window.removeEventListener("hl-user-docs-updated", onUpdate);
-      window.removeEventListener("hl-doc-status", onUpdate);
-    };
-  }, [usesSampleData, loading, persistence]);
+  const reloadDocs = useCallback(async () => {
+    const [invoices, quotes, bills] = await Promise.all([loadInvoices(), loadQuotes(), loadBills()]);
+    setHasUserDocs(invoices.length + quotes.length + bills.length > 0);
+  }, []);
+
+  useBlankBooksReload(reloadDocs);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -100,13 +89,14 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
     };
   }, [mobileOpen]);
 
-  const orgName = usesSampleData ? DEMO_ORG_SHORT : user?.businessName || "Your organisation";
-  const demoBanner = usesSampleData;
+  const sampleNav = !loading && usesSampleData;
+  const orgName = sampleNav ? DEMO_ORG_SHORT : user?.businessName || "Your organisation";
+  const demoBanner = sampleNav;
 
   const navLinks = (
     <>
       <div className="px-3 py-2">
-        {usesSampleData ? (
+        {sampleNav ? (
           <>
             <div className="flex items-center gap-2">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-300/80">
@@ -220,7 +210,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {!demoBanner && user && (
+      {!demoBanner && !loading && user && (
         <div data-demo-banner className="demo-banner no-print">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm sm:px-6">
             <p className="text-white/85">
@@ -230,7 +220,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               <span className="text-white/50"> — </span>
               {hasUserDocs
                 ? persistence === "server"
-                  ? "Invoices, quotes, and bills are saved to your account. No live bank feeds, payments, or ATO lodgement."
+                  ? "Invoices, quotes, and bills are saved to your organisation. No live bank feeds, payments, or ATO lodgement."
                   : "Invoices, quotes, and bills you create stay in this browser. No live bank feeds, payments, or ATO lodgement."
                 : `${orgName} has no documents yet. Create an invoice, quote, or bill to get started.`}
             </p>
@@ -303,7 +293,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
         }}
         seedPrompt={aiSeed}
         seedKey={aiSeedKey}
-        blankLedger={!usesSampleData}
+        blankLedger={!loading && !usesSampleData}
         orgName={user?.businessName || orgName}
       />
     </div>

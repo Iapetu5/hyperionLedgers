@@ -38,9 +38,10 @@ import {
   setSampleBillStatus,
   type UserBill,
 } from "@/lib/user-docs";
+import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
 
 export default function BillsPage() {
-  const { usesSampleData, loading: authLoading, persistence } = useAuth();
+  const { usesSampleData } = useAuth();
   const [userRows, setUserRows] = useState<UserBill[]>([]);
   const [supplier, setSupplier] = useState("");
   const [lines, setLines] = useState<LineDraft[]>(() => [emptyLineDraft()]);
@@ -61,20 +62,17 @@ export default function BillsPage() {
     setUserRows(await loadBills());
   }, []);
 
+  const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
+
   useEffect(() => {
-    if (authLoading || persistence === "unknown") return;
-    reloadUser();
-    const onUpdate = () => {
-      reloadUser();
-      setSampleTick((t) => t + 1);
-    };
+    const onUpdate = () => setSampleTick((t) => t + 1);
     window.addEventListener("hl-user-docs-updated", onUpdate);
     window.addEventListener("storage", onUpdate);
     return () => {
       window.removeEventListener("hl-user-docs-updated", onUpdate);
       window.removeEventListener("storage", onUpdate);
     };
-  }, [reloadUser, authLoading, persistence]);
+  }, []);
 
   /** Gate localStorage sample-bill overrides until after mount (SSR HTML matches first paint). */
   const [mounted, setMounted] = useState(false);
@@ -706,6 +704,14 @@ export default function BillsPage() {
             ))}
           </tbody>
         </table>
+      </div>
+    );
+  }
+
+  if (!ready) {
+    return (
+      <div className="card p-6 text-sm text-white/70">
+        Loading bills…
       </div>
     );
   }

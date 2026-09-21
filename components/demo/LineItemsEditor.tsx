@@ -12,12 +12,12 @@ import {
   findProduct,
   lineAmountFromProduct,
   lineDescriptionFromProduct,
-  loadProductsForMode,
   productsAddHref,
   xeroTaxLabel,
   type Product,
   type ProductTax,
 } from "@/lib/products";
+import { loadProductsForMode as loadProductsForModeBooks } from "@/lib/books-client";
 import {
   lineGstFromEx,
   type LineTaxRate,
@@ -502,28 +502,31 @@ export function LineItemsEditor({
   taxScope?: "income" | "expense";
   amountHint?: string;
 }) {
-  const { usesSampleData } = useAuth();
+  const { usesSampleData, loading, persistence } = useAuth();
   const pathname = usePathname() || "";
   const addProductHref = productsAddHref(catalogueReturnFromPath(pathname));
   const [products, setProducts] = useState<Product[]>([]);
   /** Avoid SSR/hydration flash of the empty-catalogue CTA before client load. */
   const [catalogueReady, setCatalogueReady] = useState(false);
 
-  const reloadProducts = useCallback(() => {
-    setProducts(loadProductsForMode(usesSampleData));
+  const reloadProducts = useCallback(async () => {
+    setProducts(await loadProductsForModeBooks(usesSampleData));
     setCatalogueReady(true);
   }, [usesSampleData]);
 
   useEffect(() => {
-    reloadProducts();
-    const onUpdate = () => reloadProducts();
+    if (loading || persistence === "unknown") return;
+    void reloadProducts();
+    const onUpdate = () => void reloadProducts();
     window.addEventListener("hl-products-updated", onUpdate);
+    window.addEventListener("hl-books-persistence", onUpdate);
     window.addEventListener("storage", onUpdate);
     return () => {
       window.removeEventListener("hl-products-updated", onUpdate);
+      window.removeEventListener("hl-books-persistence", onUpdate);
       window.removeEventListener("storage", onUpdate);
     };
-  }, [reloadProducts]);
+  }, [reloadProducts, loading, persistence]);
 
   // Drop productId when the catalogue no longer has that row (deleted product / mode switch)
   // so Edit doesn't show "Custom" while still persisting a stale id on save.

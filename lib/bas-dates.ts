@@ -1,5 +1,7 @@
 /** Australian quarterly BAS due dates (demo — lodgement still simulated). */
 
+import { toIsoDate } from "@/lib/iso-date";
+
 export type BasDueItem = {
   id: string;
   quarterLabel: string;
@@ -260,9 +262,10 @@ export const BAS_DRAFT_STATUS_SIMULATED =
  * cannot inflate a quarter-scoped BAS draft.
  */
 export function isISODateInRange(isoDate: string, start: string, end: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return false;
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(isoDate) ? isoDate : toIsoDate(isoDate);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return false;
-  return isoDate >= start && isoDate <= end;
+  return day >= start && day <= end;
 }
 
 /** Inclusive ISO bounds for the AU GST quarter containing `isoDate`. */
