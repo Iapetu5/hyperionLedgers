@@ -4,6 +4,7 @@ import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { HomeHeroLead } from "@/components/marketing/HomeHeroLead";
 import { HomeHeroActions } from "@/components/marketing/HomeHeroActions";
 import { HomePreviewDemoButton } from "@/components/marketing/HomePreviewDemoButton";
+import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { ShieldCheck, Sparkles, Wallet } from "lucide-react";
 
 export default function HomePage() {
@@ -14,6 +15,7 @@ export default function HomePage() {
       <main className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
         <section className="grid min-w-0 items-center gap-12 lg:grid-cols-2">
           <div className="min-w-0">
+            <BrandLogo size={72} className="mb-5" />
             <p className="marketing-kicker">Next step: start the trial</p>
             <h1 className="marketing-title">
               See cash, GST and invoices in plain English.
