@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { PricingCardDemoLink, PricingFooterDemoLine } from "@/components/marketing/PricingDemoLinks";
 
 const FEATURES = [
@@ -17,44 +18,45 @@ const FEATURES = [
 export default function PricingPage() {
   return (
     <div>
-      <SiteHeader variant="compact" />
-      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <p className="marketing-kicker text-center">Next step: start the trial</p>
+      <SiteHeader />
+      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
+        <p className="marketing-kicker text-center">Australian bookkeeping · one plan</p>
         <div className="mx-auto mt-3 max-w-2xl text-center">
-          <h1 className="text-5xl font-bold tracking-tight text-white sm:text-6xl">
-            One plan. $69 a month.
-          </h1>
+          <h1 className="marketing-title">One plan. $69 a month.</h1>
           <p className="marketing-lead mx-auto">
-            Try it free for 14 days. See cash, GST, and invoices in plain English.
+            Try HyperionInvoices free for 14 days. See cash, GST, and invoices in plain English.
           </p>
         </div>
 
-        <div className="mx-auto mt-12 max-w-md">
-          <div className="card relative flex flex-col border-brand-300/60 bg-brand-500/10 p-6 shadow-glow">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-300 px-3 py-1 text-sm font-bold text-slate-950 shadow-glow">
+        <div className="mx-auto mt-12 max-w-lg">
+          <div className="card flex flex-col border-brand-300/50 bg-brand-500/10 p-6 shadow-glow sm:p-8">
+            <p className="inline-flex w-fit rounded-full bg-brand-300 px-3 py-1 text-sm font-bold text-slate-950">
               14 days free
-            </span>
-            <h2 className="text-2xl font-bold text-white">HyperionInvoices</h2>
+            </p>
+            <h2 className="mt-4 text-2xl font-bold text-white">HyperionInvoices</h2>
             <p className="mt-2 marketing-copy">
               Everything in one plan. No add-ons to buy later.
             </p>
-            <p className="mt-5">
-              <span className="text-5xl font-bold text-white">$69</span>
-              <span className="text-base text-slate-200"> / month</span>
+            <p className="mt-6">
+              <span className="text-5xl font-bold tracking-tight text-white">$69</span>
+              <span className="text-lg text-slate-50"> / month</span>
             </p>
-            <p className="mt-2 text-base text-slate-100">After the free trial. Stop anytime. Pay with card or Apple Pay.</p>
-            <ul className="mt-5 flex-1 space-y-2.5">
+            <p className="mt-3 text-base leading-7 text-slate-50">
+              After the free trial. Stop anytime. Pay with card or Apple Pay.
+            </p>
+            <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-brand-200">
+              What is included
+            </p>
+            <ul className="mt-3 flex-1 space-y-3">
               {FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-base text-slate-100">
-                  <Check size={18} className="mt-0.5 shrink-0 text-brand-200" />
+                <li key={f} className="flex items-start gap-3 text-base leading-7 text-slate-50">
+                  <Check size={20} className="mt-0.5 shrink-0 text-brand-200" aria-hidden="true" />
                   {f}
                 </li>
               ))}
             </ul>
-            <div className="mt-6 flex flex-col gap-3">
-              <Link href="/signup" className="btn-primary">
-                Start free trial
-              </Link>
+            <div className="mt-8 flex flex-col gap-4">
+              <StartTrialButton className="btn-marketing-primary w-full" />
               <Link href="/signup" className="link-quiet text-center">
                 Sign up
               </Link>
@@ -64,8 +66,9 @@ export default function PricingPage() {
         </div>
 
         <PricingFooterDemoLine />
-        <p className="mt-4 text-center text-base text-slate-200">
-          Price is in Australian dollars. Pay with card or Apple Pay. You can cancel anytime. We do not send forms to the ATO for you.
+        <p className="mx-auto mt-5 max-w-2xl text-center text-base leading-7 text-slate-50">
+          Price is in Australian dollars. Pay with card or Apple Pay. You can cancel anytime.
+          HyperionInvoices does not send forms to the ATO for you.
         </p>
       </main>
       <MarketingFooter />
