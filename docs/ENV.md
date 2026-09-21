@@ -37,7 +37,7 @@ Nicholas: attach Neon from the Vercel dashboard so signups survive across device
 3. Add `SESSION_SECRET` (or `NEXTAUTH_SECRET` — either name works) as a long random string (32+ characters). Do not reuse a password. Generate locally with `openssl rand -hex 32` and paste only into Vercel.
 4. Redeploy Production.
 
-The app creates `users`, `organisations`, `sessions`, and org books tables (`invoices`, `quotes`, `bills`, `products`, `org_bank_data`) on first sign-up (`docs/schema.sql`). Until those vars are set, sign-up still works in this browser only.
+The app creates `users`, `organisations`, `sessions`, and org books tables (`invoices`, `quotes`, `bills`, `products`, `org_bank_data`) on first sign-up (`docs/schema.sql`). `npm run build` also runs `npm run migrate` when `DATABASE_URL` is present. `GET /api/stripe/status` reports `persistence.schemaApplied`. Until those vars are set, sign-up still works in this browser only.
 
 | Name | Example shape | Where |
 |------|----------------|--------|

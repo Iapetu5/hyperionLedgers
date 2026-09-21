@@ -43,12 +43,18 @@ export default function ReportsPage() {
     setRollup(rollupBlankReports(await loadInvoices(), await loadBills()));
   }, []);
 
-  const { ready } = useBlankBooksReload(reload);
+  const { ready, unresolved } = useBlankBooksReload(reload);
 
   const showBlankFigures = !usesSampleData && rollup.hasActivity;
 
   if (!ready) {
-    return <div className="card p-6 text-sm text-white/70">Loading reports…</div>;
+    return (
+      <div className="card p-6 text-sm text-white/70">
+        {unresolved
+          ? "Could not confirm where books are stored. Refresh — figures were not replaced."
+          : "Loading reports…"}
+      </div>
+    );
   }
 
   return (

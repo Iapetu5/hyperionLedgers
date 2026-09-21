@@ -16,6 +16,13 @@ import {
   type BankTransaction,
 } from "@/lib/bank-transactions";
 import {
+  loadBills as loadBillsBooks,
+  loadInvoices as loadInvoicesBooks,
+  loadQuotes as loadQuotesBooks,
+  loadBankTransactions as loadBankTransactionsBooks,
+} from "@/lib/books-client";
+import { booksApplyWhere } from "@/lib/books-copy";
+import {
   DEMO_ORG,
   accounts,
   bills,
@@ -32,9 +39,7 @@ import {
   effectiveInvoiceStatus,
   effectiveQuoteStatus,
   effectiveSampleBillStatus,
-  loadUserBills,
-  loadUserInvoices,
-  loadUserQuotes,
+  type UserBill,
   type UserInvoice,
   type UserQuote,
 } from "@/lib/user-docs";
@@ -110,7 +115,26 @@ export type CopilotContext = {
   /** Signed-in blank ledger — avoid pretending Harbour KPIs apply */
   blankLedger?: boolean;
   orgName?: string;
+  /** Signed-in org books (Postgres). Guests / sample stay browser-local. */
+  serverBooks?: boolean;
 };
+
+type BlankBooksSnapshot = {
+  invoices: UserInvoice[];
+  quotes: UserQuote[];
+  bills: UserBill[];
+  bank: BankTransaction[];
+};
+
+async function loadBlankSnapshot(): Promise<BlankBooksSnapshot> {
+  const [invoices, quotes, bills, bank] = await Promise.all([
+    loadInvoicesBooks(),
+    loadQuotesBooks(),
+    loadBillsBooks(),
+    loadBankTransactionsBooks("blank"),
+  ]);
+  return { invoices, quotes, bills, bank };
+}
 
 function overdueInvoices() {
   return invoices.filter((i) => {
@@ -165,17 +189,17 @@ function userQuoteDisplay(q: UserQuote) {
   return effectiveQuoteStatus({ status: stored, expiryDate: q.expiryDate });
 }
 
-/** Blank-ledger user invoices past due (display status), unpaid — demo-local only. */
-function overdueUserInvoices() {
-  return loadUserInvoices().filter((i) => userInvoiceDisplay(i) === "Overdue");
+/** Blank-ledger user invoices past due (display status), unpaid. */
+function overdueUserInvoices(rows: UserInvoice[]) {
+  return rows.filter((i) => userInvoiceDisplay(i) === "Overdue");
 }
 
-function awaitingPaymentUserInvoices() {
-  return loadUserInvoices().filter((i) => userInvoiceDisplay(i) === "Awaiting payment");
+function awaitingPaymentUserInvoices(rows: UserInvoice[]) {
+  return rows.filter((i) => userInvoiceDisplay(i) === "Awaiting payment");
 }
 
-function userReceivablesTotal() {
-  return loadUserInvoices()
+function userReceivablesTotal(rows: UserInvoice[]) {
+  return rows
     .filter((i) => {
       const st = userInvoiceDisplay(i);
       return st === "Awaiting payment" || st === "Overdue";
@@ -183,27 +207,26 @@ function userReceivablesTotal() {
     .reduce((sum, i) => sum + i.amount, 0);
 }
 
-/** Blank-ledger user bills past due (display status), unpaid — demo-local only. */
-function overdueUserBills() {
-  return loadUserBills().filter(
-    (b) => effectiveBillStatus(b) === "Overdue",
-  );
+/** Blank-ledger user bills past due (display status), unpaid. */
+function overdueUserBills(rows: UserBill[]) {
+  return rows.filter((b) => effectiveBillStatus(b) === "Overdue");
 }
 
 /** Blank-ledger user quotes still Sent (not expired/accepted/declined). */
-function awaitingUserQuotes() {
-  return loadUserQuotes().filter((q) => userQuoteDisplay(q) === "Sent");
+function awaitingUserQuotes(rows: UserQuote[]) {
+  return rows.filter((q) => userQuoteDisplay(q) === "Sent");
 }
 
-/** Blank-ledger user quotes past expiry (display status) — demo-local only. */
-function expiredUserQuotes() {
-  return loadUserQuotes().filter((q) => userQuoteDisplay(q) === "Expired");
+/** Blank-ledger user quotes past expiry (display status). */
+function expiredUserQuotes(rows: UserQuote[]) {
+  return rows.filter((q) => userQuoteDisplay(q) === "Expired");
 }
 
-function pickUnmatched(blankLedger = false): BankTransaction[] {
+function pickUnmatched(blankLedger = false, bankTxns?: BankTransaction[]): BankTransaction[] {
   const mode = blankLedger ? "blank" : "sample";
   const accountId = blankLedger ? BLANK_CHEQUE_ACCOUNT_ID : CHEQUE_ACCOUNT_ID;
-  return unmatchedForAccount(loadBankTransactions(mode), accountId);
+  const txns = blankLedger ? (bankTxns ?? []) : loadBankTransactions(mode);
+  return unmatchedForAccount(txns, accountId);
 }
 
 function detectIntent(question: string): AiIntent {
@@ -387,8 +410,13 @@ function replyBas(): AiReply {
   };
 }
 
-function replyCategorise(question: string, blankLedger = false): AiReply {
-  const unmatched = pickUnmatched(blankLedger);
+function replyCategorise(
+  question: string,
+  blankLedger = false,
+  bankTxns?: BankTransaction[],
+  serverBooks = false,
+): AiReply {
+  const unmatched = pickUnmatched(blankLedger, bankTxns);
   if (unmatched.length === 0) {
     return {
       intent: "categorise",
@@ -396,7 +424,13 @@ function replyCategorise(question: string, blankLedger = false): AiReply {
         ? "No unmatched bank lines on your blank cheque account right now. On Banking: set an opening balance if needed, Try starter CSV for a few generic lines, or upload your own statement — then Ask AI again to categorise. Unmatch undoes an Apply on a line."
         : "No unmatched bank lines right now. On Banking: Try sample CSV to import more, use Unmatch on a categorised line, or Reset categorisations to put sample lines back in the queue. Clear CSV imports removes imported rows only.",
       citations: blankLedger
-        ? [{ label: "Ledger mode", value: "Blank", source: "own cheque · browser CSV" }]
+        ? [
+            {
+              label: "Ledger mode",
+              value: "Blank",
+              source: serverBooks ? "own cheque · organisation books" : "own cheque · browser CSV",
+            },
+          ]
         : [],
       actions: [{ id: "bank", label: "Go to Banking", kind: "link", href: blankLedger ? "/demo/banking" : "/demo/banking#import" }],
       chips: blankLedger
@@ -426,7 +460,7 @@ function replyCategorise(question: string, blankLedger = false): AiReply {
   const prose = [
     `For unmatched line “${target.description}” (${formatAUD(target.amount)} on ${formatDateAU(target.date)}), I suggest account ${suggestion.accountCode} — ${suggestion.accountName} (${suggestion.taxRate}).`,
     `Reason: ${suggestion.reason} (${suggestion.confidence} confidence).`,
-    safe ? "You can apply this in one click — it stays in this browser demo only." : "Confidence is low — review before applying.",
+    safe ? `You can apply this in one click — ${booksApplyWhere(serverBooks, blankLedger)}.` : "Confidence is low — review before applying.",
     others.length ? `Other unmatched: ${others.join("; ")}.` : "",
   ].filter(Boolean).join(" ");
 
@@ -723,18 +757,17 @@ function replyUnknown(): AiReply {
   };
 }
 
-function replyBlankNext(orgName?: string): AiReply {
+function replyBlankNext(orgName: string | undefined, books: BlankBooksSnapshot, serverBooks: boolean): AiReply {
   const who = orgName || "your organisation";
-  const odInv = overdueUserInvoices();
-  const odBills = overdueUserBills();
+  const odInv = overdueUserInvoices(books.invoices);
+  const odBills = overdueUserBills(books.bills);
   const odBillsTotal = odBills.reduce((sum, b) => sum + b.amount, 0);
   const chase = odInv[0];
-  const awaiting = awaitingUserQuotes();
-  const ex = expiredUserQuotes();
-  const awaitingPay = awaitingPaymentUserInvoices();
-  const receivables = userReceivablesTotal();
-  const hasAnyDocs =
-    loadUserInvoices().length + loadUserQuotes().length + loadUserBills().length > 0;
+  const awaiting = awaitingUserQuotes(books.quotes);
+  const ex = expiredUserQuotes(books.quotes);
+  const awaitingPay = awaitingPaymentUserInvoices(books.invoices);
+  const receivables = userReceivablesTotal(books.invoices);
+  const hasAnyDocs = books.invoices.length + books.quotes.length + books.bills.length > 0;
   const statusNote =
     " Past-due unpaid invoices show Overdue and Sent quotes past expiry show Expired automatically (Draft stays Draft).";
 
@@ -755,7 +788,7 @@ function replyBlankNext(orgName?: string): AiReply {
 
   const citations: AiCitation[] = [
     { label: "Ledger mode", value: "Blank", source: "onboarding choice" },
-    { label: "Org", value: who, source: "session" },
+    { label: "Org", value: who, source: serverBooks ? "organisation books" : "session" },
   ];
   if (odBills.length) {
     citations.push({
@@ -816,7 +849,7 @@ function replyBlankNext(orgName?: string): AiReply {
     actions.push({ id: "quotes-ex", label: "Review expired quotes", kind: "link", href: "/demo/quotes" });
   }
   if (actions.length === 0) {
-    if (loadUserInvoices().length > 0) {
+    if (books.invoices.length > 0) {
       actions.push({ id: "inv", label: "Review invoices", kind: "link", href: "/demo/invoices" });
       const open = awaitingPay[0] ?? odInv[0];
       if (open) {
@@ -845,8 +878,14 @@ function replyBlankNext(orgName?: string): AiReply {
   };
 }
 
-function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
+function replyBlankRedirect(
+  intent: AiIntent,
+  orgName: string | undefined,
+  books: BlankBooksSnapshot,
+  serverBooks: boolean,
+): AiReply {
   const who = orgName || "your organisation";
+  const persist = serverBooks ? "your organisation" : "this browser";
   if (intent === "invoices") {
     return {
       intent,
@@ -862,7 +901,7 @@ function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
     };
   }
   if (intent === "quotes" || intent === "draft_doc") {
-    const expired = expiredUserQuotes();
+    const expired = expiredUserQuotes(books.quotes);
     const expiredNote =
       expired.length > 0
         ? ` You already have ${expired.length} expired quote${expired.length === 1 ? "" : "s"} (e.g. ${expired[0].id}) — open Quotes to refresh or archive.`
@@ -893,7 +932,11 @@ function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
       prose: `${who}'s blank ledger has its own cheque account (not demo sample balances). On Banking: set an opening balance so cash total is clear, Try starter CSV for a few generic lines, or upload your own statement — then categorise unmatched lines (Apply / Ask AI / Unmatch). Demo sample KPIs stay in the guest tour.`,
       citations: [
         { label: "Ledger mode", value: "Blank", source: "onboarding choice" },
-        { label: "Cheque", value: "blank-chk · browser CSV", source: "/demo/banking" },
+        {
+          label: "Cheque",
+          value: serverBooks ? "blank-chk · organisation books" : "blank-chk · browser CSV",
+          source: "/demo/banking",
+        },
       ],
       actions: [
         { id: "bank", label: "Open Banking", kind: "link", href: "/demo/banking" },
@@ -921,13 +964,13 @@ function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
     };
   }
   if (intent === "chase_overdue") {
-    const od = overdueUserInvoices();
+    const od = overdueUserInvoices(books.invoices);
     if (od.length > 0) {
       const top = od[0];
       const total = od.reduce((s, i) => s + i.amount, 0);
       return {
         intent,
-        prose: `${who} has ${od.length} overdue invoice${od.length === 1 ? "" : "s"} totalling ${formatAUD(total)} (e.g. ${top.id} ${top.contact}, due ${formatDateAU(top.dueDate)}). Share the customer pay link or follow up from the invoices list. Demo-local only — status flips to Overdue from the due date when unpaid.`,
+        prose: `${who} has ${od.length} overdue invoice${od.length === 1 ? "" : "s"} totalling ${formatAUD(total)} (e.g. ${top.id} ${top.contact}, due ${formatDateAU(top.dueDate)}). Share the customer pay link or follow up from the invoices list. Saved to ${persist} — status flips to Overdue from the due date when unpaid.`,
         citations: od.slice(0, 3).map((i) => ({
           label: i.id,
           value: `${formatAUD(i.amount)} · due ${formatDateAU(i.dueDate)}`,
@@ -975,18 +1018,40 @@ function replyBlankRedirect(intent: AiIntent, orgName?: string): AiReply {
   };
 }
 
-/** Main entry — pattern-match intent and retrieve facts from sample + local bank state. */
-export function getCopilotReply(question: string, ctx?: CopilotContext): AiReply {
+function booksLoadFailedReply(): AiReply {
+  return {
+    intent: "unknown",
+    prose:
+      "Could not load your organisation books just now. I did not assume an empty ledger. Sign in and try again, or open Invoices / Banking and refresh.",
+    citations: [{ label: "Books", value: "Unavailable", source: "GET failed — list unchanged" }],
+    actions: [
+      { id: "inv", label: "Open Invoices", kind: "link", href: "/demo/invoices" },
+      { id: "bank", label: "Open Banking", kind: "link", href: "/demo/banking" },
+    ],
+    chips: BLANK_SUGGESTED_CHIPS,
+    disclaimer: AI_DISCLAIMER,
+  };
+}
+
+/** Main entry — pattern-match intent and retrieve facts from sample or organisation books. */
+export async function getCopilotReply(question: string, ctx?: CopilotContext): Promise<AiReply> {
   const intent = detectIntent(question || "");
   if (ctx?.blankLedger) {
+    let books: BlankBooksSnapshot;
+    try {
+      books = await loadBlankSnapshot();
+    } catch {
+      return booksLoadFailedReply();
+    }
+    const serverBooks = Boolean(ctx.serverBooks);
     if (intent === "categorise") {
-      return replyCategorise(question, true);
+      return replyCategorise(question, true, books.bank, serverBooks);
     }
     if (intent === "next" || intent === "help" || intent === "unknown") {
-      return replyBlankNext(ctx.orgName);
+      return replyBlankNext(ctx.orgName, books, serverBooks);
     }
     // Light redirect for sample-tied topics — keep engine intact for guest/sample mode
-    return replyBlankRedirect(intent, ctx.orgName);
+    return replyBlankRedirect(intent, ctx.orgName, books, serverBooks);
   }
   switch (intent) {
     case "next":
@@ -1019,7 +1084,7 @@ export function getCopilotReply(question: string, ctx?: CopilotContext): AiReply
 }
 
 /** Plain-text helper for older call sites. */
-export function getAiReply(question: string): string {
-  const r = getCopilotReply(question);
+export async function getAiReply(question: string): Promise<string> {
+  const r = await getCopilotReply(question);
   return `${r.prose}\n\n(${r.disclaimer})`;
 }

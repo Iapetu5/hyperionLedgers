@@ -510,8 +510,13 @@ export function LineItemsEditor({
   const [catalogueReady, setCatalogueReady] = useState(false);
 
   const reloadProducts = useCallback(async () => {
-    setProducts(await loadProductsForModeBooks(usesSampleData));
-    setCatalogueReady(true);
+    try {
+      setProducts(await loadProductsForModeBooks(usesSampleData));
+    } catch {
+      /* keep last catalogue — never invent empty products on a failed GET */
+    } finally {
+      setCatalogueReady(true);
+    }
   }, [usesSampleData]);
 
   useEffect(() => {

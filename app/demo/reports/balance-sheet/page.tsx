@@ -19,7 +19,7 @@ export default function BalanceSheetReportPage() {
     setRollup(rollupBlankReports(await loadInvoices(), await loadBills()));
   }, []);
 
-  const { ready } = useBlankBooksReload(reload);
+  const { ready, unresolved } = useBlankBooksReload(reload);
 
   const cash = usesSampleData
     ? Math.round(accounts.reduce((s, a) => s + a.balance, 0) * 100) / 100
@@ -34,7 +34,13 @@ export default function BalanceSheetReportPage() {
   const showBlank = !usesSampleData && rollup.hasActivity;
 
   if (!ready) {
-    return <div className="card p-6 text-sm text-white/70">Loading balance sheet…</div>;
+    return (
+      <div className="card p-6 text-sm text-white/70">
+        {unresolved
+          ? "Could not confirm where books are stored. Refresh — figures were not replaced."
+          : "Loading balance sheet…"}
+      </div>
+    );
   }
 
   return (

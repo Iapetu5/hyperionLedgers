@@ -57,6 +57,7 @@ import {
   resetAllCategorisations,
   setBlankOpeningBalance,
 } from "@/lib/books-client";
+import { booksBankingHint, booksRecentlyCategorisedHint, usesServerBooksUi } from "@/lib/books-copy";
 
 function linesToApplyLabel(count: number) {
   return count === 1 ? "1 line to Apply" : `${count} lines to Apply`;
@@ -161,6 +162,7 @@ function bankingPathHint(mode: BankLedgerMode, step1Done: boolean) {
 
 export default function BankingPage() {
   const { usesSampleData, user, loading, persistence } = useAuth();
+  const serverBooks = usesServerBooksUi(persistence, user);
   const mode: BankLedgerMode = usesSampleData ? "sample" : "blank";
   const chequeAccountId = mode === "blank" ? BLANK_CHEQUE_ACCOUNT_ID : CHEQUE_ACCOUNT_ID;
   const fileRef = useRef<HTMLInputElement>(null);
@@ -215,7 +217,13 @@ export default function BankingPage() {
   }, [mode]);
 
   useEffect(() => {
-    if (loading || persistence === "unknown") return;
+    if (loading) return;
+    if (persistence === "unknown") {
+      setError(
+        "Could not confirm where banking is stored. Refresh — lines below were not replaced.",
+      );
+      return;
+    }
     void reload();
     setLedgerReady(true);
   }, [reload, loading, persistence]);
@@ -549,7 +557,7 @@ export default function BankingPage() {
     }
     void (async () => {
       try {
-        const updated = await applyCategoryToTransaction(t.id, suggestion);
+        const updated = await applyCategoryToTransaction(t.id, suggestion, { mode });
         if (!updated) {
           setError(`Could not apply a category to “${t.description}”. Try refreshing Banking.`);
           setSuccess(null);
@@ -592,7 +600,7 @@ export default function BankingPage() {
           continue;
         }
         try {
-          if (await applyCategoryToTransaction(t.id, suggestion)) applied += 1;
+          if (await applyCategoryToTransaction(t.id, suggestion, { mode })) applied += 1;
           else failed += 1;
         } catch {
           failed += 1;
@@ -641,7 +649,7 @@ export default function BankingPage() {
     unmatchLock.current = t.id;
     void (async () => {
       try {
-        const updated = await clearCategoryFromTransaction(t.id);
+        const updated = await clearCategoryFromTransaction(t.id, mode);
         if (!updated) {
           setError(`Could not undo match for “${t.description}”. Cash and categories are unchanged.`);
           setSuccess(null);
@@ -757,9 +765,7 @@ export default function BankingPage() {
           <h1 className="text-2xl font-bold text-white">Banking</h1>
           <BooksSectionNav />
           <p className="text-sm text-white/70">
-            {mode === "blank"
-              ? `${orgLabel} cheque account — browser-side CSV only. No live bank feeds, and demo sample lines stay out of this blank ledger.`
-              : "Sample balances and browser-side CSV import only — no live bank feeds or APIs."}
+            {booksBankingHint(serverBooks, mode === "blank")}
           </p>
         </div>
       </div>
@@ -769,7 +775,7 @@ export default function BankingPage() {
           <div className="card p-5">
             <p className="font-semibold text-white">1. Opening balance</p>
             <p className="text-xs text-slate-400">
-              {orgLabel} · demo account (browser only)
+              {orgLabel} · demo account ({serverBooks ? "saved to your organisation" : "browser only"})
             </p>
             <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">Cash total</p>
             <p className="mt-1 text-2xl font-bold text-white">{formatAUD(blankBalance)}</p>
@@ -1396,8 +1402,7 @@ export default function BankingPage() {
           <div className="border-b border-white/10 px-4 py-3">
             <h2 className="font-semibold text-white">Recently categorised</h2>
             <p className="text-xs text-slate-400">
-              Applied in this browser demo (including via Ask AI). Undo match below is one click. Reset
-              categorisations under More asks what it removes.
+              {booksRecentlyCategorisedHint(serverBooks, mode === "blank")}
             </p>
           </div>
           <ul className="divide-y divide-white/10 text-sm">

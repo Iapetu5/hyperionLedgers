@@ -35,7 +35,7 @@ import {
 } from "@/lib/books-client";
 import { effectiveQuoteStatus, type UserQuote } from "@/lib/user-docs";
 import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
-import { booksListHint, booksSampleHint, booksStoredHint, usesServerBooksUi } from "@/lib/books-copy";
+import { booksComposerHint, booksListHint, booksSampleHint, booksStoredHint, usesServerBooksUi } from "@/lib/books-copy";
 
 export default function QuotesPage() {
   const { usesSampleData, user, persistence } = useAuth();
@@ -79,7 +79,7 @@ export default function QuotesPage() {
     }
   }, []);
 
-  const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
+  const { ready, unresolved } = useBlankBooksReload(reloadUser, { includeSample: true });
 
 
   const [mounted, setMounted] = useState(false);
@@ -324,6 +324,8 @@ export default function QuotesPage() {
         contact,
         contactEmail,
         lines: draftsToInputs(lines),
+        issueDate,
+        expiryDate,
         status: nextStatus,
       });
       if ("error" in res) {
@@ -334,32 +336,8 @@ export default function QuotesPage() {
         setFormError(`${res.error}${nudge}`);
         return;
       }
-      let updated: Awaited<ReturnType<typeof updateQuote>>;
-      try {
-        updated = await updateQuote(res.id, {
-          contact: res.contact,
-          contactEmail,
-          lines: draftsToInputs(lines),
-          issueDate,
-          expiryDate,
-          status: nextStatus,
-        });
-      } catch (e) {
-        updated = { error: e instanceof Error ? e.message : "save failed" };
-      }
-      if ("error" in updated) {
-        setPublicDocStatus("quote", res.id, res.status);
-        setEditingId(res.id);
-        setLastCreatedId(res.id);
-        setFormError(
-          `Created ${res.id}, but dates/status did not save (${updated.error}). Update ${res.id} below to retry — do not create another.`,
-        );
-        setFormOk(null);
-        await reloadUser();
-        return;
-      }
-      setPublicDocStatus("quote", updated.id, updated.status);
-      const created = updated;
+      setPublicDocStatus("quote", res.id, res.status);
+      const created = res;
       resetForm();
       setLastCreatedId(created.id);
       setFormOk(
@@ -398,7 +376,8 @@ export default function QuotesPage() {
     setIssueDate(q.issueDate);
     setExpiryDate(q.expiryDate);
     // Stored workflow status in the form (not auto-Expired). Badge uses effectiveQuoteStatus.
-    setStatus((quoteStatus(q.id, q.status) as UserQuote["status"]) || q.status);
+    const stored = storedQuoteStatus(q);
+    setStatus(stored);
     setLines(
       q.lineItems?.length
         ? lineItemsToDrafts(q.lineItems)
@@ -470,11 +449,7 @@ export default function QuotesPage() {
         <h2 className="font-semibold text-white">
           {editingId ? `Edit ${editingId}` : "Create quote"}
         </h2>
-        <span className="text-xs text-slate-400">
-          {editingId
-            ? "Same id & customer link · edit dates & status · browser only"
-            : "Line amounts before GST · choose GST or GST-free on each line · issue, expiry & status · saved in this browser"}
-        </span>
+        <span className="text-xs text-slate-400">{booksComposerHint(serverBooks, Boolean(editingId), "quote")}</span>
       </div>
       <div>
         <label className="label" htmlFor="qu-contact">
@@ -714,6 +689,15 @@ export default function QuotesPage() {
     );
   }
 
+  function storedQuoteStatus(q: UserQuote): UserQuote["status"] {
+    if (serverBooks) return q.status;
+    return (quoteStatus(q.id, q.status) as UserQuote["status"]) || q.status;
+  }
+
+  function displayQuoteStatus(q: UserQuote) {
+    return effectiveQuoteStatus({ status: storedQuoteStatus(q), expiryDate: q.expiryDate });
+  }
+
   function userActions(q: UserQuote) {
     return (
       <DocRowActions keep={3}>
@@ -752,7 +736,7 @@ export default function QuotesPage() {
           Email quote
         </button>
         <PrintDocButton kind="quote" id={q.id} compact />
-        <DocDeleteButton key={q.id} id={q.id} kind="quote" onDelete={onDelete} />
+        <DocDeleteButton key={q.id} id={q.id} kind="quote" server={serverBooks} onDelete={onDelete} />
       </DocRowActions>
     );
   }
@@ -760,7 +744,9 @@ export default function QuotesPage() {
   if (!ready) {
     return (
       <div className="card p-6 text-sm text-white/70">
-        Loading quotes…
+        {unresolved
+          ? "Could not confirm where quotes are stored. Refresh — the list was not replaced."
+          : "Loading quotes…"}
       </div>
     );
   }
@@ -826,12 +812,7 @@ export default function QuotesPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge
-                      status={effectiveQuoteStatus({
-                        status: quoteStatus(q.id, q.status) as UserQuote["status"],
-                        expiryDate: q.expiryDate,
-                      })}
-                    />
+                    <StatusBadge status={displayQuoteStatus(q)} />
                   </td>
                   <td className="doc-actions-col px-4 py-3">{userActions(q)}</td>
                 </tr>
@@ -955,12 +936,7 @@ export default function QuotesPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge
-                        status={effectiveQuoteStatus({
-                          status: quoteStatus(q.id, q.status) as UserQuote["status"],
-                          expiryDate: q.expiryDate,
-                        })}
-                      />
+                    <StatusBadge status={displayQuoteStatus(q)} />
                   </td>
                   <td className="doc-actions-col px-4 py-3">{userActions(q)}</td>
                 </tr>

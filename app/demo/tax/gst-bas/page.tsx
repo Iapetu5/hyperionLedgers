@@ -116,11 +116,13 @@ export default function GstBasPage() {
   const [selectedPeriodEnd, setSelectedPeriodEnd] = useState<string | null>(null);
 
   const reloadBlank = useCallback(async () => {
-    setBlankInvoices(await loadInvoices());
-    setBlankBills(await loadBills());
+    const invoices = await loadInvoices();
+    const bills = await loadBills();
+    setBlankInvoices(invoices);
+    setBlankBills(bills);
   }, []);
 
-  const { ready } = useBlankBooksReload(reloadBlank);
+  const { ready, unresolved } = useBlankBooksReload(reloadBlank);
 
   function markSimLodged() {
     // Sample: unchanged one-way write to the org-wide key.
@@ -265,7 +267,9 @@ export default function GstBasPage() {
   if (!ready) {
     return (
       <div className="card p-6 text-sm text-white/70">
-        Loading GST &amp; BAS…
+        {unresolved
+          ? "Could not confirm where books are stored. Refresh — figures were not replaced."
+          : "Loading GST & BAS…"}
       </div>
     );
   }

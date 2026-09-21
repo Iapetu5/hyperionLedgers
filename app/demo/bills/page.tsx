@@ -39,7 +39,7 @@ import {
   type UserBill,
 } from "@/lib/user-docs";
 import { useBlankBooksReload } from "@/components/demo/useBlankBooksReload";
-import { booksListHint, booksSampleHint, booksStoredHint, usesServerBooksUi } from "@/lib/books-copy";
+import { booksComposerHint, booksListHint, booksSampleHint, booksStoredHint, usesServerBooksUi } from "@/lib/books-copy";
 
 export default function BillsPage() {
   const { usesSampleData, user, persistence } = useAuth();
@@ -79,7 +79,7 @@ export default function BillsPage() {
     }
   }, []);
 
-  const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
+  const { ready, unresolved } = useBlankBooksReload(reloadUser, { includeSample: true });
 
   useEffect(() => {
     const onUpdate = () => setSampleTick((t) => t + 1);
@@ -269,6 +269,9 @@ export default function BillsPage() {
       const res = await createBill({
         supplier,
         lines: draftsToInputs(lines),
+        date: billDate,
+        dueDate,
+        status,
       });
       if ("error" in res) {
         const nudge =
@@ -278,30 +281,7 @@ export default function BillsPage() {
         setFormError(`${res.error}${nudge}`);
         return;
       }
-      let updated: Awaited<ReturnType<typeof updateBill>>;
-      try {
-        updated = await updateBill(res.id, {
-          supplier: res.supplier,
-          lines: draftsToInputs(lines),
-          date: billDate,
-          dueDate,
-          status,
-        });
-      } catch (e) {
-        updated = { error: e instanceof Error ? e.message : "save failed" };
-      }
-      if ("error" in updated) {
-        setEditingId(res.id);
-        setLastCreatedId(res.id);
-        setComposerOpen(true);
-        setFormError(
-          `Created ${res.id}, but dates/status did not save (${updated.error}). Update ${res.id} below to retry — do not create another.`,
-        );
-        setFormOk(null);
-        await reloadUser();
-        return;
-      }
-      const createdId = updated.id;
+      const createdId = res.id;
       resetForm();
       setLastCreatedId(createdId);
       setComposerOpen(true);
@@ -441,11 +421,7 @@ export default function BillsPage() {
         <h2 className="font-semibold text-white">
           {editingId ? `Edit ${editingId}` : "Create bill"}
         </h2>
-        <span className="text-xs text-slate-400">
-          {editingId
-            ? "Same id · edit lines, dates & status · browser only"
-            : "Line amounts before GST · choose GST or GST-free on each line · due in 14 days"}
-        </span>
+        <span className="text-xs text-slate-400">{booksComposerHint(serverBooks, Boolean(editingId), "bill")}</span>
       </div>
       <div>
         <label className="label" htmlFor="bill-supplier">
@@ -749,7 +725,7 @@ export default function BillsPage() {
           </button>
         )}
         {!paid && <PrintBillButton id={b.id} compact />}
-        <DocDeleteButton key={b.id} id={b.id} kind="bill" onDelete={onDelete} />
+        <DocDeleteButton key={b.id} id={b.id} kind="bill" server={serverBooks} onDelete={onDelete} />
       </DocRowActions>
     );
   }
@@ -812,7 +788,9 @@ export default function BillsPage() {
   if (!ready) {
     return (
       <div className="card p-6 text-sm text-white/70">
-        Loading bills…
+        {unresolved
+          ? "Could not confirm where bills are stored. Refresh — the list was not replaced."
+          : "Loading bills…"}
       </div>
     );
   }

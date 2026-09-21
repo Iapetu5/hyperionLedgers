@@ -18,7 +18,7 @@ export default function ProfitLossReportPage() {
     setRollup(rollupBlankReports(await loadInvoices(), await loadBills()));
   }, []);
 
-  const { ready } = useBlankBooksReload(reload);
+  const { ready, unresolved } = useBlankBooksReload(reload);
 
   const sampleRollup = usesSampleData ? rollupSampleReports() : null;
   const incomeExGst = usesSampleData ? sampleRollup!.incomeExGst : rollup.incomeExGst;
@@ -29,7 +29,13 @@ export default function ProfitLossReportPage() {
   const showBlank = !usesSampleData && rollup.hasActivity;
 
   if (!ready) {
-    return <div className="card p-6 text-sm text-white/70">Loading profit &amp; loss…</div>;
+    return (
+      <div className="card p-6 text-sm text-white/70">
+        {unresolved
+          ? "Could not confirm where books are stored. Refresh — figures were not replaced."
+          : "Loading profit & loss…"}
+      </div>
+    );
   }
 
   return (

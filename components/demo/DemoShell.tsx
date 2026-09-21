@@ -47,6 +47,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logOut, needsOnboarding, usesSampleData, persistence } = useAuth();
+  const serverBooks = usesServerBooksUi(persistence, user);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiSeed, setAiSeed] = useState<string | undefined>();
@@ -221,7 +222,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               </strong>
               <span className="text-white/50"> — </span>
               {hasUserDocs
-                ? booksLedgerBanner(usesServerBooksUi(persistence, user))
+                ? booksLedgerBanner(serverBooks)
                 : `${orgName} has no documents yet. Create an invoice, quote, or bill to get started.`}
             </p>
             {!user ? (
@@ -294,6 +295,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
         seedPrompt={aiSeed}
         seedKey={aiSeedKey}
         blankLedger={!loading && !usesSampleData}
+        serverBooks={serverBooks}
         orgName={user?.businessName || orgName}
       />
     </div>

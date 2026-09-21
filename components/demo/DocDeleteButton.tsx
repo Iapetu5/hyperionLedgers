@@ -3,33 +3,21 @@
 import { Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/demo/ConfirmDialog";
 import { useState } from "react";
+import { booksDeleteBody } from "@/lib/books-copy";
 
 export type DocDeleteKind = "invoice" | "quote" | "bill";
 
-const COPY = {
-  invoice: {
-    confirmLabel: "Delete invoice",
-    body: (id: string) =>
-      `Removes this invoice from this browser. Other invoices, quotes, and bills stay. The customer pay link for ${id} will not work after this. Mark paid and Undo paid only change status — they do not delete.`,
-  },
-  quote: {
-    confirmLabel: "Delete quote",
-    body: (id: string) =>
-      `Removes this quote from this browser. Other quotes, invoices, and bills stay. The customer link for ${id} will not work after this.`,
-  },
-  bill: {
-    confirmLabel: "Delete bill",
-    body: (id: string) =>
-      `Removes this bill from this browser. Other bills, invoices, and quotes stay. Approve, Mark paid, and Undo paid only change status — they do not delete.`,
-  },
-} as const;
+const CONFIRM_LABEL: Record<DocDeleteKind, string> = {
+  invoice: "Delete invoice",
+  quote: "Delete quote",
+  bill: "Delete bill",
+};
 
-export function docDeleteCopy(kind: DocDeleteKind, id: string) {
-  const copy = COPY[kind];
+export function docDeleteCopy(kind: DocDeleteKind, id: string, server = false) {
   return {
     title: `Delete ${id}?`,
-    body: copy.body(id),
-    confirmLabel: copy.confirmLabel,
+    body: booksDeleteBody(server, kind, id),
+    confirmLabel: CONFIRM_LABEL[kind],
   };
 }
 
@@ -42,30 +30,33 @@ export function DocDeleteButton({
   id,
   kind,
   onDelete,
+  server = false,
 }: {
   id: string;
   kind: DocDeleteKind;
   onDelete: (id: string) => void;
+  server?: boolean;
 }) {
   const [pending, setPending] = useState<{ id: string; title: string; body: string; confirmLabel: string } | null>(
     null,
   );
+  const copy = docDeleteCopy(kind, id, server);
   return (
     <>
       <button
         type="button"
         className="btn-quiet-danger !px-2 !py-1 text-xs"
-        onClick={() => setPending({ id, ...docDeleteCopy(kind, id) })}
-        title={`Remove ${id} from this browser — other documents stay`}
+        onClick={() => setPending({ id, ...docDeleteCopy(kind, id, server) })}
+        title={`Remove ${id} from ${server ? "your organisation" : "this browser"} — other documents stay`}
       >
         <Trash2 size={12} />
         Delete
       </button>
       <ConfirmDialog
         open={pending != null}
-        title={pending?.title ?? docDeleteCopy(kind, id).title}
-        body={pending?.body ?? docDeleteCopy(kind, id).body}
-        confirmLabel={pending?.confirmLabel ?? COPY[kind].confirmLabel}
+        title={pending?.title ?? copy.title}
+        body={pending?.body ?? copy.body}
+        confirmLabel={pending?.confirmLabel ?? copy.confirmLabel}
         onCancel={() => setPending(null)}
         onConfirm={() => {
           const del = pending?.id;

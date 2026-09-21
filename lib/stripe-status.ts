@@ -1,4 +1,4 @@
-import { isDbConfigured } from "@/lib/db";
+import { ensureSchema, isDbConfigured } from "@/lib/db";
 import { canSignDownloadTokens } from "@/lib/download-token";
 import { isStripeConfigured, PLAN } from "@/lib/billing";
 import { isStripeWebhookConfigured } from "@/lib/stripe";
@@ -8,13 +8,23 @@ function envPresent(name: string, test: (value: string) => boolean): boolean {
   return Boolean(value) && test(value);
 }
 
-export function stripeEnvDiagnostics() {
+export async function stripeEnvDiagnostics() {
   const secret = process.env.STRIPE_SECRET_KEY?.trim() ?? "";
   const price = process.env.STRIPE_PRICE_ID?.trim() ?? "";
   const publishable = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? "";
   const webhook = process.env.STRIPE_WEBHOOK_SECRET?.trim() ?? "";
   const sessionSecret =
     process.env.SESSION_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim() || "";
+
+  let schemaApplied = false;
+  if (isDbConfigured()) {
+    try {
+      await ensureSchema();
+      schemaApplied = true;
+    } catch {
+      schemaApplied = false;
+    }
+  }
 
   return {
     stripe: {
@@ -28,6 +38,7 @@ export function stripeEnvDiagnostics() {
       database: isDbConfigured(),
       sessionSecret: sessionSecret.length >= 16,
       downloadTokens: canSignDownloadTokens(),
+      schemaApplied,
     },
     plan: {
       amountAud: PLAN.amountAud,

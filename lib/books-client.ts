@@ -93,6 +93,9 @@ export function isServerBooksMode() {
   return cachedPersistence === "server" && cachedHasAccount;
 }
 
+const PERSISTENCE_UNKNOWN =
+  "Could not confirm where books are stored. Sign in and retry — the list was not replaced.";
+
 export async function ensureBooksPersistence(): Promise<BooksPersistence> {
   if (cachedPersistence !== "unknown") return cachedPersistence;
   if (resolvingPersistence) return resolvingPersistence;
@@ -101,12 +104,16 @@ export async function ensureBooksPersistence(): Promise<BooksPersistence> {
       const res = await fetch("/api/auth/me", { cache: "no-store", credentials: "include" });
       const data = (await res.json().catch(() => ({}))) as {
         persistence?: string;
+        configured?: boolean;
         account?: unknown | null;
       };
+      if (!res.ok && data.configured !== true && data.configured !== false) {
+        return cachedPersistence;
+      }
       const next = booksModeFromMe(data);
       setBooksPersistence(next.mode, { hasAccount: next.hasAccount });
     } catch {
-      setBooksPersistence("local", { hasAccount: false });
+      // Leave "unknown" — do not invent a localStorage ledger on a failed GET.
     } finally {
       resolvingPersistence = null;
     }
@@ -117,6 +124,9 @@ export async function ensureBooksPersistence(): Promise<BooksPersistence> {
 
 async function serverBooksEnabled(): Promise<boolean> {
   await ensureBooksPersistence();
+  if (cachedPersistence === "unknown") {
+    throw new Error(PERSISTENCE_UNKNOWN);
+  }
   return isServerBooksMode();
 }
 
@@ -160,12 +170,16 @@ async function booksFetch<T>(path: string, init?: RequestInit): Promise<T | { er
   return data;
 }
 
+function requireList<T>(label: string, rows: T[] | undefined): T[] {
+  if (!Array.isArray(rows)) throw new Error(`${label} list was incomplete.`);
+  return rows;
+}
+
 export async function loadInvoices(): Promise<UserInvoice[]> {
   if (!(await serverBooksEnabled())) return loadUserInvoicesLocal();
   const data = await booksFetch<{ invoices: UserInvoice[] }>("/api/books/invoices");
   if ("error" in data) throw new Error(data.error);
-  if (!Array.isArray(data.invoices)) throw new Error("Invoice list was incomplete.");
-  return data.invoices;
+  return requireList("Invoice", data.invoices);
 }
 
 export async function createInvoice(
@@ -200,7 +214,11 @@ export async function updateInvoice(
 
 export async function deleteInvoice(id: string): Promise<boolean> {
   if (!(await serverBooksEnabled())) return deleteUserInvoiceLocal(id);
-  const res = await fetch(`/api/books/invoices/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const res = await fetch(`/api/books/invoices/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    cache: "no-store",
+    credentials: "include",
+  });
   if (!res.ok) return false;
   emitBooksUpdated();
   return true;
@@ -225,8 +243,7 @@ export async function loadQuotes(): Promise<UserQuote[]> {
   if (!(await serverBooksEnabled())) return loadUserQuotesLocal();
   const data = await booksFetch<{ quotes: UserQuote[] }>("/api/books/quotes");
   if ("error" in data) throw new Error(data.error);
-  if (!Array.isArray(data.quotes)) throw new Error("Quote list was incomplete.");
-  return data.quotes;
+  return requireList("Quote", data.quotes);
 }
 
 export async function createQuote(
@@ -261,7 +278,11 @@ export async function updateQuote(
 
 export async function deleteQuote(id: string): Promise<boolean> {
   if (!(await serverBooksEnabled())) return deleteUserQuoteLocal(id);
-  const res = await fetch(`/api/books/quotes/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const res = await fetch(`/api/books/quotes/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    cache: "no-store",
+    credentials: "include",
+  });
   if (!res.ok) return false;
   emitBooksUpdated();
   return true;
@@ -286,8 +307,16 @@ export async function loadBills(): Promise<UserBill[]> {
   if (!(await serverBooksEnabled())) return loadUserBillsLocal();
   const data = await booksFetch<{ bills: UserBill[] }>("/api/books/bills");
   if ("error" in data) throw new Error(data.error);
-  if (!Array.isArray(data.bills)) throw new Error("Bill list was incomplete.");
-  return data.bills;
+  return requireList("Bill", data.bills);
+}
+
+export async function getBill(id: string): Promise<UserBill | null> {
+  if (!(await serverBooksEnabled())) {
+    return loadUserBillsLocal().find((b) => b.id === id) ?? null;
+  }
+  const data = await booksFetch<{ bill: UserBill }>(`/api/books/bills/${encodeURIComponent(id)}`);
+  if ("error" in data) return null;
+  return data.bill ?? null;
 }
 
 export async function createBill(
@@ -321,7 +350,11 @@ export async function updateBill(
 
 export async function deleteBill(id: string): Promise<boolean> {
   if (!(await serverBooksEnabled())) return deleteUserBillLocal(id);
-  const res = await fetch(`/api/books/bills/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const res = await fetch(`/api/books/bills/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    cache: "no-store",
+    credentials: "include",
+  });
   if (!res.ok) return false;
   emitBooksUpdated();
   return true;
@@ -342,8 +375,8 @@ export async function setBillStatus(id: string, status: UserBill["status"]): Pro
 export async function loadProducts(): Promise<Product[]> {
   if (!(await serverBooksEnabled())) return loadUserProductsLocal();
   const data = await booksFetch<{ products: Product[] }>("/api/books/products");
-  if ("error" in data) return [];
-  return data.products;
+  if ("error" in data) throw new Error(data.error);
+  return requireList("Product", data.products);
 }
 
 export async function createProduct(input: {
@@ -381,7 +414,11 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string): Promise<boolean> {
   if (!(await serverBooksEnabled())) return deleteUserProductLocal(id);
-  const res = await fetch(`/api/books/products/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const res = await fetch(`/api/books/products/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    cache: "no-store",
+    credentials: "include",
+  });
   if (!res.ok) return false;
   emitProductsUpdated();
   return true;
@@ -501,42 +538,56 @@ export async function appendImportedRows(
 export async function applyCategoryToTransaction(
   txnId: string,
   suggestion: Pick<CategorySuggestion, "accountCode" | "accountName" | "taxRate">,
-  opts: { markMatched?: boolean } = { markMatched: true },
+  opts: { markMatched?: boolean; mode?: BankLedgerMode } = { markMatched: true },
 ): Promise<BankTransaction | null> {
-  if (!(await serverBooksEnabled())) return applyCategoryToTransactionLocal(txnId, suggestion, opts);
-  try {
-    const payload = await loadBankPayload();
-    const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
-    if (!target) return null;
-    payload.catOverrides[txnId] = {
-      accountCode: suggestion.accountCode,
-      accountName: suggestion.accountName,
-      taxRate: suggestion.taxRate,
-      matched: opts.markMatched !== false,
-      categorisedAt: new Date().toISOString(),
-    };
-    await saveBankFields({ catOverrides: payload.catOverrides });
-    const txns = await loadBankTransactions("blank");
-    return txns.find((t) => t.id === txnId) ?? null;
-  } catch {
-    return null;
+  const mode = opts.mode ?? "blank";
+  // Sample (and guests) stay in localStorage even when the signed-in org uses Postgres.
+  if (!(await serverBooksEnabled()) || mode !== "blank") {
+    return applyCategoryToTransactionLocal(txnId, suggestion, opts);
   }
+  const payload = await loadBankPayload();
+  const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
+  if (!target) return null;
+  const categorisedAt = new Date().toISOString();
+  const matched = opts.markMatched !== false;
+  payload.catOverrides[txnId] = {
+    accountCode: suggestion.accountCode,
+    accountName: suggestion.accountName,
+    taxRate: suggestion.taxRate,
+    matched,
+    categorisedAt,
+  };
+  await saveBankFields({ catOverrides: payload.catOverrides });
+  return {
+    ...target,
+    accountCode: suggestion.accountCode,
+    accountName: suggestion.accountName,
+    taxRate: suggestion.taxRate,
+    matched,
+    categorisedAt,
+  };
 }
 
-export async function clearCategoryFromTransaction(txnId: string): Promise<BankTransaction | null> {
-  if (!(await serverBooksEnabled())) return clearCategoryFromTransactionLocal(txnId);
-  try {
-    const payload = await loadBankPayload();
-    if (!applyCatsFromPayload(payload.imports, payload.catOverrides).some((t) => t.id === txnId)) {
-      return null;
-    }
-    delete payload.catOverrides[txnId];
-    await saveBankFields({ catOverrides: payload.catOverrides });
-    const txns = await loadBankTransactions("blank");
-    return txns.find((t) => t.id === txnId) ?? null;
-  } catch {
-    return null;
+export async function clearCategoryFromTransaction(
+  txnId: string,
+  mode: BankLedgerMode = "blank",
+): Promise<BankTransaction | null> {
+  if (!(await serverBooksEnabled()) || mode !== "blank") {
+    return clearCategoryFromTransactionLocal(txnId);
   }
+  const payload = await loadBankPayload();
+  const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
+  if (!target) return null;
+  delete payload.catOverrides[txnId];
+  await saveBankFields({ catOverrides: payload.catOverrides });
+  return {
+    ...target,
+    matched: false,
+    accountCode: undefined,
+    accountName: undefined,
+    taxRate: undefined,
+    categorisedAt: undefined,
+  };
 }
 
 export async function resetAllCategorisations(mode: BankLedgerMode = "blank"): Promise<number> {

@@ -42,7 +42,19 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Neon/pg jsonb params — stringify + ::jsonb so line items are not stored as text. */
+function jsonb(value: unknown) {
+  return JSON.stringify(value ?? null);
+}
+
 function parseLines(raw: unknown): UserDocLineItem[] | undefined {
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return undefined;
+    }
+  }
   if (!raw || !Array.isArray(raw)) return undefined;
   return raw as UserDocLineItem[];
 }
@@ -112,13 +124,13 @@ const INVOICE_STATUSES: UserInvoice["status"][] = ["Draft", "Awaiting payment", 
 const QUOTE_STATUSES: UserQuote["status"][] = ["Draft", "Sent", "Accepted", "Declined"];
 const BILL_STATUSES: UserBill["status"][] = ["Awaiting approval", "Approved", "Overdue", "Paid"];
 
-export async function listInvoicesServer(): Promise<UserInvoice[]> {
+export async function listInvoicesServer(): Promise<{ invoices: UserInvoice[] } | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx) return [];
+  if ("error" in ctx) return ctx;
   const rows = (await db()`
     SELECT * FROM invoices WHERE organisation_id = ${ctx.orgId} ORDER BY created_at DESC
   `) as Record<string, unknown>[];
-  return rows.map(rowToInvoice);
+  return { invoices: rows.map(rowToInvoice) };
 }
 
 export async function getInvoiceServer(id: string): Promise<UserInvoice | null> {
@@ -167,7 +179,7 @@ export async function createInvoiceServer(input: {
       ${toIsoDate(input.issueDate, todayISO())},
       ${toIsoDate(input.dueDate, plusDaysISO(14))},
       ${bundle.amount}, ${bundle.gst}, ${status}, ${bundle.reference},
-      false, ${JSON.stringify(bundle.lineItems)}, ${biz.businessName}, ${biz.businessAbn}
+      false, ${jsonb(bundle.lineItems)}::jsonb, ${biz.businessName}, ${biz.businessAbn}
     )
   `;
   return (await getInvoiceForOrg(id, ctx.orgId))!;
@@ -213,7 +225,7 @@ export async function updateInvoiceServer(
       amount = ${bundle.amount},
       gst = ${bundle.gst},
       reference = ${bundle.reference},
-      line_items = ${JSON.stringify(bundle.lineItems)},
+      line_items = ${jsonb(bundle.lineItems)}::jsonb,
       issue_date = ${toIsoDate(input.issueDate ?? existing.issueDate, todayISO())},
       due_date = ${toIsoDate(input.dueDate ?? existing.dueDate, plusDaysISO(14))},
       status = ${input.status ?? existing.status},
@@ -226,14 +238,17 @@ export async function updateInvoiceServer(
 export async function setInvoiceStatusServer(
   id: string,
   status: UserInvoice["status"],
-): Promise<UserInvoice | null> {
+): Promise<UserInvoice | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx || !INVOICE_STATUSES.includes(status)) return null;
+  if ("error" in ctx) return ctx;
+  if (!INVOICE_STATUSES.includes(status)) return { error: "Invalid invoice status." };
   await db()`
     UPDATE invoices SET status = ${status}, updated_at = now()
     WHERE id = ${id} AND organisation_id = ${ctx.orgId}
   `;
-  return getInvoiceForOrg(id, ctx.orgId);
+  const row = await getInvoiceForOrg(id, ctx.orgId);
+  if (!row) return { error: "Invoice not found." };
+  return row;
 }
 
 export async function setPublicInvoiceStatusServer(
@@ -246,22 +261,23 @@ export async function setPublicInvoiceStatusServer(
   return getInvoiceServer(id);
 }
 
-export async function deleteInvoiceServer(id: string): Promise<boolean> {
+export async function deleteInvoiceServer(id: string): Promise<{ ok: true } | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx) return false;
+  if ("error" in ctx) return ctx;
   const rows = (await db()`
     DELETE FROM invoices WHERE id = ${id} AND organisation_id = ${ctx.orgId} RETURNING id
   `) as { id: string }[];
-  return rows.length > 0;
+  if (!rows.length) return { error: "Invoice not found." };
+  return { ok: true };
 }
 
-export async function listQuotesServer(): Promise<UserQuote[]> {
+export async function listQuotesServer(): Promise<{ quotes: UserQuote[] } | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx) return [];
+  if ("error" in ctx) return ctx;
   const rows = (await db()`
     SELECT * FROM quotes WHERE organisation_id = ${ctx.orgId} ORDER BY created_at DESC
   `) as Record<string, unknown>[];
-  return rows.map(rowToQuote);
+  return { quotes: rows.map(rowToQuote) };
 }
 
 export async function getQuoteServer(id: string): Promise<UserQuote | null> {
@@ -311,7 +327,7 @@ export async function createQuoteServer(input: {
       ${toIsoDate(input.issueDate, todayISO())},
       ${toIsoDate(input.expiryDate, plusDaysISO(14))},
       ${bundle.amount}, ${bundle.gst}, ${status}, ${bundle.reference},
-      ${JSON.stringify(bundle.lineItems)}, ${biz.businessName}, ${biz.businessAbn}
+      ${jsonb(bundle.lineItems)}::jsonb, ${biz.businessName}, ${biz.businessAbn}
     )
   `;
   return (await getQuoteForOrg(id, ctx.orgId))!;
@@ -359,7 +375,7 @@ export async function updateQuoteServer(
       amount = ${bundle.amount},
       gst = ${bundle.gst},
       reference = ${bundle.reference},
-      line_items = ${JSON.stringify(bundle.lineItems)},
+      line_items = ${jsonb(bundle.lineItems)}::jsonb,
       issue_date = ${toIsoDate(input.issueDate ?? existing.issueDate, todayISO())},
       expiry_date = ${toIsoDate(input.expiryDate ?? existing.expiryDate, plusDaysISO(14))},
       status = ${input.status ?? existing.status},
@@ -369,14 +385,20 @@ export async function updateQuoteServer(
   return (await getQuoteForOrg(id, ctx.orgId))!;
 }
 
-export async function setQuoteStatusServer(id: string, status: UserQuote["status"]): Promise<UserQuote | null> {
+export async function setQuoteStatusServer(
+  id: string,
+  status: UserQuote["status"],
+): Promise<UserQuote | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx || !QUOTE_STATUSES.includes(status)) return null;
+  if ("error" in ctx) return ctx;
+  if (!QUOTE_STATUSES.includes(status)) return { error: "Invalid quote status." };
   await db()`
     UPDATE quotes SET status = ${status}, updated_at = now()
     WHERE id = ${id} AND organisation_id = ${ctx.orgId}
   `;
-  return getQuoteForOrg(id, ctx.orgId);
+  const row = await getQuoteForOrg(id, ctx.orgId);
+  if (!row) return { error: "Quote not found." };
+  return row;
 }
 
 export async function setPublicQuoteStatusServer(
@@ -389,22 +411,23 @@ export async function setPublicQuoteStatusServer(
   return getQuoteServer(id);
 }
 
-export async function deleteQuoteServer(id: string): Promise<boolean> {
+export async function deleteQuoteServer(id: string): Promise<{ ok: true } | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx) return false;
+  if ("error" in ctx) return ctx;
   const rows = (await db()`
     DELETE FROM quotes WHERE id = ${id} AND organisation_id = ${ctx.orgId} RETURNING id
   `) as { id: string }[];
-  return rows.length > 0;
+  if (!rows.length) return { error: "Quote not found." };
+  return { ok: true };
 }
 
-export async function listBillsServer(): Promise<UserBill[]> {
+export async function listBillsServer(): Promise<{ bills: UserBill[] } | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx) return [];
+  if ("error" in ctx) return ctx;
   const rows = (await db()`
     SELECT * FROM bills WHERE organisation_id = ${ctx.orgId} ORDER BY created_at DESC
   `) as Record<string, unknown>[];
-  return rows.map(rowToBill);
+  return { bills: rows.map(rowToBill) };
 }
 
 export async function getBillForOrg(id: string, orgId: string): Promise<UserBill | null> {
@@ -447,7 +470,7 @@ export async function createBillServer(input: {
       ${toIsoDate(input.dueDate, plusDaysISO(14))},
       ${bundle.amount}, ${bundle.gst},
       ${input.status && BILL_STATUSES.includes(input.status) ? input.status : "Awaiting approval"},
-      ${bundle.reference}, ${JSON.stringify(bundle.lineItems)}, ${biz.businessName}, ${biz.businessAbn}
+      ${bundle.reference}, ${jsonb(bundle.lineItems)}::jsonb, ${biz.businessName}, ${biz.businessAbn}
     )
   `;
   return (await getBillForOrg(id, ctx.orgId))!;
@@ -493,7 +516,7 @@ export async function updateBillServer(
       amount = ${bundle.amount},
       gst = ${bundle.gst},
       category = ${bundle.reference},
-      line_items = ${JSON.stringify(bundle.lineItems)},
+      line_items = ${jsonb(bundle.lineItems)}::jsonb,
       bill_date = ${toIsoDate(input.date ?? existing.date, todayISO())},
       due_date = ${toIsoDate(input.dueDate ?? existing.dueDate, plusDaysISO(14))},
       status = ${input.status ?? existing.status},
@@ -503,31 +526,38 @@ export async function updateBillServer(
   return (await getBillForOrg(id, ctx.orgId))!;
 }
 
-export async function setBillStatusServer(id: string, status: UserBill["status"]): Promise<UserBill | null> {
+export async function setBillStatusServer(
+  id: string,
+  status: UserBill["status"],
+): Promise<UserBill | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx || !BILL_STATUSES.includes(status)) return null;
+  if ("error" in ctx) return ctx;
+  if (!BILL_STATUSES.includes(status)) return { error: "Invalid bill status." };
   await db()`
     UPDATE bills SET status = ${status}, updated_at = now() WHERE id = ${id} AND organisation_id = ${ctx.orgId}
   `;
-  return getBillForOrg(id, ctx.orgId);
+  const row = await getBillForOrg(id, ctx.orgId);
+  if (!row) return { error: "Bill not found." };
+  return row;
 }
 
-export async function deleteBillServer(id: string): Promise<boolean> {
+export async function deleteBillServer(id: string): Promise<{ ok: true } | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx) return false;
+  if ("error" in ctx) return ctx;
   const rows = (await db()`
     DELETE FROM bills WHERE id = ${id} AND organisation_id = ${ctx.orgId} RETURNING id
   `) as { id: string }[];
-  return rows.length > 0;
+  if (!rows.length) return { error: "Bill not found." };
+  return { ok: true };
 }
 
-export async function listProductsServer(): Promise<Product[]> {
+export async function listProductsServer(): Promise<{ products: Product[] } | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx) return [];
+  if ("error" in ctx) return ctx;
   const rows = (await db()`
     SELECT * FROM products WHERE organisation_id = ${ctx.orgId} ORDER BY created_at DESC
   `) as Record<string, unknown>[];
-  return rows.map(rowToProduct);
+  return { products: rows.map(rowToProduct) };
 }
 
 export async function createProductServer(input: {
@@ -593,13 +623,14 @@ export async function updateProductServer(
   return rowToProduct(rows[0]);
 }
 
-export async function deleteProductServer(id: string): Promise<boolean> {
+export async function deleteProductServer(id: string): Promise<{ ok: true } | { error: string }> {
   const ctx = await requireOrg();
-  if ("error" in ctx) return false;
+  if ("error" in ctx) return ctx;
   const rows = (await db()`
     DELETE FROM products WHERE id = ${id} AND organisation_id = ${ctx.orgId} RETURNING id
   `) as { id: string }[];
-  return rows.length > 0;
+  if (!rows.length) return { error: "Product not found." };
+  return { ok: true };
 }
 
 type BankDataRow = {
@@ -630,8 +661,8 @@ async function saveBankData(orgId: string, data: BankDataRow): Promise<void> {
     INSERT INTO org_bank_data (organisation_id, imports, cat_overrides, opening_balance, updated_at)
     VALUES (
       ${orgId},
-      ${JSON.stringify(data.imports)}::jsonb,
-      ${JSON.stringify(data.catOverrides)}::jsonb,
+      ${jsonb(data.imports)}::jsonb,
+      ${jsonb(data.catOverrides)}::jsonb,
       ${data.openingBalance},
       now()
     )
@@ -661,6 +692,9 @@ export async function saveBankImportsServer(imports: BankTransaction[]): Promise
 export async function saveBankCatOverridesServer(
   catOverrides: Record<string, unknown>,
 ): Promise<{ ok: true } | { error: string }> {
+  if (catOverrides == null || typeof catOverrides !== "object" || Array.isArray(catOverrides)) {
+    return { error: "catOverrides must be an object map." };
+  }
   const ctx = await requireOrg();
   if ("error" in ctx) return ctx;
   const data = await loadBankData(ctx.orgId);

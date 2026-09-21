@@ -21,7 +21,8 @@ import {
   type AiAction,
   type AiReply,
 } from "@/lib/ai-copilot";
-import { applyCategoryToTransaction } from "@/lib/bank-transactions";
+import { applyCategoryToTransaction } from "@/lib/books-client";
+import { booksApplyWhere } from "@/lib/books-copy";
 import { formatAUD } from "@/lib/format";
 
 type Msg =
@@ -37,6 +38,7 @@ export function AiAssistant({
   seedKey = 0,
   blankLedger = false,
   orgName,
+  serverBooks = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -45,6 +47,8 @@ export function AiAssistant({
   /** Blank org — greeting / what-next without Harbour KPIs */
   blankLedger?: boolean;
   orgName?: string;
+  /** Signed-in org books (Postgres). Guests / sample stay browser-local. */
+  serverBooks?: boolean;
 }) {
   const greeting = blankLedger ? blankAiGreeting : defaultAiGreeting;
   const chips = blankLedger ? BLANK_SUGGESTED_CHIPS : SUGGESTED_CHIPS;
@@ -88,10 +92,9 @@ export function AiAssistant({
     setInput("");
     setMessages((prev) => [...prev, { role: "user", text: q }]);
 
-    // Tiny delay so the panel feels responsive without faking an API
-    window.setTimeout(() => {
+    void (async () => {
       try {
-        const reply = getCopilotReply(q, { blankLedger, orgName });
+        const reply = await getCopilotReply(q, { blankLedger, orgName, serverBooks });
         setMessages((prev) => [...prev, { role: "assistant", kind: "reply", reply, applied: [] }]);
       } catch {
         setMessages((prev) => [
@@ -99,13 +102,15 @@ export function AiAssistant({
           {
             role: "assistant",
             kind: "error",
-            text: "Something went wrong reading the demo ledger. Try again, or ask “what next?”.",
+            text: blankLedger
+              ? "Could not read your books just now. The list was not replaced with an empty ledger. Sign in and try again, or ask “what next?”."
+              : "Something went wrong reading the demo ledger. Try again, or ask “what next?”.",
           },
         ]);
       } finally {
         setBusy(false);
       }
-    }, 180);
+    })();
   }
 
   function applyAction(msgIndex: number, action: AiAction) {
@@ -113,61 +118,80 @@ export function AiAssistant({
       runQuery(action.prompt);
       return;
     }
-    if (action.kind !== "apply-category" || !action.txnId || !action.category) return;
+    if (action.kind !== "apply-category" || !action.txnId || !action.category || busy) return;
 
-    const updated = applyCategoryToTransaction(action.txnId, action.category);
-    if (!updated) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          kind: "error",
-          text: "Could not apply that category — the bank line may already be gone. Refresh Banking and try again.",
-        },
-      ]);
-      return;
-    }
-
-    setMessages((prev) =>
-      prev.map((m, i) => {
-        if (i !== msgIndex || m.role !== "assistant" || m.kind !== "reply") return m;
-        return {
-          ...m,
-          applied: [...(m.applied ?? []), action.txnId!],
-        };
-      })
-    );
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        kind: "reply",
-        applied: [],
-        reply: {
-          intent: "categorise",
-          prose: `Applied ${action.category!.accountCode} — ${action.category!.accountName} (${action.category!.taxRate}) to “${updated.description}” (${formatAUD(updated.amount)}). It’s marked matched in this browser demo. Open Banking to confirm.`,
-          citations: [
+    setBusy(true);
+    void (async () => {
+      try {
+        const updated = await applyCategoryToTransaction(action.txnId!, action.category!, {
+          mode: blankLedger ? "blank" : "sample",
+        });
+        if (!updated) {
+          setMessages((prev) => [
+            ...prev,
             {
-              label: "Applied",
-              value: `${action.category!.accountCode} · ${updated.description}`,
-              source: updated.id,
+              role: "assistant",
+              kind: "error",
+              text: "Could not apply that category — the bank line may already be gone. Refresh Banking and try again.",
             },
-          ],
-          actions: [
-            { id: "bank", label: "View in Banking", kind: "link", href: "/demo/banking" },
-            {
-              id: "more",
-              label: "Categorise another",
-              kind: "prompt",
-              prompt: "Categorise unmatched bank lines",
+          ]);
+          return;
+        }
+
+        setMessages((prev) =>
+          prev.map((m, i) => {
+            if (i !== msgIndex || m.role !== "assistant" || m.kind !== "reply") return m;
+            return {
+              ...m,
+              applied: [...(m.applied ?? []), action.txnId!],
+            };
+          }),
+        );
+
+        const where = booksApplyWhere(serverBooks, blankLedger);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            kind: "reply",
+            applied: [],
+            reply: {
+              intent: "categorise",
+              prose: `Applied ${action.category!.accountCode} — ${action.category!.accountName} (${action.category!.taxRate}) to “${updated.description}” (${formatAUD(updated.amount)}). It’s marked matched — ${where}. Open Banking to confirm.`,
+              citations: [
+                {
+                  label: "Applied",
+                  value: `${action.category!.accountCode} · ${updated.description}`,
+                  source: updated.id,
+                },
+              ],
+              actions: [
+                { id: "bank", label: "View in Banking", kind: "link", href: "/demo/banking" },
+                {
+                  id: "more",
+                  label: "Categorise another",
+                  kind: "prompt",
+                  prompt: "Categorise unmatched bank lines",
+                },
+              ],
+              chips: ["Categorise unmatched bank lines", "What should I do next?"],
+              disclaimer: AI_DISCLAIMER,
             },
-          ],
-          chips: ["Categorise unmatched bank lines", "What should I do next?"],
-          disclaimer: AI_DISCLAIMER,
-        },
-      },
-    ]);
+          },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            kind: "error",
+            text: "Could not save that category. Banking is unchanged — sign in and try again, or refresh Banking.",
+          },
+        ]);
+      } finally {
+        setBusy(false);
+      }
+    })();
   }
 
   if (!open) return null;
@@ -310,7 +334,7 @@ export function AiAssistant({
                           <button
                             key={a.id}
                             type="button"
-                            disabled={done}
+                            disabled={done || busy}
                             onClick={() => applyAction(i, a)}
                             className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold shadow-sm ${
                               done
