@@ -9,6 +9,7 @@ export type AbrSearchState = {
   busy: boolean;
   error: string | null;
   simulated: boolean;
+  liveConfigured: boolean;
 };
 
 export function useAbrSearch(query: string, enabled = true): AbrSearchState {
@@ -16,6 +17,7 @@ export function useAbrSearch(query: string, enabled = true): AbrSearchState {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [simulated, setSimulated] = useState(true);
+  const [liveConfigured, setLiveConfigured] = useState(false);
 
   useEffect(() => {
     if (!enabled) {
@@ -45,15 +47,18 @@ export function useAbrSearch(query: string, enabled = true): AbrSearchState {
           results?: AbrCompany[];
           error?: string;
           simulated?: boolean;
+          liveConfigured?: boolean;
         };
         if (!res.ok) {
           setError(data.error || "Search is unavailable right now.");
           setResults([]);
+          setLiveConfigured(data.liveConfigured === true);
           return;
         }
         setError(null);
         setResults(data.results ?? []);
         setSimulated(data.simulated !== false);
+        setLiveConfigured(data.liveConfigured === true);
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         setError("Could not search just now. Try again.");
@@ -69,7 +74,7 @@ export function useAbrSearch(query: string, enabled = true): AbrSearchState {
     };
   }, [query, enabled]);
 
-  return { results, busy, error, simulated };
+  return { results, busy, error, simulated, liveConfigured };
 }
 
 /** Fetch ABN details after a name match so GST / address fill when ABR has them. */

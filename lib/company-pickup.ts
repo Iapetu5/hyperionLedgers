@@ -44,6 +44,15 @@ export function isRealCompanyName(name?: string | null): boolean {
   return n.length > 0 && n !== "Your organisation";
 }
 
+/** Inline Add company / Account name errors. Empty is allowed only when the field is blank on purpose. */
+export function validateBusinessName(name?: string | null): string | null {
+  const n = (name ?? "").trim();
+  if (!n) return "Enter the business name.";
+  if (n === "Your organisation") return "Use your real business name.";
+  if (n.length < 2) return "Enter the full business name.";
+  return null;
+}
+
 export function saveSelectedCompany(company: SelectedCompany) {
   if (typeof window === "undefined") return;
   sessionStorage.setItem(ADD_COMPANY_KEY, JSON.stringify(company));
