@@ -6,6 +6,7 @@ import { FormEvent, useState } from "react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { validateSignup } from "@/lib/auth";
+import { AbnField } from "@/components/abn/AbnField";
 
 export default function SignupPage() {
   const { signUp } = useAuth();
@@ -13,13 +14,15 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [abn, setAbn] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const local = validateSignup({ fullName, email, password });
+    const local = validateSignup({ fullName, email, password, businessName, abn });
     setFieldErrors(local);
     if (Object.keys(local).length > 0) {
       setError(null);
@@ -27,7 +30,7 @@ export default function SignupPage() {
     }
     setBusy(true);
     setError(null);
-    const res = await signUp({ fullName, email, password });
+    const res = await signUp({ fullName, email, password, businessName, abn });
     if (!res.ok) {
       setBusy(false);
       setError(res.error);
@@ -71,16 +74,11 @@ export default function SignupPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Step 1 of 3 · Account</p>
         <h1 className="mt-1 text-xl font-bold text-white">Start your free trial</h1>
         <p className="mt-1 text-sm text-slate-300">
-          14 days of full HyperionInvoices — then $69 a month. Next you&apos;ll{" "}
-          <Link href="/add-company" className="font-semibold text-brand-300 hover:underline">
-            add your business
-          </Link>{" "}
-          on a dedicated page (search by name or ABN). After Stripe Checkout you can download the Windows
-          app. Prefer to look first?{" "}
+          You get 14 days free. Next we set up your business.{" "}
           <Link href="/demo" className="font-semibold text-brand-300 hover:underline">
             Try a demo
-          </Link>
-          {" "}— no account needed.
+          </Link>{" "}
+          first if you prefer.
         </p>
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <div>
@@ -96,13 +94,29 @@ export default function SignupPage() {
           <div>
             <label className="label" htmlFor="password">Password</label>
             <input id="password" className="input" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <p className="mt-1 text-xs text-slate-400">At least 8 characters. Stored only in this browser unless Postgres is attached.</p>
+            <p className="mt-1 text-xs text-slate-400">At least 8 characters.</p>
             {fieldErrors.password && <p className="mt-1 text-xs text-rose-300">{fieldErrors.password}</p>}
           </div>
+          <div>
+            <label className="label" htmlFor="businessName">Business name</label>
+            <input
+              id="businessName"
+              className="input"
+              autoComplete="organization"
+              placeholder="Example Cafe Pty Ltd"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-slate-400">Optional here. You can search the register on the next page.</p>
+            {fieldErrors.businessName && <p className="mt-1 text-xs text-rose-300">{fieldErrors.businessName}</p>}
+          </div>
+          <AbnField value={abn} onChange={setAbn} />
+          {fieldErrors.abn && <p className="text-xs text-rose-300">{fieldErrors.abn}</p>}
           {error && <p className="text-sm text-rose-300">{error}</p>}
           <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy ? "Creating…" : "Continue — add your company"}
+            {busy ? "Creating…" : "Next set up business"}
           </button>
+          <p className="text-center text-xs text-slate-400">Then $69 a month.</p>
         </form>
         <p className="mt-4 text-center text-sm text-slate-300">
           Already have an account?{" "}

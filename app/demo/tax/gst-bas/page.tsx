@@ -260,10 +260,8 @@ export default function GstBasPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">GST &amp; BAS</h1>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          Draft GST figures and due dates for your records. Line tax follows Xero-style{" "}
-          <span className="text-white/90">GST on Income</span> /{" "}
-          <span className="text-white/90">GST Free</span> (and expense equivalents). HyperionInvoices
-          does not connect to or lodge with the ATO — lodgement here is always simulated.
+          Practice preview. Not sent to the tax office. GST on Income and GST Free lines still
+          change the boxes below. You can switch quarter and mark a period as prepared.
         </p>
       </div>
 
@@ -416,15 +414,13 @@ export default function GstBasPage() {
               {[
                 ["GST on Income", gstOnIncome, "Sales lines at GST on Income (10%)"],
                 ["GST on Expenses", gstOnExpenses, "Purchase lines at GST on Expenses"],
-                [
-                  "PAYG withheld",
-                  paygWithheld,
-                  usesSampleData ? "Payroll preview (demo)" : "Not calculated",
-                ],
+                ["PAYG withheld", paygWithheld, "Not calculated"] as const,
               ].map(([label, val, hint]) => (
                 <div key={String(label)} className="card-inset p-3">
                   <dt className="text-xs uppercase tracking-wide text-slate-400">{label}</dt>
-                  <dd className="mt-1 font-semibold text-white">{formatAUD(Number(val))}</dd>
+                  <dd className="mt-1 font-semibold text-white">
+                    {label === "PAYG withheld" ? "Not calculated" : formatAUD(Number(val))}
+                  </dd>
                   <p className="mt-1 text-[11px] text-slate-500">{hint}</p>
                 </div>
               ))}
@@ -451,7 +447,7 @@ export default function GstBasPage() {
                 onClick={markSimLodged}
               >
                 <FileCheck2 size={16} />
-                {mounted && simLodged ? "Simulated lodgement recorded" : "Mark as prepared (simulated)"}
+                {mounted && simLodged ? "Prepared (practice only)" : "Mark as prepared"}
               </button>
               <p className="text-xs text-slate-500">
                 {usesSampleData

@@ -29,7 +29,7 @@ const REPORT_LINKS = [
     href: "/demo/tax/gst-bas",
     title: "GST & BAS",
     blurb:
-      "Quarterly BAS due dates and draft GST on Income / GST Free-aware figures. Lodgement is simulated.",
+      "Quarterly BAS due dates and draft GST figures. Practice preview — not sent to the tax office.",
     icon: Calculator,
   },
 ];
@@ -60,8 +60,7 @@ export default function ReportsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Reports</h1>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          Management reports for your records. Figures are previews from demo or ledger activity —
-          they are not ATO-lodged returns and HyperionInvoices does not file with the ATO.
+          Practice preview. Not sent to the tax office.
         </p>
       </div>
 

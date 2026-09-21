@@ -49,7 +49,7 @@ export default function ProfitLossReportPage() {
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
           Shows trading income and expenses for the period. Amounts are tax-exclusive where noted;
           GST on Income / GST Free lines affect GST boxes on BAS, not this operating profit view.
-          This is a management preview for your records — not an ATO-lodged return.
+          Practice preview. Not sent to the tax office.
         </p>
       </div>
 

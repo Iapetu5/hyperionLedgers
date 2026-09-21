@@ -52,9 +52,7 @@ export default function BalanceSheetReportPage() {
         </p>
         <h1 className="mt-1 text-2xl font-bold text-white">Balance sheet</h1>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          A point-in-time snapshot of assets, liabilities, and equity. Useful for understanding cash
-          and what is owed — for your records only. This is not an ATO form and HyperionInvoices does
-          not lodge balance sheets with the ATO.
+          What you own and owe at a point in time. Practice preview. Not sent to the tax office.
         </p>
       </div>
 
