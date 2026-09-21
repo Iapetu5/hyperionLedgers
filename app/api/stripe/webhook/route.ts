@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { persistDownloadGrant, recordStripeEvent } from "@/lib/entitlements";
+import {
+  persistDownloadGrant,
+  persistDownloadGrantFromSubscription,
+  recordStripeEvent,
+} from "@/lib/entitlements";
 import { clientIp, rateLimit } from "@/lib/request-guard";
 import {
   isCheckoutSessionId,
@@ -7,6 +11,9 @@ import {
   isStripeWebhookConfigured,
   retrieveCheckoutSession,
   sessionGrantsDownload,
+  type StripeCheckoutSession,
+  type StripeSubscription,
+  subscriptionGrantsDownload,
   verifyStripeSignature,
 } from "@/lib/stripe";
 
@@ -47,11 +54,22 @@ export async function POST(req: Request) {
   if (event.type === "checkout.session.completed") {
     const sessionId = event.data?.object?.id ?? "";
     if (isCheckoutSessionId(sessionId)) {
-      const session = await retrieveCheckoutSession(sessionId);
-      if (sessionGrantsDownload(session)) {
-        await persistDownloadGrant(session!);
+      const inline = event.data?.object as StripeCheckoutSession | undefined;
+      const session =
+        (await retrieveCheckoutSession(sessionId)) ??
+        (inline && sessionGrantsDownload(inline) ? inline : null);
+      if (session && sessionGrantsDownload(session)) {
+        await persistDownloadGrant(session);
       }
     }
   }
+
+  if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
+    const sub = event.data?.object as StripeSubscription | undefined;
+    if (subscriptionGrantsDownload(sub)) {
+      await persistDownloadGrantFromSubscription(sub!);
+    }
+  }
+
   return NextResponse.json({ received: true });
 }

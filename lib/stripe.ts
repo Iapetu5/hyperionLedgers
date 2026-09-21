@@ -12,6 +12,13 @@ export type StripeCheckoutSession = {
   client_reference_id?: string | null;
 };
 
+export type StripeSubscription = {
+  id: string;
+  status?: string;
+  metadata?: Record<string, string> | null;
+  customer?: string | null;
+};
+
 export function isStripeWebhookConfigured(): boolean {
   return Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim().startsWith("whsec_"));
 }
@@ -74,4 +81,9 @@ export function sessionGrantsDownload(session: StripeCheckoutSession | null): bo
 
 export function sessionEmail(session: StripeCheckoutSession): string | null {
   return session.customer_email || session.customer_details?.email || null;
+}
+
+export function subscriptionGrantsDownload(sub: StripeSubscription | null | undefined): boolean {
+  if (!sub?.id) return false;
+  return ["trialing", "active", "past_due"].includes(sub.status ?? "");
 }

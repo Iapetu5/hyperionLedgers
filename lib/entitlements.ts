@@ -3,8 +3,13 @@ import { cookies } from "next/headers";
 import { db, ensureSchema, isDbConfigured } from "@/lib/db";
 import { cookieSecure } from "@/lib/request-guard";
 import { getSessionAccount } from "@/lib/server-auth";
-import type { StripeCheckoutSession } from "@/lib/stripe";
-import { isCheckoutSessionId, sessionEmail, sessionGrantsDownload } from "@/lib/stripe";
+import type { StripeCheckoutSession, StripeSubscription } from "@/lib/stripe";
+import {
+  isCheckoutSessionId,
+  sessionEmail,
+  sessionGrantsDownload,
+  subscriptionGrantsDownload,
+} from "@/lib/stripe";
 
 export const ENTITLEMENT_COOKIE = "hl_entitlement";
 
@@ -66,22 +71,25 @@ export async function recordStripeEvent(eventId: string): Promise<boolean> {
   return Boolean(inserted[0]);
 }
 
-export async function persistDownloadGrant(session: StripeCheckoutSession): Promise<void> {
-  if (!sessionGrantsDownload(session) || !isDbConfigured()) return;
+async function writeOrgEntitlement(input: {
+  userId?: string;
+  email?: string;
+  status: string;
+  checkoutSessionId?: string | null;
+  subscriptionId?: string | null;
+}): Promise<void> {
+  if (!isDbConfigured()) return;
   await ensureSchema();
-  const email = sessionEmail(session)?.trim().toLowerCase() ?? "";
-  const userId = session.client_reference_id || session.metadata?.userId || "";
-  const sub = session.subscription;
-  const subId = typeof sub === "string" ? sub : sub?.id ?? null;
-  const status = typeof sub === "object" && sub?.status ? sub.status : "trialing";
+  const userId = input.userId?.trim() ?? "";
+  const email = input.email?.trim().toLowerCase() ?? "";
   if (userId) {
     await db()`
       UPDATE organisations
       SET
         has_paid_download = true,
-        subscription_status = ${status},
-        stripe_checkout_session_id = ${session.id},
-        stripe_subscription_id = ${subId}
+        subscription_status = ${input.status},
+        stripe_checkout_session_id = ${input.checkoutSessionId ?? null},
+        stripe_subscription_id = ${input.subscriptionId ?? null}
       WHERE user_id = ${userId}
     `;
     return;
@@ -91,12 +99,38 @@ export async function persistDownloadGrant(session: StripeCheckoutSession): Prom
     UPDATE organisations o
     SET
       has_paid_download = true,
-      subscription_status = ${status},
-      stripe_checkout_session_id = ${session.id},
-      stripe_subscription_id = ${subId}
+      subscription_status = ${input.status},
+      stripe_checkout_session_id = ${input.checkoutSessionId ?? null},
+      stripe_subscription_id = ${input.subscriptionId ?? null}
     FROM users u
     WHERE o.user_id = u.id AND u.email = ${email}
   `;
+}
+
+export async function persistDownloadGrant(session: StripeCheckoutSession): Promise<void> {
+  if (!sessionGrantsDownload(session)) return;
+  const email = sessionEmail(session)?.trim().toLowerCase() ?? "";
+  const userId = session.client_reference_id || session.metadata?.userId || "";
+  const sub = session.subscription;
+  const subId = typeof sub === "string" ? sub : sub?.id ?? null;
+  const status = typeof sub === "object" && sub?.status ? sub.status : "trialing";
+  await writeOrgEntitlement({
+    userId,
+    email,
+    status,
+    checkoutSessionId: session.id,
+    subscriptionId: subId,
+  });
+}
+
+export async function persistDownloadGrantFromSubscription(sub: StripeSubscription): Promise<void> {
+  if (!subscriptionGrantsDownload(sub)) return;
+  const userId = sub.metadata?.userId?.trim() ?? "";
+  await writeOrgEntitlement({
+    userId,
+    status: sub.status ?? "trialing",
+    subscriptionId: sub.id,
+  });
 }
 
 export async function grantDownloadFromSession(session: StripeCheckoutSession): Promise<void> {
