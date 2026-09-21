@@ -62,7 +62,19 @@ export default function QuotesPage() {
   const [status, setStatus] = useState<UserQuote["status"]>("Sent");
 
   const reloadUser = useCallback(async () => {
-    setUserRows(await loadQuotes());
+    try {
+      setUserRows(await loadQuotes());
+      setStatusError((prev) =>
+        prev ===
+        "Could not load quotes. The list below may be incomplete — do not create or delete until it reloads."
+          ? null
+          : prev,
+      );
+    } catch {
+      setStatusError(
+        "Could not load quotes. The list below may be incomplete — do not create or delete until it reloads.",
+      );
+    }
   }, []);
 
   const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
@@ -396,13 +408,15 @@ export default function QuotesPage() {
     void (async () => {
       try {
         const ok = await deleteQuote(id);
-        await reloadUser();
         if (!ok) {
+          await reloadUser();
           setSendNote(null);
           setFormOk(null);
           setStatusError(`Could not delete ${id} — still in the list.`);
           return;
         }
+        setUserRows((rows) => rows.filter((r) => r.id !== id));
+        await reloadUser();
         if (editingId === id) resetForm();
         if (lastCreatedId === id) setLastCreatedId(null);
         setStatusError(null);

@@ -62,7 +62,19 @@ export default function BillsPage() {
   const [status, setStatus] = useState<UserBill["status"]>("Awaiting approval");
 
   const reloadUser = useCallback(async () => {
-    setUserRows(await loadBills());
+    try {
+      setUserRows(await loadBills());
+      setStatusError((prev) =>
+        prev ===
+        "Could not load bills. The list below may be incomplete — do not create or delete until it reloads."
+          ? null
+          : prev,
+      );
+    } catch {
+      setStatusError(
+        "Could not load bills. The list below may be incomplete — do not create or delete until it reloads.",
+      );
+    }
   }, []);
 
   const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
@@ -325,13 +337,15 @@ export default function BillsPage() {
     void (async () => {
       try {
         const ok = await deleteBill(id);
-        await reloadUser();
         if (!ok) {
+          await reloadUser();
           setStatusNote(null);
           setFormOk(null);
           setStatusError(`Could not delete ${id} — still in the list.`);
           return;
         }
+        setUserRows((rows) => rows.filter((r) => r.id !== id));
+        await reloadUser();
         if (editingId === id) resetForm();
         if (lastCreatedId === id) setLastCreatedId(null);
         setStatusError(null);

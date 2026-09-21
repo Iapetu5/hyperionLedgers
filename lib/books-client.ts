@@ -163,7 +163,8 @@ async function booksFetch<T>(path: string, init?: RequestInit): Promise<T | { er
 export async function loadInvoices(): Promise<UserInvoice[]> {
   if (!(await serverBooksEnabled())) return loadUserInvoicesLocal();
   const data = await booksFetch<{ invoices: UserInvoice[] }>("/api/books/invoices");
-  if ("error" in data) return [];
+  if ("error" in data) throw new Error(data.error);
+  if (!Array.isArray(data.invoices)) throw new Error("Invoice list was incomplete.");
   return data.invoices;
 }
 
@@ -223,7 +224,8 @@ export async function setInvoiceStatus(id: string, status: UserInvoice["status"]
 export async function loadQuotes(): Promise<UserQuote[]> {
   if (!(await serverBooksEnabled())) return loadUserQuotesLocal();
   const data = await booksFetch<{ quotes: UserQuote[] }>("/api/books/quotes");
-  if ("error" in data) return [];
+  if ("error" in data) throw new Error(data.error);
+  if (!Array.isArray(data.quotes)) throw new Error("Quote list was incomplete.");
   return data.quotes;
 }
 
@@ -283,7 +285,8 @@ export async function setQuoteStatus(id: string, status: UserQuote["status"]): P
 export async function loadBills(): Promise<UserBill[]> {
   if (!(await serverBooksEnabled())) return loadUserBillsLocal();
   const data = await booksFetch<{ bills: UserBill[] }>("/api/books/bills");
-  if ("error" in data) return [];
+  if ("error" in data) throw new Error(data.error);
+  if (!Array.isArray(data.bills)) throw new Error("Bill list was incomplete.");
   return data.bills;
 }
 
@@ -437,11 +440,15 @@ function stripCatFields(t: BankTransaction): BankTransaction {
   return { ...rest, matched: false };
 }
 
-async function saveBankPayload(payload: BankPayload): Promise<void> {
+async function saveBankFields(fields: {
+  imports?: BankTransaction[];
+  catOverrides?: Record<string, unknown>;
+  openingBalance?: number | null;
+}): Promise<void> {
   const data = await booksFetch<BankPayload>("/api/books/banking", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(fields),
   });
   if ("error" in data) throw new Error(data.error);
   if (typeof window !== "undefined") {
@@ -486,7 +493,7 @@ export async function appendImportedRows(
   }
   if (added.length) {
     payload.imports = [...payload.imports, ...added.map(stripCatFields)];
-    await saveBankPayload(payload);
+    await saveBankFields({ imports: payload.imports });
   }
   return loadBankTransactions("blank");
 }
@@ -508,7 +515,7 @@ export async function applyCategoryToTransaction(
       matched: opts.markMatched !== false,
       categorisedAt: new Date().toISOString(),
     };
-    await saveBankPayload(payload);
+    await saveBankFields({ catOverrides: payload.catOverrides });
     const txns = await loadBankTransactions("blank");
     return txns.find((t) => t.id === txnId) ?? null;
   } catch {
@@ -524,7 +531,7 @@ export async function clearCategoryFromTransaction(txnId: string): Promise<BankT
       return null;
     }
     delete payload.catOverrides[txnId];
-    await saveBankPayload(payload);
+    await saveBankFields({ catOverrides: payload.catOverrides });
     const txns = await loadBankTransactions("blank");
     return txns.find((t) => t.id === txnId) ?? null;
   } catch {
@@ -536,8 +543,8 @@ export async function resetAllCategorisations(mode: BankLedgerMode = "blank"): P
   if (!(await serverBooksEnabled()) || mode !== "blank") return resetAllCategorisationsLocal(mode);
   const payload = await loadBankPayload();
   const n = Object.keys(payload.catOverrides).length;
-  payload.catOverrides = {};
-  await saveBankPayload(payload);
+  if (!n) return 0;
+  await saveBankFields({ catOverrides: {} });
   return n;
 }
 
@@ -545,14 +552,10 @@ export async function clearImportedTransactions(mode: BankLedgerMode = "blank"):
   if (!(await serverBooksEnabled()) || mode !== "blank") return clearImportedTransactionsLocal(mode);
   const payload = await loadBankPayload();
   const n = payload.imports.length;
-  payload.imports = [];
-  for (const id of Object.keys(payload.catOverrides)) {
-    if (payload.imports.every((t) => t.id !== id)) {
-      // keep overrides for sample ids only — imports cleared
-    }
-  }
-  payload.catOverrides = {};
-  await saveBankPayload(payload);
+  if (!n) return 0;
+  const catOverrides = { ...payload.catOverrides };
+  for (const t of payload.imports) delete catOverrides[t.id];
+  await saveBankFields({ imports: [], catOverrides });
   return n;
 }
 
@@ -575,18 +578,17 @@ export async function setBlankOpeningBalance(amount: number): Promise<number> {
   if (!Number.isFinite(n) || Math.abs(n) > 50_000_000) {
     return payload.openingBalance ?? 0;
   }
-  payload.openingBalance = n;
-  await saveBankPayload(payload);
-  return payload.openingBalance ?? 0;
+  await saveBankFields({ openingBalance: n });
+  return n;
 }
 
 export async function clearBlankOpeningBalance(): Promise<boolean> {
   if (!(await serverBooksEnabled())) return clearBlankOpeningBalanceLocal();
   const payload = await loadBankPayload();
   const had = payload.openingBalance != null;
-  payload.openingBalance = null;
-  await saveBankPayload(payload);
-  return had;
+  if (!had) return false;
+  await saveBankFields({ openingBalance: null });
+  return true;
 }
 
 export async function loadProductsForMode(usesSampleData: boolean): Promise<Product[]> {

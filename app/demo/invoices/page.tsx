@@ -59,7 +59,19 @@ export default function InvoicesPage() {
   const [status, setStatus] = useState<UserInvoice["status"]>("Awaiting payment");
 
   const reloadUser = useCallback(async () => {
-    setUserRows(await loadInvoices());
+    try {
+      setUserRows(await loadInvoices());
+      setStatusError((prev) =>
+        prev ===
+        "Could not load invoices. The list below may be incomplete — do not create or delete until it reloads."
+          ? null
+          : prev,
+      );
+    } catch {
+      setStatusError(
+        "Could not load invoices. The list below may be incomplete — do not create or delete until it reloads.",
+      );
+    }
   }, []);
 
   const { ready } = useBlankBooksReload(reloadUser, { includeSample: true });
@@ -336,13 +348,15 @@ export default function InvoicesPage() {
     void (async () => {
       try {
         const ok = await deleteInvoice(id);
-        await reloadUser();
         if (!ok) {
+          await reloadUser();
           setSendNote(null);
           setFormOk(null);
           setStatusError(`Could not delete ${id} — still in the list.`);
           return;
         }
+        setUserRows((rows) => rows.filter((r) => r.id !== id));
+        await reloadUser();
         if (editingId === id) resetForm();
         if (lastCreatedId === id) setLastCreatedId(null);
         setStatusError(null);
