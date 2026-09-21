@@ -95,15 +95,35 @@ export function CompanySearch({ selected, onSelect }: Props) {
         }}
       />
       <p className="mt-2 text-xs text-slate-400">
+        Type at least two letters, then pick your business from the list.
         {simulated
-          ? "Type at least two letters. Demo register — pick a match or enter the details yourself."
-          : "Type at least two letters. Matches come from the Australian Business Register."}
+          ? " This is a practice register — you can still enter the details yourself."
+          : " Matches come from the Australian Business Register."}
       </p>
-      {busy && <p className="mt-2 text-sm text-slate-300">Searching…</p>}
-      {error && <p className="mt-2 text-sm text-rose-300">{error}</p>}
-      {!busy && query.trim().length >= 2 && results.length === 0 && !error && (
+      {query.trim().length === 0 && (
         <p className="mt-3 text-sm text-slate-300">
-          No register matches for that search. Use manual entry below.
+          Start with the name on your invoices, or the 11-digit ABN. Example: type{" "}
+          <span className="text-slate-200">cafe</span> or{" "}
+          <span className="text-slate-200">51 824 753 556</span>.
+        </p>
+      )}
+      {query.trim().length === 1 && (
+        <p className="mt-3 text-sm text-slate-300">Type one more letter to search.</p>
+      )}
+      {busy && (
+        <p className="mt-2 text-sm text-slate-300" aria-live="polite">
+          Searching…
+        </p>
+      )}
+      {error && (
+        <p className="mt-2 text-sm text-rose-300" role="alert">
+          {error} You can try again, or enter the details yourself below.
+        </p>
+      )}
+      {!busy && query.trim().length >= 2 && results.length === 0 && !error && (
+        <p className="mt-3 text-sm text-slate-300" role="status">
+          We could not find a business matching “{query.trim()}”. Check the spelling, try the
+          ABN, or enter the details yourself.
         </p>
       )}
       {results.length > 0 && (

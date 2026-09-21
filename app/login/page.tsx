@@ -34,7 +34,11 @@ export default function LoginPage() {
       <BrandLogo className="mb-8 justify-center" />
       <div className="card p-6">
         <h1 className="text-xl font-bold text-white">Log in</h1>
-        <p className="mt-1 text-sm text-slate-300">
+        <p className="mt-2 text-sm text-slate-300">
+          Use the email and password you created. If you have not added a company or finished
+          setup, HyperionInvoices will take you there first.
+        </p>
+        <p className="mt-2 text-sm text-slate-400">
           Prefer to look first?{" "}
           <Link href="/pricing" className="font-semibold text-brand-300 hover:underline">
             See pricing
