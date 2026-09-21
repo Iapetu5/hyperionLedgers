@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/demo/ConfirmDialog";
+import { useState } from "react";
+
+export type DocDeleteKind = "invoice" | "quote" | "bill";
 
 const COPY = {
   invoice: {
@@ -22,18 +24,30 @@ const COPY = {
   },
 } as const;
 
-/** List Delete — rose quiet control, confirm names what is removed vs kept. */
+export function docDeleteCopy(kind: DocDeleteKind, id: string) {
+  const copy = COPY[kind];
+  return {
+    title: `Delete ${id}?`,
+    body: copy.body(id),
+    confirmLabel: copy.confirmLabel,
+  };
+}
+
+/**
+ * Rose quiet Delete. Confirm is owned here so list pages can pass a real delete.
+ * The dialog must survive More closing — MoreMenu keeps overflow items mounted.
+ */
 export function DocDeleteButton({
   id,
   kind,
   onDelete,
 }: {
   id: string;
-  kind: "invoice" | "quote" | "bill";
+  kind: DocDeleteKind;
   onDelete: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const copy = COPY[kind];
+  const copy = docDeleteCopy(kind, id);
   return (
     <>
       <button
@@ -47,8 +61,8 @@ export function DocDeleteButton({
       </button>
       <ConfirmDialog
         open={open}
-        title={`Delete ${id}?`}
-        body={copy.body(id)}
+        title={copy.title}
+        body={copy.body}
         confirmLabel={copy.confirmLabel}
         onCancel={() => setOpen(false)}
         onConfirm={() => {
