@@ -650,7 +650,7 @@ export default function BillsPage() {
           </button>
         )}
         {!paid && <PrintBillButton id={b.id} compact />}
-        <DocDeleteButton id={b.id} kind="bill" onDelete={onDelete} />
+        <DocDeleteButton key={b.id} id={b.id} kind="bill" onDelete={onDelete} />
       </DocRowActions>
     );
   }

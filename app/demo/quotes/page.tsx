@@ -642,7 +642,7 @@ export default function QuotesPage() {
           Email quote
         </button>
         <PrintDocButton kind="quote" id={q.id} compact />
-        <DocDeleteButton id={q.id} kind="quote" onDelete={onDelete} />
+        <DocDeleteButton key={q.id} id={q.id} kind="quote" onDelete={onDelete} />
       </DocRowActions>
     );
   }

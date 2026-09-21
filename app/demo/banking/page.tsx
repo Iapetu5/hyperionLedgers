@@ -407,7 +407,7 @@ export default function BankingPage() {
       const dupeNote =
         dupes === 0
           ? ""
-          : ` Skipped ${dupes} duplicate${dupes === 1 ? "" : "s"} already on this cheque (same date, description and amount).`;
+          : ` Skipped ${dupes} duplicate${dupes === 1 ? "" : "s"} (same date, description and amount as a line already on this cheque or earlier in this file).`;
       setTxns(next);
       setSuccess(
         added === 0
@@ -422,6 +422,11 @@ export default function BankingPage() {
       requestAnimationFrame(() => {
         reconSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
+      } catch {
+        setError(
+          "Import did not finish. Check the cheque below — duplicate rows are never added twice. Opening only changes if none was saved yet.",
+        );
+        setSuccess(null);
       } finally {
         importLock.current = false;
         setImportBusy(false);
@@ -500,19 +505,23 @@ export default function BankingPage() {
     applyAllLock.current = true;
     setApplyAllBusy(true);
     void (async () => {
-      try {
-      const lines = unmatchedForAccount(await loadBankTransactions(mode), chequeAccountId);
       let applied = 0;
       let skippedNoSuggestion = 0;
       let failed = 0;
+      try {
+      const lines = unmatchedForAccount(await loadBankTransactions(mode), chequeAccountId);
       for (const t of lines) {
         const suggestion = suggestCategory(t.description, t.amount);
         if (suggestion.confidence !== "high") {
           skippedNoSuggestion += 1;
           continue;
         }
-        if (await applyCategoryToTransaction(t.id, suggestion)) applied += 1;
-        else failed += 1;
+        try {
+          if (await applyCategoryToTransaction(t.id, suggestion)) applied += 1;
+          else failed += 1;
+        } catch {
+          failed += 1;
+        }
       }
       const fresh = await loadBankTransactions(mode);
       setTxns(fresh);
@@ -535,6 +544,16 @@ export default function BankingPage() {
             ? `Applied ${applied} line${applied === 1 ? "" : "s"}.${skipBit}${failBit} ${left} ${morePowerHint(true, hasImport)}`.trim()
             : `Applied ${applied} line${applied === 1 ? "" : "s"}.${skipBit}${failBit} ${left} Next: ${steps.applyN} Apply, or Ask AI under More.`,
       );
+      } catch {
+        setError(
+          `Apply all stopped. Applied ${applied}. Skipped ${skippedNoSuggestion} (no confident category). Could not apply ${failed}. Skipped and failed lines stay Needs category.`,
+        );
+        setSuccess(null);
+        try {
+          setTxns(await loadBankTransactions(mode));
+        } catch {
+          /* leave the table as last shown */
+        }
       } finally {
         applyAllLock.current = false;
         setApplyAllBusy(false);
@@ -823,7 +842,9 @@ export default function BankingPage() {
             <code className="rounded bg-white/10 px-1 text-brand-200">credit</code> columns
             {mode === "sample" && sampleCheque ? ` for ${sampleCheque.name}` : " for your cheque account"}.
             Dates: DD/MM/YYYY. Amounts: −42.50 or ($42.50). Parsed in your browser — nothing is sent to a
-            server. No live bank feed. If any rows are skipped, the list stays on this page after import until
+            server. No live bank feed. Rows already on this cheque (same date, description and amount), or
+            repeated in the file, are skipped — cash does not increase twice; the result says how many were
+            imported vs skipped. If any rows fail to parse, that list stays on this page after import until
             you Import CSV again.
           </p>
         </div>
@@ -1014,6 +1035,7 @@ export default function BankingPage() {
                 unmatched.length > 0 ? (
                   <>
                     {linesToApplyLabel(unmatched.length)}. Apply on a line, or Apply all.
+                    Apply all only writes confident categories and says how many applied vs skipped.
                   </>
                 ) : (
                   <>

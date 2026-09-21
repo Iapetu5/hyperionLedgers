@@ -5,7 +5,8 @@ import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 
 /** Compact confirm — same control size as neighbouring buttons. Cancel is the easy way out.
- *  Confirm fires once per open. State is memory-only — refresh is Cancel (no write).
+ *  First action wins: Cancel, backdrop, and Escape are the same (no write). Confirm fires
+ *  once per open. State is memory-only — refresh is Cancel (no write).
  */
 export function ConfirmDialog({
   open,
@@ -38,6 +39,8 @@ export function ConfirmDialog({
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.preventDefault();
+        if (lockedRef.current) return;
+        lockedRef.current = true;
         onCancel();
       }
     }
@@ -53,6 +56,13 @@ export function ConfirmDialog({
 
   if (!open || typeof document === "undefined") return null;
 
+  function handleCancel() {
+    if (lockedRef.current) return;
+    lockedRef.current = true;
+    setArmed(false);
+    onCancel();
+  }
+
   function handleConfirm() {
     if (lockedRef.current || !armed) return;
     lockedRef.current = true;
@@ -61,7 +71,7 @@ export function ConfirmDialog({
   }
 
   function handleBackdrop(e: MouseEvent<HTMLDivElement>) {
-    if (e.target === e.currentTarget) onCancel();
+    if (e.target === e.currentTarget) handleCancel();
   }
 
   return createPortal(
@@ -89,7 +99,7 @@ export function ConfirmDialog({
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button ref={cancelRef} type="button" className="btn-secondary" onClick={onCancel}>
+          <button ref={cancelRef} type="button" className="btn-secondary" onClick={handleCancel}>
             {cancelLabel}
           </button>
           <button

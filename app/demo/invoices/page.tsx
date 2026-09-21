@@ -632,7 +632,7 @@ export default function InvoicesPage() {
           </button>
         )}
         {!paid && <PrintDocButton kind="invoice" id={inv.id} compact />}
-        <DocDeleteButton id={inv.id} kind="invoice" onDelete={onDelete} />
+        <DocDeleteButton key={inv.id} id={inv.id} kind="invoice" onDelete={onDelete} />
       </DocRowActions>
     );
   }
