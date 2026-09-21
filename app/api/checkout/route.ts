@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAppUrl, isStripeConfigured, PLAN } from "@/lib/billing";
+import { CHECKOUT_PAYMENT_METHOD_TYPES, getAppUrl, isStripeConfigured, PLAN } from "@/lib/billing";
 import { checkoutOriginAllowed, clientIp, rateLimit } from "@/lib/request-guard";
 import { getSessionAccount } from "@/lib/server-auth";
 
@@ -56,6 +56,10 @@ export async function POST(req: Request) {
   params.set("billing_address_collection", "auto");
   params.set("allow_promotion_codes", "true");
   params.set("locale", "en");
+  params.set("payment_method_collection", "always");
+  CHECKOUT_PAYMENT_METHOD_TYPES.forEach((method, i) => {
+    params.set(`payment_method_types[${i}]`, method);
+  });
   if (email) params.set("customer_email", email);
   if (account?.id) {
     params.set("client_reference_id", account.id);

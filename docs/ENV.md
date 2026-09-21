@@ -46,7 +46,7 @@ The app creates `users`, `organisations`, and `sessions` on first sign-up (`docs
 
 ## Stripe (Phase 1 buy — test mode)
 
-Create a product in the Stripe Dashboard (test mode) with one recurring price: **$69 AUD per month**. Checkout applies a 14-day trial in code.
+Create a product in the Stripe Dashboard (test mode) with one recurring price: **$69 AUD per month**. Checkout applies a 14-day trial in code. Hosted Checkout collects a payment method every time (`card`): debit, credit, Apple Pay, and Google Pay on the same session.
 
 | Name | Example shape | Where |
 |------|----------------|--------|
@@ -56,6 +56,8 @@ Create a product in the Stripe Dashboard (test mode) with one recurring price: *
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | Vercel secret |
 
 Webhook URL: `https://www.hyperioninvoices.com.au/api/stripe/webhook` (event: `checkout.session.completed`).
+
+Apple Pay / Google Pay Dashboard steps, including domain verification for `www.hyperioninvoices.com.au` and the apex: [STRIPE_APPLE_PAY.md](./STRIPE_APPLE_PAY.md).
 
 Do not invent or commit real keys.
 

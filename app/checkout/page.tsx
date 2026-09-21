@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
-import { PLAN, isStripeConfigured } from "@/lib/billing";
+import { CHECKOUT_PAY_COPY, PLAN, isStripeConfigured } from "@/lib/billing";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,7 @@ export default async function CheckoutPage({
               : stripeError
                 ? "Stripe Checkout could not start. Check the test keys and price ID in Vercel, then try again."
                 : configured
-                  ? "You will go to Stripe Checkout (test mode) for the $69 monthly plan with a 14-day free trial. After payment you land on Downloads for the Windows app."
+                  ? `You will go to Stripe Checkout (test mode) for the $69 monthly plan with a 14-day free trial. ${CHECKOUT_PAY_COPY}. Google Pay shows on the same Checkout when Stripe supports it on that device. After payment you land on Downloads for the Windows app.`
                   : "The buy path is ready. Stripe test keys are not in this environment yet, so Checkout cannot open. Sign up still works, and Nicholas can add the keys in Vercel without changing DNS."}
           </p>
           {!configured ? (
@@ -62,7 +62,7 @@ export default async function CheckoutPage({
                 </li>
               </ul>
               <p className="mt-2 text-xs text-amber-100/80">
-                Create a recurring $69 AUD monthly price in Stripe test mode and paste its ID. Do not put live keys in the repo.
+                Create a recurring $69 AUD monthly price in Stripe test mode and paste its ID. Enable Cards, Apple Pay, and Google Pay in the Stripe Dashboard (see docs/STRIPE_APPLE_PAY.md). Do not put live keys in the repo.
               </p>
             </div>
           ) : null}

@@ -42,7 +42,7 @@ export default function PricingPage() {
               <span className="text-5xl font-bold text-white">$69</span>
               <span className="text-base text-slate-200"> / month</span>
             </p>
-            <p className="mt-2 text-base text-slate-100">After the free trial. Stop anytime.</p>
+            <p className="mt-2 text-base text-slate-100">After the free trial. Stop anytime. Pay with card or Apple Pay.</p>
             <ul className="mt-5 flex-1 space-y-2.5">
               {FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-base text-slate-100">
@@ -65,7 +65,7 @@ export default function PricingPage() {
 
         <PricingFooterDemoLine />
         <p className="mt-4 text-center text-base text-slate-200">
-          Price is in Australian dollars. You can cancel anytime. We do not send forms to the ATO for you.
+          Price is in Australian dollars. Pay with card or Apple Pay. You can cancel anytime. We do not send forms to the ATO for you.
         </p>
       </main>
       <MarketingFooter />
