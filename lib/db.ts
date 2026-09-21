@@ -66,5 +66,13 @@ export async function ensureSchema() {
       created_at timestamptz NOT NULL DEFAULT now()
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS download_tokens (
+      jti text PRIMARY KEY,
+      expires_at timestamptz NOT NULL,
+      used_at timestamptz,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )
+  `;
   schemaReady = true;
 }

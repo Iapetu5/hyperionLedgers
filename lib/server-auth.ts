@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, scrypt as scryptCb, timingSafeEqua
 import { promisify } from "util";
 import { cookies } from "next/headers";
 import { db, ensureSchema, isDbConfigured } from "@/lib/db";
+import { cookieSecure } from "@/lib/request-guard";
 import type { GstAccountingMethod, LedgerMode, OnboardingInput, PublicAccount } from "@/lib/auth";
 import { formatAbn, validateAbnField } from "@/lib/abn";
 import { validateSignup } from "@/lib/auth";
@@ -99,7 +100,7 @@ function toPublic(user: UserRow, org: OrgRow): PublicAccount {
 export function setSessionCookie(token: string) {
   cookies().set(SESSION_COOKIE, encodeCookie(token), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_DAYS * 24 * 60 * 60,
@@ -109,7 +110,7 @@ export function setSessionCookie(token: string) {
 export function clearSessionCookie() {
   cookies().set(SESSION_COOKIE, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: 0,

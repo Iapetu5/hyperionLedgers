@@ -22,7 +22,15 @@ Production: [https://www.hyperioninvoices.com.au](https://www.hyperioninvoices.c
 
 The homepage does **not** dump visitors into the demo.
 
-**Stripe:** Start free trial / Buy posts to `/api/checkout`. Success URL is `/downloads?session_id={CHECKOUT_SESSION_ID}`. The Downloads page retrieves the session (or trusts a signed entitlement cookie / `has_paid_download` on the organisation) before showing the installer. The `.exe` is **not** in `public/` — only the API route streams `private/downloads/HyperionInvoices-Setup.exe`.
+**Stripe:** Start free trial / Buy posts to `/api/checkout` (server-only). Success URL is `/downloads?session_id={CHECKOUT_SESSION_ID}`. The Downloads page **retrieves the session from Stripe** (or a signed `hl_entitlement` cookie / `has_paid_download`). `?success=1` is ignored. The `.exe` is **not** in `public/` — `/api/downloads/windows` streams `private/downloads/HyperionInvoices-Setup.exe` after a 10-minute single-use token or an httpOnly session/entitlement.
+
+## Download security
+
+- Checkout sessions are created only in `POST /api/checkout` (origin check + rate limit). Secret key never goes to the browser.
+- Webhook `POST /api/stripe/webhook` verifies `Stripe-Signature` (`whsec_…`), rejects unknown event ids, stores `evt_` ids for idempotency, then **re-fetches** the session from Stripe before granting.
+- Entitlement is written to `organisations.has_paid_download` / `subscription_status`. Cookies are httpOnly, `SameSite=lax`, Secure on Vercel.
+- Unauthenticated `GET /api/downloads/windows` returns **401**. Download links use a short-lived signed token (`SESSION_SECRET`). Rate limited.
+- Placeholders only in `.env.example`. Never commit `.env` or real keys.
 
 ## Environment
 

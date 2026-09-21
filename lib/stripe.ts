@@ -1,5 +1,4 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import { isStripeConfigured } from "@/lib/billing";
 
 export type StripeCheckoutSession = {
   id: string;
@@ -19,6 +18,14 @@ export function isStripeWebhookConfigured(): boolean {
 
 export function stripeSecret(): string {
   return process.env.STRIPE_SECRET_KEY?.trim() ?? "";
+}
+
+export function isCheckoutSessionId(value: string): boolean {
+  return /^cs_(test|live)_[A-Za-z0-9]{8,128}$/.test(value);
+}
+
+export function isStripeEventId(value: string): boolean {
+  return /^evt_[A-Za-z0-9]{8,128}$/.test(value);
 }
 
 export function verifyStripeSignature(rawBody: string, header: string | null): boolean {
@@ -47,7 +54,7 @@ export function verifyStripeSignature(rawBody: string, header: string | null): b
 }
 
 export async function retrieveCheckoutSession(sessionId: string): Promise<StripeCheckoutSession | null> {
-  if (!isStripeConfigured() || !sessionId.startsWith("cs_")) return null;
+  if (!/^sk_(test|live)_/.test(stripeSecret()) || !isCheckoutSessionId(sessionId)) return null;
   const res = await fetch(
     `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=subscription`,
     { headers: { Authorization: `Bearer ${stripeSecret()}` } }

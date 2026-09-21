@@ -41,5 +41,12 @@ CREATE TABLE IF NOT EXISTS stripe_events (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS download_tokens (
+  jti text PRIMARY KEY,
+  expires_at timestamptz NOT NULL,
+  used_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS sessions_token_hash_idx ON sessions(token_hash);
 CREATE INDEX IF NOT EXISTS organisations_user_id_idx ON organisations(user_id);

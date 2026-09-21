@@ -1,30 +1,31 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { db, ensureSchema, isDbConfigured } from "@/lib/db";
+import { cookieSecure } from "@/lib/request-guard";
 import { getSessionAccount } from "@/lib/server-auth";
 import type { StripeCheckoutSession } from "@/lib/stripe";
-import { sessionEmail, sessionGrantsDownload } from "@/lib/stripe";
+import { isCheckoutSessionId, sessionEmail, sessionGrantsDownload } from "@/lib/stripe";
 
 export const ENTITLEMENT_COOKIE = "hl_entitlement";
 
 function signingSecret(): string {
-  return (
-    process.env.SESSION_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim() ||
-    process.env.STRIPE_SECRET_KEY?.trim() ||
-    ""
-  );
+  return process.env.SESSION_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim() || "";
 }
 
-export function signEntitlement(sessionId: string): string {
-  const secret = signingSecret();
+function canSign(): boolean {
+  return signingSecret().length >= 16;
+}
+
+export function signEntitlement(sessionId: string): string | null {
+  if (!canSign() || !isCheckoutSessionId(sessionId)) return null;
   const exp = Date.now() + 7 * 24 * 60 * 60 * 1000;
   const payload = `${sessionId}.${exp}`;
-  const sig = createHmac("sha256", secret || "hyperionledgers-entitlement").update(payload).digest("hex");
+  const sig = createHmac("sha256", signingSecret()).update(payload).digest("hex");
   return `${payload}.${sig}`;
 }
 
 export function readEntitlementCookie(): string | null {
+  if (!canSign()) return null;
   const raw = cookies().get(ENTITLEMENT_COOKIE)?.value;
   if (!raw) return null;
   const parts = raw.split(".");
@@ -32,21 +33,21 @@ export function readEntitlementCookie(): string | null {
   const sig = parts.pop()!;
   const exp = parts.pop()!;
   const sessionId = parts.join(".");
-  if (Date.now() > Number(exp)) return null;
+  if (Date.now() > Number(exp) || !isCheckoutSessionId(sessionId)) return null;
   const payload = `${sessionId}.${exp}`;
-  const expected = createHmac("sha256", signingSecret() || "hyperionledgers-entitlement")
-    .update(payload)
-    .digest("hex");
+  const expected = createHmac("sha256", signingSecret()).update(payload).digest("hex");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-  return sessionId.startsWith("cs_") ? sessionId : null;
+  return sessionId;
 }
 
 export function setEntitlementCookie(sessionId: string) {
-  cookies().set(ENTITLEMENT_COOKIE, signEntitlement(sessionId), {
+  const value = signEntitlement(sessionId);
+  if (!value) return;
+  cookies().set(ENTITLEMENT_COOKIE, value, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60,
@@ -54,12 +55,15 @@ export function setEntitlementCookie(sessionId: string) {
 }
 
 export async function recordStripeEvent(eventId: string): Promise<boolean> {
-  if (!isDbConfigured() || !eventId) return true;
+  if (!eventId.startsWith("evt_")) return false;
+  if (!isDbConfigured()) return true;
   await ensureSchema();
-  const existing = (await db()`SELECT id FROM stripe_events WHERE id = ${eventId} LIMIT 1`) as { id: string }[];
-  if (existing[0]) return false;
-  await db()`INSERT INTO stripe_events (id) VALUES (${eventId})`;
-  return true;
+  const inserted = (await db()`
+    INSERT INTO stripe_events (id) VALUES (${eventId})
+    ON CONFLICT (id) DO NOTHING
+    RETURNING id
+  `) as { id: string }[];
+  return Boolean(inserted[0]);
 }
 
 export async function persistDownloadGrant(session: StripeCheckoutSession): Promise<void> {

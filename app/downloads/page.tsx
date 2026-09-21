@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { existsSync } from "fs";
 import path from "path";
+import { headers } from "next/headers";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { getSessionAccount } from "@/lib/server-auth";
-import { grantDownloadFromSession, hasDownloadAccess } from "@/lib/entitlements";
-import { retrieveCheckoutSession, sessionGrantsDownload } from "@/lib/stripe";
+import { grantDownloadFromSession, hasDownloadAccess, readEntitlementCookie } from "@/lib/entitlements";
+import { isCheckoutSessionId, retrieveCheckoutSession, sessionGrantsDownload } from "@/lib/stripe";
 import { isStripeConfigured, PLAN } from "@/lib/billing";
 import { PRODUCT_NAME, WINDOWS_INSTALLER_FILE } from "@/lib/brand";
+import { issueDownloadToken } from "@/lib/download-token";
+import { rateLimit } from "@/lib/request-guard";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 
 export const dynamic = "force-dynamic";
@@ -15,20 +18,27 @@ export const dynamic = "force-dynamic";
 export default async function DownloadsPage({
   searchParams,
 }: {
-  searchParams: { session_id?: string };
+  searchParams: { session_id?: string; success?: string };
 }) {
   const account = await getSessionAccount();
   const sessionId = searchParams.session_id ?? "";
-  if (sessionId) {
-    const session = await retrieveCheckoutSession(sessionId);
-    if (sessionGrantsDownload(session)) {
-      await grantDownloadFromSession(session!);
+  // Never trust ?success=1 — only a retrieved Stripe session or stored entitlement.
+  if (isCheckoutSessionId(sessionId)) {
+    const ip = headers().get("x-forwarded-for")?.split(",")[0]?.trim() || "page";
+    if (rateLimit(`cs-retrieve:${ip}`, 20, 15 * 60 * 1000)) {
+      const session = await retrieveCheckoutSession(sessionId);
+      if (sessionGrantsDownload(session)) {
+        await grantDownloadFromSession(session!);
+      }
     }
   }
   const allowed = await hasDownloadAccess();
   const installerReady = existsSync(
     path.join(process.cwd(), "private", "downloads", WINDOWS_INSTALLER_FILE)
   );
+  const subject = account?.id || readEntitlementCookie() || "entitled";
+  const token = allowed && installerReady ? await issueDownloadToken(subject) : null;
+  const downloadHref = token ? `/api/downloads/windows?token=${encodeURIComponent(token)}` : "/api/downloads/windows";
 
   return (
     <div>
@@ -47,7 +57,7 @@ export default async function DownloadsPage({
               Mac is coming soon.
             </p>
             {installerReady ? (
-              <a href="/api/downloads/windows" className="btn-primary mt-6 w-full">
+              <a href={downloadHref} className="btn-primary mt-6 w-full">
                 Download for Windows
               </a>
             ) : (
@@ -57,7 +67,7 @@ export default async function DownloadsPage({
               </p>
             )}
             <p className="mt-3 text-xs text-slate-500">
-              This download is only for your account. It is not a public link.
+              This download is only for your account. The link expires in 10 minutes and is not a public file.
             </p>
           </div>
         ) : (

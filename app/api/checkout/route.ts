@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAppUrl, isStripeConfigured, PLAN } from "@/lib/billing";
+import { checkoutOriginAllowed, clientIp, rateLimit } from "@/lib/request-guard";
 import { getSessionAccount } from "@/lib/server-auth";
 
 export const dynamic = "force-dynamic";
@@ -22,11 +23,17 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!checkoutOriginAllowed(req)) {
+    return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
+  }
+  if (!rateLimit(`checkout:${clientIp(req)}`, 12, 15 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many checkout attempts." }, { status: 429 });
+  }
+
   const appUrl = getAppUrl();
   const body = (await req.json().catch(() => ({}))) as CheckoutBody;
   const account = await getSessionAccount();
-  const email =
-    (typeof body.email === "string" ? body.email.trim() : "") || account?.email || "";
+  const email = account?.email || (typeof body.email === "string" ? body.email.trim() : "");
 
   if (!isStripeConfigured()) {
     return NextResponse.json({
@@ -70,7 +77,7 @@ export async function POST(req: Request) {
         {
           configured: true,
           url: "/checkout?reason=stripe-error",
-          message: session.error?.message || "Stripe Checkout could not start. Check the test price ID and secret key.",
+          message: "Stripe Checkout could not start. Check the test price ID and secret key.",
         },
         { status: 502 }
       );
