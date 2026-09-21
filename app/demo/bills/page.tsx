@@ -288,7 +288,7 @@ export default function BillsPage() {
     setFormError(null);
     setLastCreatedId(null);
     setComposerOpen(true);
-    setFormOk(`Editing ${b.id} — update supplier, lines, dates, or status. Delete still removes it.`);
+    setFormOk(`Editing ${b.id} — update supplier, lines, dates, or status. Delete asks first.`);
     if (typeof document !== "undefined") {
       document.getElementById("bill-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -821,7 +821,7 @@ export default function BillsPage() {
         <div className="border-b border-white/10 px-4 py-3">
           <h2 className="font-semibold text-white">Demo sample</h2>
           <p className="text-xs text-slate-400">
-            Line amounts before GST. Next: Approve, then Mark paid. After Paid, Print is on the row. Undo Approve and Undo paid sit under More.
+            Line amounts before GST. Next: Approve, then Mark paid. After Paid, Print is on the row. Undo Approve and Undo paid sit under More. Delete is not on sample rows.
             Print is an internal summary only — no public supplier pay link. Past-due unpaid rows show Overdue.
           </p>
         </div>

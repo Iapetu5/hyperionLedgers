@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 
-/** Compact confirm — same control size as neighbouring buttons. Cancel is the easy way out. */
+/** Compact confirm — same control size as neighbouring buttons. Cancel is the easy way out.
+ *  Confirm fires once per open. State is memory-only — refresh is Cancel (no write).
+ */
 export function ConfirmDialog({
   open,
   title,
@@ -25,9 +27,13 @@ export function ConfirmDialog({
   const titleId = useId();
   const bodyId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const lockedRef = useRef(false);
+  const [armed, setArmed] = useState(true);
 
   useEffect(() => {
     if (!open) return;
+    lockedRef.current = false;
+    setArmed(true);
     const id = window.requestAnimationFrame(() => cancelRef.current?.focus());
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -46,6 +52,13 @@ export function ConfirmDialog({
   }, [open, onCancel]);
 
   if (!open || typeof document === "undefined") return null;
+
+  function handleConfirm() {
+    if (lockedRef.current || !armed) return;
+    lockedRef.current = true;
+    setArmed(false);
+    onConfirm();
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 p-3 sm:items-center">
@@ -73,8 +86,9 @@ export function ConfirmDialog({
           </button>
           <button
             type="button"
-            className="btn-secondary border-rose-400/45 text-rose-100 hover:bg-rose-500/15"
-            onClick={onConfirm}
+            className="btn-secondary border-rose-400/45 text-rose-100 hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={handleConfirm}
+            disabled={!armed}
           >
             {confirmLabel}
           </button>
