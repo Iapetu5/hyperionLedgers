@@ -181,7 +181,7 @@ export default function AccountPage() {
         <div>
           <p className="text-sm font-semibold text-white">GST and year end</p>
           <p className="mt-1 text-sm text-slate-300">
-            These are the same choices you made during setup. Change them if needed, then Save.
+            These are the same choices you made during setup. Change them if needed, then Save changes.
           </p>
         </div>
         <fieldset>

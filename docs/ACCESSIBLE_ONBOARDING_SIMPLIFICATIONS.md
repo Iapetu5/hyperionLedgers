@@ -50,6 +50,9 @@ Do not redo the step labels, one-question wizard, or Confirm company primary. Re
 - Next names the following question (`Next: year end`). Last CTAs unchanged.
 - On a phone, Next is the full-width primary; Back stays text underneath (same `btn-primary` size — do not enlarge).
 
+### Signup
+- Form uses `noValidate` so empty or short fields show the inline alerts (`Enter your full name.`, `Use at least 8 characters.`), not the browser tooltip.
+
 ### Add company / Account labels
 - Confirm fields: **Business name**, **Business type** (options unchanged).
 - Empty name: `Enter the business name.`

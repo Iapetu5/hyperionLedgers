@@ -72,7 +72,7 @@ export default function SignupPage() {
         <p className="mt-2 text-sm text-slate-300">
           Enter your name, email, and password. Next you will add your company.
         </p>
-        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+        <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate>
           <div>
             <label className="label" htmlFor="fullName">Full name</label>
             <input
