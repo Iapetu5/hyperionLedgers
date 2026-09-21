@@ -54,6 +54,7 @@ import {
 export type BooksPersistence = "server" | "local" | "unknown";
 
 let cachedPersistence: BooksPersistence = "unknown";
+let resolvePromise: Promise<BooksPersistence> | null = null;
 
 export function setBooksPersistence(mode: BooksPersistence) {
   cachedPersistence = mode;
@@ -63,8 +64,36 @@ export function getBooksPersistence(): BooksPersistence {
   return cachedPersistence;
 }
 
-function isServerBooksMode() {
-  return cachedPersistence === "server";
+/** Probe /api/auth/me when mode is still unknown — avoids localStorage before AuthProvider finishes. */
+async function resolveBooksPersistence(): Promise<BooksPersistence> {
+  if (cachedPersistence !== "unknown") return cachedPersistence;
+  if (!resolvePromise) {
+    resolvePromise = (async () => {
+      if (typeof window === "undefined") {
+        setBooksPersistence("local");
+        return "local";
+      }
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const data = (await res.json()) as { configured?: boolean };
+        if (data.configured) {
+          setBooksPersistence("server");
+          return "server";
+        }
+      } catch {
+        // Offline or API unavailable — fall back to browser-local demo books.
+      }
+      setBooksPersistence("local");
+      return "local";
+    })();
+  }
+  const mode = await resolvePromise;
+  resolvePromise = null;
+  return mode;
+}
+
+async function isServerBooksMode(): Promise<boolean> {
+  return (await resolveBooksPersistence()) === "server";
 }
 
 function emitBooksUpdated() {
@@ -91,7 +120,7 @@ async function booksFetch<T>(path: string, init?: RequestInit): Promise<T | { er
 }
 
 export async function loadInvoices(): Promise<UserInvoice[]> {
-  if (!isServerBooksMode()) return loadUserInvoicesLocal();
+  if (!(await isServerBooksMode())) return loadUserInvoicesLocal();
   const data = await booksFetch<{ invoices: UserInvoice[] }>("/api/books/invoices");
   if ("error" in data) return [];
   return data.invoices;
@@ -100,7 +129,7 @@ export async function loadInvoices(): Promise<UserInvoice[]> {
 export async function createInvoice(
   input: Parameters<typeof createUserInvoiceLocal>[0],
 ): Promise<UserInvoice | { error: string }> {
-  if (!isServerBooksMode()) return createUserInvoiceLocal(input);
+  if (!(await isServerBooksMode())) return createUserInvoiceLocal(input);
   const data = await booksFetch<{ invoice: UserInvoice }>("/api/books/invoices", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -115,7 +144,7 @@ export async function updateInvoice(
   id: string,
   input: Parameters<typeof updateUserInvoiceLocal>[1],
 ): Promise<UserInvoice | { error: string }> {
-  if (!isServerBooksMode()) return updateUserInvoiceLocal(id, input);
+  if (!(await isServerBooksMode())) return updateUserInvoiceLocal(id, input);
   const data = await booksFetch<{ invoice: UserInvoice }>(`/api/books/invoices/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -127,7 +156,7 @@ export async function updateInvoice(
 }
 
 export async function deleteInvoice(id: string): Promise<boolean> {
-  if (!isServerBooksMode()) return deleteUserInvoiceLocal(id);
+  if (!(await isServerBooksMode())) return deleteUserInvoiceLocal(id);
   const res = await fetch(`/api/books/invoices/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!res.ok) return false;
   emitBooksUpdated();
@@ -135,7 +164,7 @@ export async function deleteInvoice(id: string): Promise<boolean> {
 }
 
 export async function setInvoiceStatus(id: string, status: UserInvoice["status"]): Promise<UserInvoice | null> {
-  if (!isServerBooksMode()) return setUserInvoiceStatusLocal(id, status);
+  if (!(await isServerBooksMode())) return setUserInvoiceStatusLocal(id, status);
   const data = await booksFetch<{ invoice: UserInvoice | null }>(
     `/api/books/invoices/${encodeURIComponent(id)}/status`,
     {
@@ -150,7 +179,7 @@ export async function setInvoiceStatus(id: string, status: UserInvoice["status"]
 }
 
 export async function loadQuotes(): Promise<UserQuote[]> {
-  if (!isServerBooksMode()) return loadUserQuotesLocal();
+  if (!(await isServerBooksMode())) return loadUserQuotesLocal();
   const data = await booksFetch<{ quotes: UserQuote[] }>("/api/books/quotes");
   if ("error" in data) return [];
   return data.quotes;
@@ -159,7 +188,7 @@ export async function loadQuotes(): Promise<UserQuote[]> {
 export async function createQuote(
   input: Parameters<typeof createUserQuoteLocal>[0],
 ): Promise<UserQuote | { error: string }> {
-  if (!isServerBooksMode()) return createUserQuoteLocal(input);
+  if (!(await isServerBooksMode())) return createUserQuoteLocal(input);
   const data = await booksFetch<{ quote: UserQuote }>("/api/books/quotes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -174,7 +203,7 @@ export async function updateQuote(
   id: string,
   input: Parameters<typeof updateUserQuoteLocal>[1],
 ): Promise<UserQuote | { error: string }> {
-  if (!isServerBooksMode()) return updateUserQuoteLocal(id, input);
+  if (!(await isServerBooksMode())) return updateUserQuoteLocal(id, input);
   const data = await booksFetch<{ quote: UserQuote }>(`/api/books/quotes/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -186,7 +215,7 @@ export async function updateQuote(
 }
 
 export async function deleteQuote(id: string): Promise<boolean> {
-  if (!isServerBooksMode()) return deleteUserQuoteLocal(id);
+  if (!(await isServerBooksMode())) return deleteUserQuoteLocal(id);
   const res = await fetch(`/api/books/quotes/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!res.ok) return false;
   emitBooksUpdated();
@@ -194,7 +223,7 @@ export async function deleteQuote(id: string): Promise<boolean> {
 }
 
 export async function setQuoteStatus(id: string, status: UserQuote["status"]): Promise<UserQuote | null> {
-  if (!isServerBooksMode()) return setUserQuoteStatusLocal(id, status);
+  if (!(await isServerBooksMode())) return setUserQuoteStatusLocal(id, status);
   const data = await booksFetch<{ quote: UserQuote | null }>(
     `/api/books/quotes/${encodeURIComponent(id)}/status`,
     {
@@ -209,7 +238,7 @@ export async function setQuoteStatus(id: string, status: UserQuote["status"]): P
 }
 
 export async function loadBills(): Promise<UserBill[]> {
-  if (!isServerBooksMode()) return loadUserBillsLocal();
+  if (!(await isServerBooksMode())) return loadUserBillsLocal();
   const data = await booksFetch<{ bills: UserBill[] }>("/api/books/bills");
   if ("error" in data) return [];
   return data.bills;
@@ -218,7 +247,7 @@ export async function loadBills(): Promise<UserBill[]> {
 export async function createBill(
   input: Parameters<typeof createUserBillLocal>[0],
 ): Promise<UserBill | { error: string }> {
-  if (!isServerBooksMode()) return createUserBillLocal(input);
+  if (!(await isServerBooksMode())) return createUserBillLocal(input);
   const data = await booksFetch<{ bill: UserBill }>("/api/books/bills", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -233,7 +262,7 @@ export async function updateBill(
   id: string,
   input: Parameters<typeof updateUserBillLocal>[1],
 ): Promise<UserBill | { error: string }> {
-  if (!isServerBooksMode()) return updateUserBillLocal(id, input);
+  if (!(await isServerBooksMode())) return updateUserBillLocal(id, input);
   const data = await booksFetch<{ bill: UserBill }>(`/api/books/bills/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -245,7 +274,7 @@ export async function updateBill(
 }
 
 export async function deleteBill(id: string): Promise<boolean> {
-  if (!isServerBooksMode()) return deleteUserBillLocal(id);
+  if (!(await isServerBooksMode())) return deleteUserBillLocal(id);
   const res = await fetch(`/api/books/bills/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!res.ok) return false;
   emitBooksUpdated();
@@ -253,7 +282,7 @@ export async function deleteBill(id: string): Promise<boolean> {
 }
 
 export async function setBillStatus(id: string, status: UserBill["status"]): Promise<UserBill | null> {
-  if (!isServerBooksMode()) return setUserBillStatusLocal(id, status);
+  if (!(await isServerBooksMode())) return setUserBillStatusLocal(id, status);
   const data = await booksFetch<{ bill: UserBill | null }>(`/api/books/bills/${encodeURIComponent(id)}/status`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -265,7 +294,7 @@ export async function setBillStatus(id: string, status: UserBill["status"]): Pro
 }
 
 export async function loadProducts(): Promise<Product[]> {
-  if (!isServerBooksMode()) return loadUserProductsLocal();
+  if (!(await isServerBooksMode())) return loadUserProductsLocal();
   const data = await booksFetch<{ products: Product[] }>("/api/books/products");
   if ("error" in data) return [];
   return data.products;
@@ -278,7 +307,7 @@ export async function createProduct(input: {
   code?: string;
   description?: string;
 }): Promise<Product | { error: string }> {
-  if (!isServerBooksMode()) return createUserProductLocal(input);
+  if (!(await isServerBooksMode())) return createUserProductLocal(input);
   const data = await booksFetch<{ product: Product }>("/api/books/products", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -293,7 +322,7 @@ export async function updateProduct(
   id: string,
   input: Parameters<typeof updateUserProductLocal>[1],
 ): Promise<Product | { error: string }> {
-  if (!isServerBooksMode()) return updateUserProductLocal(id, input);
+  if (!(await isServerBooksMode())) return updateUserProductLocal(id, input);
   const data = await booksFetch<{ product: Product }>(`/api/books/products/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -305,7 +334,7 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  if (!isServerBooksMode()) return deleteUserProductLocal(id);
+  if (!(await isServerBooksMode())) return deleteUserProductLocal(id);
   const res = await fetch(`/api/books/products/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!res.ok) return false;
   emitProductsUpdated();
@@ -364,7 +393,7 @@ async function saveBankPayload(payload: BankPayload): Promise<void> {
 }
 
 export async function loadBankTransactions(mode: BankLedgerMode = "blank"): Promise<BankTransaction[]> {
-  if (!isServerBooksMode() || mode !== "blank") return loadBankTransactionsLocal(mode);
+  if (!(await isServerBooksMode()) || mode !== "blank") return loadBankTransactionsLocal(mode);
   const payload = await loadBankPayload();
   return applyCatsFromPayload(payload.imports, payload.catOverrides);
 }
@@ -374,7 +403,7 @@ export async function appendImportedRows(
   accountId = BLANK_CHEQUE_ACCOUNT_ID,
   mode: BankLedgerMode = "blank",
 ): Promise<BankTransaction[]> {
-  if (!isServerBooksMode() || mode !== "blank") {
+  if (!(await isServerBooksMode()) || mode !== "blank") {
     return appendImportedRowsLocal(rows, accountId, mode);
   }
   const payload = await loadBankPayload();
@@ -410,7 +439,7 @@ export async function applyCategoryToTransaction(
   suggestion: Pick<CategorySuggestion, "accountCode" | "accountName" | "taxRate">,
   opts: { markMatched?: boolean } = { markMatched: true },
 ): Promise<BankTransaction | null> {
-  if (!isServerBooksMode()) return applyCategoryToTransactionLocal(txnId, suggestion, opts);
+  if (!(await isServerBooksMode())) return applyCategoryToTransactionLocal(txnId, suggestion, opts);
   const payload = await loadBankPayload();
   const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
   if (!target) return null;
@@ -426,7 +455,7 @@ export async function applyCategoryToTransaction(
 }
 
 export async function clearCategoryFromTransaction(txnId: string): Promise<BankTransaction | null> {
-  if (!isServerBooksMode()) return clearCategoryFromTransactionLocal(txnId);
+  if (!(await isServerBooksMode())) return clearCategoryFromTransactionLocal(txnId);
   const payload = await loadBankPayload();
   delete payload.catOverrides[txnId];
   await saveBankPayload(payload);
@@ -434,7 +463,7 @@ export async function clearCategoryFromTransaction(txnId: string): Promise<BankT
 }
 
 export async function resetAllCategorisations(mode: BankLedgerMode = "blank"): Promise<number> {
-  if (!isServerBooksMode() || mode !== "blank") return resetAllCategorisationsLocal(mode);
+  if (!(await isServerBooksMode()) || mode !== "blank") return resetAllCategorisationsLocal(mode);
   const payload = await loadBankPayload();
   const n = Object.keys(payload.catOverrides).length;
   payload.catOverrides = {};
@@ -443,7 +472,7 @@ export async function resetAllCategorisations(mode: BankLedgerMode = "blank"): P
 }
 
 export async function clearImportedTransactions(mode: BankLedgerMode = "blank"): Promise<number> {
-  if (!isServerBooksMode() || mode !== "blank") return clearImportedTransactionsLocal(mode);
+  if (!(await isServerBooksMode()) || mode !== "blank") return clearImportedTransactionsLocal(mode);
   const payload = await loadBankPayload();
   const n = payload.imports.length;
   payload.imports = [];
@@ -458,19 +487,19 @@ export async function clearImportedTransactions(mode: BankLedgerMode = "blank"):
 }
 
 export async function getBlankOpeningBalance(): Promise<number> {
-  if (!isServerBooksMode()) return getBlankOpeningBalanceLocal();
+  if (!(await isServerBooksMode())) return getBlankOpeningBalanceLocal();
   const payload = await loadBankPayload();
   return payload.openingBalance ?? 0;
 }
 
 export async function hasBlankOpeningBalance(): Promise<boolean> {
-  if (!isServerBooksMode()) return hasBlankOpeningBalanceLocal();
+  if (!(await isServerBooksMode())) return hasBlankOpeningBalanceLocal();
   const payload = await loadBankPayload();
   return payload.openingBalance != null;
 }
 
 export async function setBlankOpeningBalance(amount: number): Promise<number> {
-  if (!isServerBooksMode()) return setBlankOpeningBalanceLocal(amount);
+  if (!(await isServerBooksMode())) return setBlankOpeningBalanceLocal(amount);
   const payload = await loadBankPayload();
   const n = Math.round(Number(amount) * 100) / 100;
   payload.openingBalance = Number.isFinite(n) ? n : 0;
@@ -479,7 +508,7 @@ export async function setBlankOpeningBalance(amount: number): Promise<number> {
 }
 
 export async function clearBlankOpeningBalance(): Promise<boolean> {
-  if (!isServerBooksMode()) return clearBlankOpeningBalanceLocal();
+  if (!(await isServerBooksMode())) return clearBlankOpeningBalanceLocal();
   const payload = await loadBankPayload();
   const had = payload.openingBalance != null;
   payload.openingBalance = null;

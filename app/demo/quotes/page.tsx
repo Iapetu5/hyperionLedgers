@@ -36,7 +36,7 @@ import {
 import { effectiveQuoteStatus, type UserQuote } from "@/lib/user-docs";
 
 export default function QuotesPage() {
-  const { usesSampleData, user } = useAuth();
+  const { usesSampleData, user, loading: authLoading, persistence } = useAuth();
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
@@ -62,6 +62,7 @@ export default function QuotesPage() {
   }, []);
 
   useEffect(() => {
+    if (authLoading || persistence === "unknown") return;
     reloadUser();
     const onUpdate = () => reloadUser();
     window.addEventListener("hl-user-docs-updated", onUpdate);
@@ -70,7 +71,7 @@ export default function QuotesPage() {
       window.removeEventListener("hl-user-docs-updated", onUpdate);
       window.removeEventListener("storage", onUpdate);
     };
-  }, [reloadUser]);
+  }, [reloadUser, authLoading, persistence]);
 
 
   const [mounted, setMounted] = useState(false);
