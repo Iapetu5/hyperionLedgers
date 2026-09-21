@@ -24,7 +24,7 @@ export function BusinessNameTypeahead({
   placeholder = "Sunrise Cafe Pty Ltd",
 }: Props) {
   const listId = useId();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [picked, setPicked] = useState<AbrCompany | null>(null);
   const { results, busy, error, simulated } = useAbrSearch(value, open);
@@ -71,6 +71,9 @@ export function BusinessNameTypeahead({
           setPicked(null);
           setOpen(true);
           setActiveIndex(0);
+        }}
+        onFocus={() => {
+          if (value.trim().length >= 2) setOpen(true);
         }}
         onKeyDown={(e) => {
           if (!results.length || !open) return;

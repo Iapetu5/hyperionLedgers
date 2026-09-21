@@ -67,11 +67,14 @@ function AddCompanyForm() {
     setPrefilled(true);
   }, [user, prefilled]);
 
+  const changingExisting =
+    Boolean(user) && !needsOnboarding && isRealCompanyName(user?.businessName);
   const stepLabel = user
     ? needsOnboarding
       ? SETUP_STEP.addCompany
       : "Your company"
     : "Add a company";
+  const pageTitle = changingExisting ? "Change your company" : "Add your company";
 
   const continueHref = useMemo(() => {
     if (nextUrl) return nextUrl;
@@ -197,11 +200,26 @@ function AddCompanyForm() {
 
       <div className="card p-6 sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">{stepLabel}</p>
-        <h1 className="mt-1 text-2xl font-bold text-white">Add your company</h1>
+        <h1 className="mt-1 text-2xl font-bold text-white">{pageTitle}</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Search HyperionInvoices&apos; Australian Business Register lookup by name or ABN, pick the match,
-          then confirm the details. You can also type them yourself on this page.
+          Type the business name or ABN. Pick a match, check the details, then confirm. If you
+          cannot find it, you can type the details yourself.
         </p>
+        <ol className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-300">
+          {[
+            ["1", "Search"],
+            ["2", "Pick a match"],
+            ["3", "Confirm"],
+          ].map(([n, label]) => (
+            <li
+              key={n}
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/25 px-2.5 py-1"
+            >
+              <span className="text-brand-300">{n}</span>
+              {label}
+            </li>
+          ))}
+        </ol>
 
         <div className="mt-6 space-y-6">
           <CompanySearch selected={selected} onSelect={applyCompany} />
@@ -223,6 +241,7 @@ function AddCompanyForm() {
                   onChange={(e) => setLegalName(e.target.value)}
                   autoComplete="organization"
                 />
+                <p className="mt-1 text-xs text-slate-400">The official name on the ABN record.</p>
               </div>
               <div>
                 <label className="label" htmlFor="confirmAbn">
@@ -254,6 +273,9 @@ function AddCompanyForm() {
                     </option>
                   ))}
                 </select>
+                <p className="mt-1 text-xs text-slate-400">
+                  Company, sole trader, or partnership — pick the closest match.
+                </p>
               </div>
               <div>
                 <label className="label" htmlFor="address">
@@ -277,17 +299,25 @@ function AddCompanyForm() {
                     : ". From the Australian Business Register."}
                 </p>
               )}
-              {error && <p className="text-sm text-rose-300">{error}</p>}
-              <div className="flex flex-wrap gap-2">
+              {error && (
+                <p className="text-sm text-rose-300" role="alert">
+                  {error}
+                </p>
+              )}
+              <div className="space-y-2">
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="btn-primary w-full"
                   disabled={busy || !isRealCompanyName(legalName)}
                 >
                   {busy ? "Saving…" : "Confirm company"}
                 </button>
-                <button type="button" className="btn-secondary" onClick={() => applyCompany(null)}>
-                  Clear
+                <button
+                  type="button"
+                  className="text-sm font-medium text-slate-400 hover:text-white hover:underline"
+                  onClick={() => applyCompany(null)}
+                >
+                  Clear and search again
                 </button>
               </div>
             </form>
@@ -307,17 +337,28 @@ function AddCompanyForm() {
             </p>
           )}
 
-          {error && !detailsReady && <p className="text-sm text-rose-300">{error}</p>}
+          {error && !detailsReady && (
+            <p className="text-sm text-rose-300" role="alert">
+              {error}
+            </p>
+          )}
 
           <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-white/10 pt-4 text-sm text-slate-300">
-            {user && !needsOnboarding && (
-              <Link href={continueHref} className="hover:text-white hover:underline">
-                Back to the app
+            {user && needsOnboarding && (
+              <Link href="/onboarding" className="hover:text-white hover:underline">
+                Back to organisation setup
               </Link>
             )}
-            <Link href="/signup" className="hover:text-white hover:underline">
-              {user ? "Create another account" : "Start from sign up"}
-            </Link>
+            {user && !needsOnboarding && (
+              <Link href={continueHref} className="hover:text-white hover:underline">
+                {nextUrl === "/demo/account" ? "Back to your account" : "Back to the app"}
+              </Link>
+            )}
+            {!user && (
+              <Link href="/signup" className="hover:text-white hover:underline">
+                Start from sign up
+              </Link>
+            )}
           </div>
         </div>
       </div>
