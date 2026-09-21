@@ -18,10 +18,10 @@ export function BrandLogo({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/black-hole-logo.svg"
-        alt=""
+        alt="HyperionInvoices"
         width={size}
         height={size}
-        className="shrink-0 rounded-full"
+        className="shrink-0 rounded-full ring-1 ring-cyan-400/40"
       />
       {showWordmark && (
         <span
