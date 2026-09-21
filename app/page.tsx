@@ -41,7 +41,7 @@ export default function HomePage() {
           <div className="card overflow-hidden shadow-soft">
             <div className="border-b border-white/10 px-4 py-3">
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">
-                One plan
+                Demo · sample data
               </p>
               <p className="mt-1 text-xl font-semibold text-white">$69 a month after 14 days free</p>
             </div>

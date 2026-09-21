@@ -104,7 +104,7 @@ export default function SignupPage() {
               id="businessName"
               className="input"
               autoComplete="organization"
-              placeholder="Example Cafe Pty Ltd"
+              placeholder="Sunrise Cafe Pty Ltd"
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
             />
