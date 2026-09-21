@@ -43,6 +43,7 @@ export default function QuotesPage() {
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [showTaxTreatment, setShowTaxTreatment] = useState(true);
   const [userRows, setUserRows] = useState<UserQuote[]>([]);
   const [contact, setContact] = useState("");
@@ -341,12 +342,30 @@ export default function QuotesPage() {
 
   function onDelete(id: string) {
     void (async () => {
-      await deleteQuote(id);
-      if (editingId === id) resetForm();
-      if (lastCreatedId === id) setLastCreatedId(null);
-      await reloadUser();
-      setSendNote(`Removed ${id}. Next: Create quote.`);
-      setFormOk(null);
+      try {
+        const ok = await deleteQuote(id);
+        await reloadUser();
+        if (!ok) {
+          setSendNote(null);
+          setFormOk(null);
+          setStatusError(`Could not delete ${id} — still in the list.`);
+          return;
+        }
+        if (editingId === id) resetForm();
+        if (lastCreatedId === id) setLastCreatedId(null);
+        setStatusError(null);
+        setSendNote(`Removed ${id}. Next: Create quote.`);
+        setFormOk(null);
+      } catch {
+        setSendNote(null);
+        setFormOk(null);
+        setStatusError(`Could not delete ${id} — still in the list.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
@@ -592,6 +611,14 @@ export default function QuotesPage() {
             </button>
           )}
         </div>
+        {statusError && (
+          <p
+            className="rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-2 text-sm text-rose-200"
+            role="alert"
+          >
+            {statusError}
+          </p>
+        )}
         {sendNote && (
           <p
             className="rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100"

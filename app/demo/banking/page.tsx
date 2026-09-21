@@ -476,19 +476,40 @@ export default function BankingPage() {
       setSuccess(null);
       return;
     }
+    const want = Math.round(n * 100) / 100;
+    if (Math.abs(want) > 50_000_000) {
+      setError("Opening must be between −50,000,000 and 50,000,000. Opening is unchanged.");
+      setSuccess(null);
+      return;
+    }
     const prevSet = openingSet;
     const prev = opening;
     void (async () => {
-      const saved = await setBlankOpeningBalance(n);
-      setOpening(saved);
-      setOpeningSet(true);
-      setOpeningDraft(String(saved));
-      setError(null);
-      setSuccess(
-        prevSet && prev !== saved
-          ? `Replaced opening ${formatAUD(prev)} with ${formatAUD(saved)}. CSV lines and categories stay. Next: ${steps.importN} Import CSV below.`
-          : `Opening saved as ${formatAUD(saved)}. Next: ${steps.importN} Import CSV below.`,
-      );
+      try {
+        const saved = await setBlankOpeningBalance(want);
+        if (saved !== want) {
+          const hasOpening = await hasBlankOpeningBalance();
+          const current = await getBlankOpeningBalance();
+          setOpeningSet(hasOpening);
+          setOpening(current);
+          setOpeningDraft(hasOpening ? String(current) : "");
+          setError("Opening was not saved (amount out of range or save failed). Opening is unchanged.");
+          setSuccess(null);
+          return;
+        }
+        setOpening(saved);
+        setOpeningSet(true);
+        setOpeningDraft(String(saved));
+        setError(null);
+        setSuccess(
+          prevSet && prev !== saved
+            ? `Replaced opening ${formatAUD(prev)} with ${formatAUD(saved)}. CSV lines and categories stay. Next: ${steps.importN} Import CSV below.`
+            : `Opening saved as ${formatAUD(saved)}. Next: ${steps.importN} Import CSV below.`,
+        );
+      } catch {
+        setError("Opening was not saved. Opening is unchanged.");
+        setSuccess(null);
+      }
     })();
   }
 

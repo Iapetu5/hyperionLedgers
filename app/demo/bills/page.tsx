@@ -297,12 +297,30 @@ export default function BillsPage() {
 
   function onDelete(id: string) {
     void (async () => {
-      await deleteBill(id);
-      if (editingId === id) resetForm();
-      if (lastCreatedId === id) setLastCreatedId(null);
-      await reloadUser();
-      setStatusNote(`Removed ${id}. Next: Add bill.`);
-      setFormOk(null);
+      try {
+        const ok = await deleteBill(id);
+        await reloadUser();
+        if (!ok) {
+          setStatusNote(null);
+          setFormOk(null);
+          setStatusError(`Could not delete ${id} — still in the list.`);
+          return;
+        }
+        if (editingId === id) resetForm();
+        if (lastCreatedId === id) setLastCreatedId(null);
+        setStatusError(null);
+        setStatusNote(`Removed ${id}. Next: Add bill.`);
+        setFormOk(null);
+      } catch {
+        setStatusNote(null);
+        setFormOk(null);
+        setStatusError(`Could not delete ${id} — still in the list.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 

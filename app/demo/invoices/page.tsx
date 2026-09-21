@@ -309,12 +309,30 @@ export default function InvoicesPage() {
 
   function onDelete(id: string) {
     void (async () => {
-      await deleteInvoice(id);
-      if (editingId === id) resetForm();
-      if (lastCreatedId === id) setLastCreatedId(null);
-      await reloadUser();
-      setSendNote(`Removed ${id}. Next: Create invoice.`);
-      setFormOk(null);
+      try {
+        const ok = await deleteInvoice(id);
+        await reloadUser();
+        if (!ok) {
+          setSendNote(null);
+          setFormOk(null);
+          setStatusError(`Could not delete ${id} — still in the list.`);
+          return;
+        }
+        if (editingId === id) resetForm();
+        if (lastCreatedId === id) setLastCreatedId(null);
+        setStatusError(null);
+        setSendNote(`Removed ${id}. Next: Create invoice.`);
+        setFormOk(null);
+      } catch {
+        setSendNote(null);
+        setFormOk(null);
+        setStatusError(`Could not delete ${id} — still in the list.`);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
