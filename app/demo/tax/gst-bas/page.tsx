@@ -6,12 +6,14 @@ import { Calculator, FileCheck2 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/demo/EmptyState";
 import { BasDueDates } from "@/components/bas/BasDueDates";
-import { formatAUD, formatDateAU } from "@/lib/format";
+import { GstYtdSummary } from "@/components/bas/GstYtdSummary";
+import { formatAUD, formatDateAU, todayISO } from "@/lib/format";
 import { basPeriods, gstBas } from "@/lib/sample-data";
 import {
   BAS_DRAFT_STATUS_SIMULATED,
   deriveBasDraftFromDocDates,
   formatBasRelative,
+  getAuFinancialYear,
   isISODateInRange,
   isWeekendISO,
   listBlankBasQuarters,
@@ -20,7 +22,9 @@ import {
 import {
   EMPTY_REPORT_ROLLUP,
   rollupBlankReports,
+  rollupDocsInIsoRange,
   rollupSampleReports,
+  rollupSampleReportsInIsoRange,
   type BlankReportRollup,
 } from "@/lib/blank-reports";
 import { loadUserBills, loadUserInvoices, type UserBill, type UserInvoice } from "@/lib/user-docs";
@@ -225,6 +229,14 @@ export default function GstBasPage() {
   // Sample roll-up is sync (no localStorage) so SSR/client match; blank waits for mount effect.
   const live = usesSampleData ? rollupSampleReports() : quarterRollup;
   const showFigures = usesSampleData || blankHasActivity;
+
+  // Current AU FY in Sydney — independent of the quarter picker.
+  const ytdFy = useMemo(() => getAuFinancialYear(todayISO()), []);
+  const ytdRollup: BlankReportRollup = useMemo(() => {
+    if (!ytdFy) return EMPTY_REPORT_ROLLUP;
+    if (usesSampleData) return rollupSampleReportsInIsoRange(ytdFy.start, ytdFy.end);
+    return rollupDocsInIsoRange(blankInvoices, blankBills, ytdFy.start, ytdFy.end);
+  }, [usesSampleData, blankInvoices, blankBills, ytdFy]);
   const gstOnIncome = live.incomeGst;
   const gstOnExpenses = live.expenseGst;
   const netGst = live.netGst;
@@ -260,10 +272,35 @@ export default function GstBasPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">GST &amp; BAS</h1>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/70">
-          Practice preview. Not sent to the tax office. GST on Income and GST Free lines still
-          change the boxes below. You can switch quarter and mark a period as prepared.
+          Practice preview. Not sent to the tax office. Year-to-date GST is the running amount you
+          would use when paying the ATO this financial year. The quarter draft below stays for BAS.
+          HyperionInvoices does not lodge with the ATO.
+        </p>
+        <p className="mt-2 text-sm text-slate-400">
+          <a href="#ytd-gst" className="font-semibold text-brand-300 hover:underline">
+            Year to date
+          </a>
+          {" · "}
+          <a href="#quarter-draft" className="font-semibold text-brand-300 hover:underline">
+            This quarter
+          </a>
+          {" · "}
+          <Link href="/demo/reports" className="font-semibold text-brand-300 hover:underline">
+            Reports
+          </Link>
         </p>
       </div>
+
+      {ytdFy && (
+        <GstYtdSummary
+          fy={ytdFy}
+          incomeGst={ytdRollup.incomeGst}
+          expenseGst={ytdRollup.expenseGst}
+          netGst={ytdRollup.netGst}
+          invoiceCount={ytdRollup.invoiceCount}
+          billCount={ytdRollup.billCount}
+        />
+      )}
 
       <BasDueDates />
 
@@ -276,7 +313,7 @@ export default function GstBasPage() {
 
       {showFigures ? (
         <>
-          <div className="card p-5">
+          <div id="quarter-draft" className="card scroll-mt-24 p-5">
             {!usesSampleData && blankQuarters.length > 1 && blankDraft && (
               <div className="mb-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -375,14 +412,15 @@ export default function GstBasPage() {
               lines{" "}
               {usesSampleData
                 ? "on listed documents."
-                : "dated inside this quarter only. Documents from other quarters stay in your ledger and in year-to-date reports, but do not change these draft boxes."}{" "}
+                : "dated inside this quarter only. Documents from other quarters stay in your ledger and in the year-to-date GST summary above, but do not change these draft boxes."}{" "}
               <strong className="text-slate-300">GST Free</strong> income/expense lines do not add to
               these GST boxes.
               {!usesSampleData && (
                 <>
                   {" "}
-                  Profit &amp; loss is year-to-date across every document, so its GST rows can be
-                  higher than this simulated quarter draft.
+                  Year-to-date GST above (and profit &amp; loss) can be higher than this simulated
+                  quarter draft when you have documents in earlier quarters of the same financial
+                  year.
                 </>
               )}
             </p>
@@ -509,10 +547,11 @@ export default function GstBasPage() {
           </p>
         </>
       ) : (
+        <div id="quarter-draft" className="scroll-mt-24">
         <EmptyState
           icon={Calculator}
           title="No BAS draft figures yet"
-          description="Blank ledger — create an invoice or bill and this page will show a draft period (from your document dates), due date, and GST on Income / GST on Expenses boxes. GST Free lines stay out of the GST boxes. Lodgement stays simulated — never sent to the ATO."
+          description="Blank ledger — year-to-date GST above is $0 until you add invoices or bills dated this Australian financial year. Create a document and this page will also show a draft quarter (from your document dates), due date, and GST on Income / GST on Expenses boxes. GST Free lines stay out of the GST boxes. Lodgement stays simulated — never sent to the ATO."
           showExploreSample
           actions={[
             { label: "Create invoice", href: "/demo/invoices?mixed=1", primary: true },
@@ -522,6 +561,7 @@ export default function GstBasPage() {
           ]}
           hint="The due-date calendar above still applies for planning. The guest demo keeps richer sample quarter history."
         />
+        </div>
       )}
     </div>
   );

@@ -29,7 +29,7 @@ const REPORT_LINKS = [
     href: "/demo/tax/gst-bas",
     title: "GST & BAS",
     blurb:
-      "Quarterly BAS due dates and draft GST figures. Practice preview — not sent to the tax office.",
+      "Year-to-date GST to pay the tax office (practice figure) plus the quarterly BAS draft. Not sent to the ATO.",
     icon: Calculator,
   },
 ];

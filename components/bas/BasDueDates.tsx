@@ -39,9 +39,14 @@ export function BasDueDates({ compact = false }: { compact?: boolean }) {
               <p className="mt-1 text-sm text-slate-400">No upcoming due date on the demo calendar</p>
             )}
           </div>
-          <Link href="/demo/tax/gst-bas" className="text-sm font-semibold text-brand-300 hover:underline">
-            GST &amp; BAS
-          </Link>
+          <div className="flex flex-col items-end gap-1 text-right">
+            <Link href="/demo/tax/gst-bas#ytd-gst" className="text-sm font-semibold text-brand-300 hover:underline">
+              Year-to-date GST
+            </Link>
+            <Link href="/demo/tax/gst-bas#quarter-draft" className="text-xs font-semibold text-brand-300 hover:underline">
+              This quarter
+            </Link>
+          </div>
         </div>
         <p className="mt-2 text-[11px] text-slate-500">
           Demo calendar for your records — lodgement is simulated, not sent to the ATO.

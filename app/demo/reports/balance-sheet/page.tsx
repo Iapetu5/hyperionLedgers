@@ -108,7 +108,7 @@ export default function BalanceSheetReportPage() {
             Cash on hand KPI elsewhere may differ slightly from bank account roll-ups depending on
             reconciliation state — treat both as demo guidance. For GST on Income / GST Free and BAS
             due dates, see{" "}
-            <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
+            <Link href="/demo/tax/gst-bas#ytd-gst" className="font-semibold text-brand-300 hover:underline">
               GST &amp; BAS
             </Link>
             .
@@ -162,7 +162,7 @@ export default function BalanceSheetReportPage() {
 
           <p className="text-xs leading-relaxed text-slate-500">
             Simplified demo snapshot from your docs. For GST and BAS due dates, see{" "}
-            <Link href="/demo/tax/gst-bas" className="font-semibold text-brand-300 hover:underline">
+            <Link href="/demo/tax/gst-bas#ytd-gst" className="font-semibold text-brand-300 hover:underline">
               GST &amp; BAS
             </Link>
             .
