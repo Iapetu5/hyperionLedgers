@@ -72,7 +72,11 @@ export default function SignupPage() {
         <EasyStepBar current={1} total={2} label="Your details" />
         <h1 className="mt-4 text-xl font-bold text-white">Create your HyperionInvoices account</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-          Enter your name, email, and password. Next we will add your company.
+          Enter your name, email, and password. Company name and ABN are not asked here — next we open{" "}
+          <Link href="/onboarding/add-company?return=/onboarding" className="font-semibold text-brand-300 hover:underline">
+            Add company
+          </Link>
+          {" "}to search the practice ABR.
         </p>
         <form className="mt-6 space-y-5" onSubmit={onSubmit}>
           <div>
