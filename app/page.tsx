@@ -19,6 +19,7 @@ export default function HomePage() {
             <p className="marketing-lead">
               HyperionInvoices keeps the books for a small Australian business. Try it free for 14 days.
               Then it is $69 a month. You can stop anytime. After you pay, you can download the Windows app.
+              Or try a demo first — that path uses sample data, not your real account.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
               <StartTrialButton className="btn-marketing-primary" />

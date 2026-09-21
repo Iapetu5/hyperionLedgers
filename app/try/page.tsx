@@ -34,6 +34,7 @@ export default function TryPage() {
         <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">How to start</h1>
         <p className="mt-3 max-w-2xl text-lg text-white/80">
           Start the free trial. Answer a few setup questions. Then make your first invoice.
+          Or try a demo first if you want to look around with sample data.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
           <StartTrialButton className="btn-primary" />
