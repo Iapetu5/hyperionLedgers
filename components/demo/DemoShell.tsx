@@ -43,7 +43,7 @@ const NAV = [
 export function DemoShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading, logOut, needsOnboarding, usesSampleData } = useAuth();
+  const { user, loading, logOut, needsOnboarding, usesSampleData, persistence } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiSeed, setAiSeed] = useState<string | undefined>();
@@ -71,8 +71,8 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (usesSampleData) {
-      setHasUserDocs(false);
+    if (usesSampleData || loading || persistence === "unknown") {
+      if (usesSampleData) setHasUserDocs(false);
       return;
     }
     const reload = async () => {
@@ -87,7 +87,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener("hl-user-docs-updated", onUpdate);
       window.removeEventListener("hl-doc-status", onUpdate);
     };
-  }, [usesSampleData]);
+  }, [usesSampleData, loading, persistence]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -229,7 +229,9 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               </strong>
               <span className="text-white/50"> — </span>
               {hasUserDocs
-                ? "Invoices, quotes, and bills you create stay in this browser. No live bank feeds, payments, or ATO lodgement."
+                ? persistence === "server"
+                  ? "Invoices, quotes, and bills are saved to your account. No live bank feeds, payments, or ATO lodgement."
+                  : "Invoices, quotes, and bills you create stay in this browser. No live bank feeds, payments, or ATO lodgement."
                 : `${orgName} has no documents yet. Create an invoice, quote, or bill to get started.`}
             </p>
             {!user ? (

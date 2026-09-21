@@ -35,7 +35,7 @@ import {
 import { effectiveInvoiceStatus, type UserInvoice } from "@/lib/user-docs";
 
 export default function InvoicesPage() {
-  const { usesSampleData } = useAuth();
+  const { usesSampleData, loading: authLoading, persistence } = useAuth();
   const tick = useDocStatusTick();
   const [copied, setCopied] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
@@ -59,6 +59,7 @@ export default function InvoicesPage() {
   }, []);
 
   useEffect(() => {
+    if (authLoading || persistence === "unknown") return;
     reloadUser();
     const onUpdate = () => reloadUser();
     window.addEventListener("hl-user-docs-updated", onUpdate);
@@ -67,7 +68,7 @@ export default function InvoicesPage() {
       window.removeEventListener("hl-user-docs-updated", onUpdate);
       window.removeEventListener("storage", onUpdate);
     };
-  }, [reloadUser]);
+  }, [reloadUser, authLoading, persistence]);
 
 
   const [mounted, setMounted] = useState(false);

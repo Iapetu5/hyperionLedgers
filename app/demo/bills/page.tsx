@@ -40,7 +40,7 @@ import {
 } from "@/lib/user-docs";
 
 export default function BillsPage() {
-  const { usesSampleData } = useAuth();
+  const { usesSampleData, loading: authLoading, persistence } = useAuth();
   const [userRows, setUserRows] = useState<UserBill[]>([]);
   const [supplier, setSupplier] = useState("");
   const [lines, setLines] = useState<LineDraft[]>(() => [emptyLineDraft()]);
@@ -62,6 +62,7 @@ export default function BillsPage() {
   }, []);
 
   useEffect(() => {
+    if (authLoading || persistence === "unknown") return;
     reloadUser();
     const onUpdate = () => {
       reloadUser();
@@ -73,7 +74,7 @@ export default function BillsPage() {
       window.removeEventListener("hl-user-docs-updated", onUpdate);
       window.removeEventListener("storage", onUpdate);
     };
-  }, [reloadUser]);
+  }, [reloadUser, authLoading, persistence]);
 
   /** Gate localStorage sample-bill overrides until after mount (SSR HTML matches first paint). */
   const [mounted, setMounted] = useState(false);
