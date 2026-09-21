@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { TryDemoLink } from "@/components/marketing/TryDemoCta";
 import { CHECKOUT_PAY_COPY, PLAN, isStripeConfigured } from "@/lib/billing";
+import { MARKETING_LIMITS } from "@/lib/brand";
 import { getPlatformStatus, windowsDownloadLabel } from "@/lib/platform-status.server";
 
 export const dynamic = "force-dynamic";
@@ -22,64 +24,75 @@ export default async function CheckoutPage({
   const { windowsInstallerReady } = getPlatformStatus();
   const cancelled = searchParams.reason === "cancelled";
   const stripeError = searchParams.reason === "stripe-error";
-  const unconfigured = searchParams.reason === "unconfigured";
+  const envUnconfigured = !configured;
+
+  const lead = cancelled
+    ? "Checkout was cancelled. You can try again, or create an account first."
+    : stripeError || (searchParams.reason === "unconfigured" && configured)
+      ? "Checkout could not start. Try again in a moment, or create an account first."
+      : envUnconfigured
+        ? "Checkout is not available on this site yet. You can still create an account. The $69 plan starts after a 14-day trial when payments are switched on."
+        : `You will go to Stripe for the $69 monthly plan with a 14-day free trial. ${CHECKOUT_PAY_COPY}. ${windowsDownloadLabel(windowsInstallerReady)}`;
 
   return (
     <div>
       <SiteHeader />
-      <main className="mx-auto max-w-lg px-4 py-16 sm:px-6">
-        <div className="card p-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">
-            Buy → Pay → Download
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-white">
-            Start HyperionInvoices — ${PLAN.amountAud} {PLAN.intervalLabel}
-          </h1>
-          <p className="mt-2 text-sm text-slate-300">
-            {cancelled
-              ? "Checkout was cancelled. You can try again, or create an account first."
-              : stripeError
-                ? "Stripe Checkout could not start. Check the test keys and price ID in Vercel, then try again."
-                : unconfigured
-                  ? "Stripe test keys are not set in this environment. Sign up still works; add the keys in Vercel and redeploy to open Checkout."
-                : configured
-                  ? `You will go to Stripe Checkout (test mode) for the $69 monthly plan with a 14-day free trial. ${CHECKOUT_PAY_COPY}. Google Pay shows on the same Checkout when Stripe supports it on that device. ${windowsDownloadLabel(windowsInstallerReady)}`
-                  : "The buy path is ready. Stripe test keys are not in this environment yet, so Checkout cannot open. Sign up still works, and Nicholas can add the keys in Vercel without changing DNS."}
-          </p>
-          {!configured ? (
-            <div className="mt-4 rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
-              <p className="font-semibold text-white">Set these Vercel env vars, then redeploy:</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-amber-50/90">
-                <li>
-                  <code>STRIPE_SECRET_KEY</code> — Stripe test secret (<code>sk_test_…</code>)
-                </li>
-                <li>
-                  <code>STRIPE_PRICE_ID</code> — $69 AUD / month Price ID (<code>price_…</code>)
-                </li>
-                <li>
-                  <code>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> — test publishable (<code>pk_test_…</code>)
-                </li>
-                <li>
-                  <code>STRIPE_WEBHOOK_SECRET</code> — webhook signing secret (<code>whsec_…</code>)
-                </li>
-                <li>
-                  <code>NEXT_PUBLIC_APP_URL</code> — <code>https://www.hyperioninvoices.com.au</code>
-                </li>
-              </ul>
-              <p className="mt-2 text-xs text-amber-100/80">
-                Create a recurring $69 AUD monthly price in Stripe test mode and paste its ID. Enable Cards, Apple Pay, and Google Pay in the Stripe Dashboard (see docs/STRIPE_APPLE_PAY.md). Do not put live keys in the repo.
-              </p>
+      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
+        <div className="grid items-start gap-10 lg:grid-cols-[1.4fr_1fr] lg:gap-14">
+          <div>
+            <p className="marketing-kicker">Australian bookkeeping · checkout</p>
+            <h1 className="marketing-title">Start HyperionInvoices</h1>
+            <p className="marketing-lead">
+              {PLAN.trialDays} days free, then ${PLAN.amountAud} {PLAN.intervalLabel}. You can stop anytime.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+              {envUnconfigured ? (
+                <Link href="/signup" className="btn-marketing-primary">
+                  Sign up
+                </Link>
+              ) : (
+                <StartTrialButton className="btn-marketing-primary" />
+              )}
+              {envUnconfigured ? (
+                <Link href="/pricing" className="link-quiet">
+                  Pricing
+                </Link>
+              ) : (
+                <Link href="/signup" className="link-quiet">
+                  Sign up
+                </Link>
+              )}
+              {!envUnconfigured ? (
+                <Link href="/pricing" className="link-quiet">
+                  Pricing
+                </Link>
+              ) : null}
+              <TryDemoLink className="link-quiet" />
             </div>
-          ) : null}
-          <div className="mt-6 flex flex-col gap-2">
-            <Link href="/signup" className="btn-primary">
-              Continue to sign up
-              <ArrowRight size={16} />
-            </Link>
-            <Link href="/pricing" className="btn-secondary">
-              Back to pricing
-            </Link>
+            <p className="mt-10 marketing-copy">{MARKETING_LIMITS}</p>
           </div>
+
+          <aside className="card h-fit p-6 sm:p-8">
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-200">
+              Buy → Pay → Download
+            </p>
+            <h2 className="mt-3 text-xl font-semibold text-white">
+              ${PLAN.amountAud} {PLAN.intervalLabel} after {PLAN.trialDays} days free
+            </h2>
+            <p className="mt-3 marketing-copy">{lead}</p>
+            <div className="mt-6 flex flex-col gap-4">
+              {envUnconfigured ? (
+                <Link href="/signup" className="btn-marketing-primary w-full">
+                  Continue to sign up
+                </Link>
+              ) : (
+                <StartTrialButton className="btn-marketing-primary w-full" />
+              )}
+              <Link href="/pricing" className="link-quiet text-center">
+                Back to pricing
+              </Link>
+            </div>
+          </aside>
         </div>
       </main>
       <MarketingFooter />

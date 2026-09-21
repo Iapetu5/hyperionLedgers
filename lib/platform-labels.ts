@@ -10,6 +10,6 @@ export function abrRegisterLabel(live: boolean): string {
 
 export function windowsDownloadLabel(ready: boolean): string {
   return ready
-    ? "After you pay, you can download the Windows app from Downloads."
+    ? "After you pay, you can download the Windows installer from Downloads."
     : "After you pay, Downloads unlocks — the Windows installer is still being published to the server.";
 }

@@ -17,11 +17,7 @@ const LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function SiteHeader({
-  variant = "marketing",
-}: {
-  variant?: "marketing" | "compact";
-}) {
+export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -101,9 +97,7 @@ export function SiteHeader({
               Sign up
             </Link>
             <TryDemoLink className="rounded-lg px-3 py-2.5 text-base text-slate-50 hover:bg-white/10 hover:text-white" />
-            <GoToAppLink className="rounded-lg px-3 py-2.5 text-base text-slate-50 hover:bg-white/10 hover:text-white">
-              {variant === "compact" ? "Open your ledger" : "Go to app"}
-            </GoToAppLink>
+            <GoToAppLink className="rounded-lg px-3 py-2.5 text-base text-slate-50 hover:bg-white/10 hover:text-white" />
             <div className="px-3 pt-3">
               <StartTrialButton className="btn-marketing-primary w-full" />
             </div>

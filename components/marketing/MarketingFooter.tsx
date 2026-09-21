@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { GoToAppLink, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { MARKETING_LIMITS } from "@/lib/brand";
 
 const EXPLORE = [
   { href: "/product", label: "Product" },
@@ -21,7 +22,7 @@ export function MarketingFooter() {
           <BrandLogo />
           <p className="mt-4 text-base leading-7 text-slate-50">
             HyperionInvoices keeps the books for a small Australian business. $69 a month after 14 days free.
-            We do not send forms to the tax office.
+            {` ${MARKETING_LIMITS}`}
           </p>
         </div>
         <nav aria-label="Footer" className="grid gap-8 sm:grid-cols-2">
@@ -45,7 +46,7 @@ export function MarketingFooter() {
                 Log in
               </Link>
               <TryDemoLink className="link-quiet w-fit" />
-              <GoToAppLink className="link-quiet w-fit">Go to app</GoToAppLink>
+              <GoToAppLink className="link-quiet w-fit" />
             </div>
           </div>
         </nav>

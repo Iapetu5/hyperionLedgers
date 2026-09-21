@@ -4,8 +4,7 @@ import {
   Landmark,
   Calculator,
   Boxes,
-  Users,
-  Briefcase,
+  BarChart3,
   Wallet,
   Sparkles,
 } from "lucide-react";
@@ -13,15 +12,15 @@ import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { GuestOnly, TryDemoLink } from "@/components/marketing/TryDemoCta";
+import { MARKETING_LIMITS } from "@/lib/brand";
 
 const FEATURES = [
-  { icon: FileText, title: "Sales and quotes", body: "Make quotes and invoices. Send a pay link." },
-  { icon: Wallet, title: "Purchases", body: "Enter bills and expenses. Keep supplier contacts." },
+  { icon: FileText, title: "Sales and quotes", body: "Make quotes and invoices. Send a customer link — not a live payment." },
+  { icon: Wallet, title: "Purchases", body: "Enter bills and expenses. Keep supplier names on each bill." },
   { icon: Landmark, title: "Banking", body: "See accounts. Import a bank CSV. Not a live bank feed." },
-  { icon: Boxes, title: "Products", body: "Keep items and stock in one list." },
-  { icon: Briefcase, title: "Projects", body: "See job profit and time on the work you track." },
-  { icon: Users, title: "Payroll", body: "See pay runs and staff. Not connected to Single Touch Payroll." },
-  { icon: Calculator, title: "GST and BAS", body: "See GST and the next BAS due date. Review a draft." },
+  { icon: Boxes, title: "Products", body: "Keep items and prices in one list." },
+  { icon: Calculator, title: "GST and BAS", body: "See GST and the next BAS due date. Review a draft. Does not lodge." },
+  { icon: BarChart3, title: "Reports", body: "See profit and loss, and what you own and owe." },
   { icon: Sparkles, title: "Plain English", body: "Ask what to do next. Get a short answer." },
 ];
 
@@ -35,7 +34,7 @@ export default function ProductPage() {
           Quotes, invoices, GST, and reports in one place.
         </h1>
         <p className="marketing-lead">
-          HyperionInvoices keeps sales, bills, stock, banking, jobs, pay, and GST together.
+          HyperionInvoices keeps sales, bills, banking, GST, and reports together.
           Ask a question and get a plain answer.
           <GuestOnly>
             {" "}
@@ -58,7 +57,7 @@ export default function ProductPage() {
           <p className="mt-3 max-w-2xl text-base leading-7 text-slate-50">
             One plan. Open a page, see the numbers, and know what to do next.
           </p>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map(({ icon: Icon, title, body }) => (
               <div key={title} className="card p-6">
                 <Icon className="text-brand-200" size={24} aria-hidden="true" />
@@ -69,9 +68,7 @@ export default function ProductPage() {
           </div>
         </section>
 
-        <p className="mt-14 max-w-2xl text-base leading-7 text-slate-50">
-          HyperionInvoices does not send forms to the tax office. Mac is coming soon.
-        </p>
+        <p className="mt-14 max-w-2xl text-base leading-7 text-slate-50">{MARKETING_LIMITS}</p>
       </main>
       <MarketingFooter />
     </div>
