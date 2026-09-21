@@ -31,8 +31,16 @@ export function BusinessNameTypeahead({
   async function pick(company: AbrCompany) {
     onChange(company.legalName);
     setOpen(false);
+    onSelect?.(company);
     const enriched = await enrichAbrCompany(company);
-    onSelect?.(enriched);
+    if (
+      enriched.address !== company.address ||
+      enriched.gstRegistered !== company.gstRegistered ||
+      enriched.legalName !== company.legalName
+    ) {
+      onChange(enriched.legalName);
+      onSelect?.(enriched);
+    }
   }
 
   const showList = open && value.trim().length >= 2 && (results.length > 0 || busy || error);

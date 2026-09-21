@@ -25,7 +25,15 @@ export function CompanySearch({ selected, onSelect }: Props) {
   }, [results]);
 
   async function pick(company: AbrCompany) {
-    onSelect(await enrichAbrCompany(company));
+    onSelect(company);
+    const enriched = await enrichAbrCompany(company);
+    if (
+      enriched.address !== company.address ||
+      enriched.gstRegistered !== company.gstRegistered ||
+      enriched.legalName !== company.legalName
+    ) {
+      onSelect(enriched);
+    }
   }
 
   if (selected) {
