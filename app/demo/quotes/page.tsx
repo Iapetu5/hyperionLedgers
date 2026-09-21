@@ -83,6 +83,34 @@ export default function QuotesPage() {
     [tick, mounted],
   );
 
+  async function markQuoteSent(id: string) {
+    try {
+      const isUserRow = userRows.some((r) => r.id === id);
+      if (isUserRow) {
+        const row = await setQuoteStatus(id, "Sent");
+        if (!row) {
+          setSendNote(null);
+          setStatusError(`Email sent, but ${id} is still not marked Sent — check the list.`);
+          await reloadUser();
+          return;
+        }
+        setPublicDocStatus("quote", id, row.status);
+      } else {
+        setPublicDocStatus("quote", id, "Sent");
+      }
+      setStatusError(null);
+      await reloadUser();
+    } catch {
+      setSendNote(null);
+      setStatusError(`Email sent, but ${id} may still not be Sent — check the list.`);
+      try {
+        await reloadUser();
+      } catch {
+        /* leave the list as last shown */
+      }
+    }
+  }
+
   async function copyLink(id: string) {
     const url = `${window.location.origin}${publicQuoteUrl(id)}`;
     try {
@@ -245,6 +273,7 @@ export default function QuotesPage() {
     setFormError(null);
     setFormOk(null);
     void (async () => {
+      try {
       const nextStatus: UserQuote["status"] = editingId ? status : asDraft ? "Draft" : "Sent";
       if (editingId) {
         const res = await updateQuote(editingId, {
@@ -280,18 +309,32 @@ export default function QuotesPage() {
         setFormError(`${res.error}${nudge}`);
         return;
       }
-      const updated = await updateQuote(res.id, {
-        contact: res.contact,
-        contactEmail,
-        lines: draftsToInputs(lines),
-        issueDate,
-        expiryDate,
-        status: nextStatus,
-      });
-      if (!("error" in updated)) {
-        setPublicDocStatus("quote", updated.id, updated.status);
+      let updated: Awaited<ReturnType<typeof updateQuote>>;
+      try {
+        updated = await updateQuote(res.id, {
+          contact: res.contact,
+          contactEmail,
+          lines: draftsToInputs(lines),
+          issueDate,
+          expiryDate,
+          status: nextStatus,
+        });
+      } catch (e) {
+        updated = { error: e instanceof Error ? e.message : "save failed" };
       }
-      const created = "error" in updated ? res : updated;
+      if ("error" in updated) {
+        setPublicDocStatus("quote", res.id, res.status);
+        setEditingId(res.id);
+        setLastCreatedId(res.id);
+        setFormError(
+          `Created ${res.id}, but dates/status did not save (${updated.error}). Update ${res.id} below to retry — do not create another.`,
+        );
+        setFormOk(null);
+        await reloadUser();
+        return;
+      }
+      setPublicDocStatus("quote", updated.id, updated.status);
+      const created = updated;
       resetForm();
       setLastCreatedId(created.id);
       setFormOk(
@@ -303,6 +346,15 @@ export default function QuotesPage() {
         openSend({ ...created, contactEmail: contactEmail || created.contactEmail });
       }
       await reloadUser();
+      } catch {
+        setFormError("Could not finish saving. Check the list before creating again.");
+        setFormOk(null);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
@@ -765,9 +817,7 @@ export default function QuotesPage() {
             quote={sendTarget}
             onClose={() => setSendTarget(null)}
             onSent={() => {
-              void setQuoteStatus(sendTarget.id, "Sent");
-              setPublicDocStatus("quote", sendTarget.id, "Sent");
-              reloadUser();
+              void markQuoteSent(sendTarget.id);
             }}
           />
         ) : null}
@@ -818,9 +868,7 @@ export default function QuotesPage() {
           quote={sendTarget}
           onClose={() => setSendTarget(null)}
           onSent={() => {
-            void setQuoteStatus(sendTarget.id, "Sent");
-            setPublicDocStatus("quote", sendTarget.id, "Sent");
-            reloadUser();
+            void markQuoteSent(sendTarget.id);
           }}
         />
       ) : null}

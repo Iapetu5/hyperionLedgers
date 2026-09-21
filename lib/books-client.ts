@@ -392,8 +392,21 @@ type BankPayload = {
 
 async function loadBankPayload(): Promise<BankPayload> {
   const data = await booksFetch<BankPayload>("/api/books/banking");
-  if ("error" in data) return { imports: [], catOverrides: {}, openingBalance: null };
-  return data;
+  // Never invent an empty ledger on GET failure — a later PUT would wipe imports/cats/opening.
+  if ("error" in data) throw new Error(data.error);
+  if (
+    !Array.isArray(data.imports) ||
+    data.catOverrides == null ||
+    typeof data.catOverrides !== "object" ||
+    Array.isArray(data.catOverrides)
+  ) {
+    throw new Error("Banking payload was incomplete.");
+  }
+  return {
+    imports: data.imports,
+    catOverrides: data.catOverrides,
+    openingBalance: data.openingBalance ?? null,
+  };
 }
 
 function applyCatsFromPayload(txns: BankTransaction[], cats: Record<string, unknown>): BankTransaction[] {
@@ -425,11 +438,12 @@ function stripCatFields(t: BankTransaction): BankTransaction {
 }
 
 async function saveBankPayload(payload: BankPayload): Promise<void> {
-  await booksFetch("/api/books/banking", {
+  const data = await booksFetch<BankPayload>("/api/books/banking", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  if ("error" in data) throw new Error(data.error);
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("hl-bank-updated"));
   }
@@ -483,26 +497,39 @@ export async function applyCategoryToTransaction(
   opts: { markMatched?: boolean } = { markMatched: true },
 ): Promise<BankTransaction | null> {
   if (!(await serverBooksEnabled())) return applyCategoryToTransactionLocal(txnId, suggestion, opts);
-  const payload = await loadBankPayload();
-  const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
-  if (!target) return null;
-  payload.catOverrides[txnId] = {
-    accountCode: suggestion.accountCode,
-    accountName: suggestion.accountName,
-    taxRate: suggestion.taxRate,
-    matched: opts.markMatched !== false,
-    categorisedAt: new Date().toISOString(),
-  };
-  await saveBankPayload(payload);
-  return loadBankTransactions("blank").then((txns) => txns.find((t) => t.id === txnId) ?? null);
+  try {
+    const payload = await loadBankPayload();
+    const target = applyCatsFromPayload(payload.imports, payload.catOverrides).find((t) => t.id === txnId);
+    if (!target) return null;
+    payload.catOverrides[txnId] = {
+      accountCode: suggestion.accountCode,
+      accountName: suggestion.accountName,
+      taxRate: suggestion.taxRate,
+      matched: opts.markMatched !== false,
+      categorisedAt: new Date().toISOString(),
+    };
+    await saveBankPayload(payload);
+    const txns = await loadBankTransactions("blank");
+    return txns.find((t) => t.id === txnId) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function clearCategoryFromTransaction(txnId: string): Promise<BankTransaction | null> {
   if (!(await serverBooksEnabled())) return clearCategoryFromTransactionLocal(txnId);
-  const payload = await loadBankPayload();
-  delete payload.catOverrides[txnId];
-  await saveBankPayload(payload);
-  return loadBankTransactions("blank").then((txns) => txns.find((t) => t.id === txnId) ?? null);
+  try {
+    const payload = await loadBankPayload();
+    if (!applyCatsFromPayload(payload.imports, payload.catOverrides).some((t) => t.id === txnId)) {
+      return null;
+    }
+    delete payload.catOverrides[txnId];
+    await saveBankPayload(payload);
+    const txns = await loadBankTransactions("blank");
+    return txns.find((t) => t.id === txnId) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function resetAllCategorisations(mode: BankLedgerMode = "blank"): Promise<number> {
@@ -545,7 +572,10 @@ export async function setBlankOpeningBalance(amount: number): Promise<number> {
   if (!(await serverBooksEnabled())) return setBlankOpeningBalanceLocal(amount);
   const payload = await loadBankPayload();
   const n = Math.round(Number(amount) * 100) / 100;
-  payload.openingBalance = Number.isFinite(n) ? n : 0;
+  if (!Number.isFinite(n) || Math.abs(n) > 50_000_000) {
+    return payload.openingBalance ?? 0;
+  }
+  payload.openingBalance = n;
   await saveBankPayload(payload);
   return payload.openingBalance ?? 0;
 }

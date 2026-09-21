@@ -221,6 +221,7 @@ export default function BillsPage() {
     setFormError(null);
     setFormOk(null);
     void (async () => {
+      try {
       if (editingId) {
         const res = await updateBill(editingId, {
           supplier,
@@ -252,19 +253,44 @@ export default function BillsPage() {
         setFormError(`${res.error}${nudge}`);
         return;
       }
-      const updated = await updateBill(res.id, {
-        supplier: res.supplier,
-        lines: draftsToInputs(lines),
-        date: billDate,
-        dueDate,
-        status,
-      });
-      const createdId = "error" in updated ? res.id : updated.id;
+      let updated: Awaited<ReturnType<typeof updateBill>>;
+      try {
+        updated = await updateBill(res.id, {
+          supplier: res.supplier,
+          lines: draftsToInputs(lines),
+          date: billDate,
+          dueDate,
+          status,
+        });
+      } catch (e) {
+        updated = { error: e instanceof Error ? e.message : "save failed" };
+      }
+      if ("error" in updated) {
+        setEditingId(res.id);
+        setLastCreatedId(res.id);
+        setComposerOpen(true);
+        setFormError(
+          `Created ${res.id}, but dates/status did not save (${updated.error}). Update ${res.id} below to retry — do not create another.`,
+        );
+        setFormOk(null);
+        await reloadUser();
+        return;
+      }
+      const createdId = updated.id;
       resetForm();
       setLastCreatedId(createdId);
       setComposerOpen(true);
       setFormOk(`Created ${createdId}.`);
       await reloadUser();
+      } catch {
+        setFormError("Could not finish saving. Check the list before creating again.");
+        setFormOk(null);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 

@@ -193,17 +193,24 @@ export default function BankingPage() {
   const unmatchLock = useRef<string | null>(null);
 
   const reload = useCallback(async () => {
-    setTxns(await loadBankTransactions(mode));
-    if (mode === "blank") {
-      const hasOpening = await hasBlankOpeningBalance();
-      const o = await getBlankOpeningBalance();
-      setOpeningSet(hasOpening);
-      setOpening(o);
-      setOpeningDraft(hasOpening ? String(o) : "");
-    } else {
-      setOpeningSet(false);
-      setOpening(0);
-      setOpeningDraft("");
+    try {
+      setTxns(await loadBankTransactions(mode));
+      if (mode === "blank") {
+        const hasOpening = await hasBlankOpeningBalance();
+        const o = await getBlankOpeningBalance();
+        setOpeningSet(hasOpening);
+        setOpening(o);
+        setOpeningDraft(hasOpening ? String(o) : "");
+      } else {
+        setOpeningSet(false);
+        setOpening(0);
+        setOpeningDraft("");
+      }
+    } catch {
+      setError(
+        "Could not load this cheque. Lines below may be incomplete — do not Import, Apply, or Clear until this reloads.",
+      );
+      setSuccess(null);
     }
   }, [mode]);
 
@@ -410,24 +417,6 @@ export default function BankingPage() {
       try {
       const beforeImportCount = txns.filter((x) => x.source === "import").length;
       const skippedSnapshot = skipped;
-      let openingNote = "";
-      if (mode === "blank") {
-        const inferred = inferOpeningFromParsedRows(preview);
-        if (inferred != null) {
-          if (!(await hasBlankOpeningBalance())) {
-            const savedOpening = await setBlankOpeningBalance(inferred);
-            setOpening(savedOpening);
-            setOpeningSet(true);
-            setOpeningDraft(String(savedOpening));
-            openingNote = ` Opening balance set to ${formatAUD(inferred)} from the CSV running balance (only because none was saved yet).`;
-          } else {
-            const savedOpening = await getBlankOpeningBalance();
-            if (savedOpening !== inferred) {
-              openingNote = ` Saved opening kept at ${formatAUD(savedOpening)}. CSV running balance suggested ${formatAUD(inferred)} — use Save opening to replace.`;
-            }
-          }
-        }
-      }
       const next = await appendImportedRows(preview, chequeAccountId, mode);
       const added = next.filter((x) => x.source === "import").length - beforeImportCount;
       const offered = preview.length;
@@ -437,6 +426,36 @@ export default function BankingPage() {
           ? ""
           : ` Skipped ${dupes} duplicate${dupes === 1 ? "" : "s"} (same date, description and amount as a line already on this cheque or earlier in this file).`;
       setTxns(next);
+      let openingNote = "";
+      if (mode === "blank") {
+        try {
+          const inferred = inferOpeningFromParsedRows(preview);
+          if (inferred != null) {
+            if (!(await hasBlankOpeningBalance())) {
+              if (Math.abs(inferred) > 50_000_000) {
+                openingNote = ` Opening was not saved (CSV suggested ${formatAUD(inferred)}, outside ±50,000,000). Use Save opening.`;
+              } else {
+                const savedOpening = await setBlankOpeningBalance(inferred);
+                if (savedOpening !== inferred) {
+                  openingNote = ` Opening was not saved (CSV suggested ${formatAUD(inferred)}). Use Save opening.`;
+                } else {
+                  setOpening(savedOpening);
+                  setOpeningSet(true);
+                  setOpeningDraft(String(savedOpening));
+                  openingNote = ` Opening balance set to ${formatAUD(inferred)} from the CSV running balance (only because none was saved yet).`;
+                }
+              }
+            } else {
+              const savedOpening = await getBlankOpeningBalance();
+              if (savedOpening !== inferred) {
+                openingNote = ` Saved opening kept at ${formatAUD(savedOpening)}. CSV running balance suggested ${formatAUD(inferred)} — use Save opening to replace.`;
+              }
+            }
+          }
+        } catch {
+          openingNote = " Opening was not updated. Use Save opening if you still need one.";
+        }
+      }
       setSuccess(
         added === 0
           ? `Nothing new was imported.${dupeNote} Cash did not change.${openingNote}`
@@ -453,7 +472,7 @@ export default function BankingPage() {
       });
       } catch {
         setError(
-          "Import did not finish. Check the cheque below — duplicate rows are never added twice. Opening only changes if none was saved yet.",
+          "Import did not finish. Check the cheque below — duplicate rows are never added twice. Opening is unchanged.",
         );
         setSuccess(null);
       } finally {
@@ -529,25 +548,30 @@ export default function BankingPage() {
       return;
     }
     void (async () => {
-      const updated = await applyCategoryToTransaction(t.id, suggestion);
-      if (!updated) {
-        setError(`Could not apply a category to “${t.description}”. Try refreshing Banking.`);
+      try {
+        const updated = await applyCategoryToTransaction(t.id, suggestion);
+        if (!updated) {
+          setError(`Could not apply a category to “${t.description}”. Try refreshing Banking.`);
+          setSuccess(null);
+          return;
+        }
+        const fresh = await loadBankTransactions(mode);
+        setTxns(fresh);
+        setError(null);
+        const remaining = unmatchedForAccount(fresh, chequeAccountId).length;
+        const left =
+          remaining === 0 ? "Nothing left to Apply." : `${linesToApplyLabel(remaining)} still marked Needs category.`;
+        setSuccess(
+          `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
+            remaining === 0
+              ? `${left} ${morePowerHint(true, hasImport)} Undo match below.`
+              : `${left} Next: ${steps.applyN} Apply the next line.`
+          }`.replace(/\s+/g, " ").trim(),
+        );
+      } catch {
+        setError(`Could not apply a category to “${t.description}”. Check the line below.`);
         setSuccess(null);
-        return;
       }
-      const fresh = await loadBankTransactions(mode);
-      setTxns(fresh);
-      setError(null);
-      const remaining = unmatchedForAccount(fresh, chequeAccountId).length;
-      const left =
-        remaining === 0 ? "Nothing left to Apply." : `${linesToApplyLabel(remaining)} still marked Needs category.`;
-      setSuccess(
-        `Applied ${suggestion.accountCode} — ${suggestion.accountName} to “${t.description}”. ${
-          remaining === 0
-            ? `${left} ${morePowerHint(true, hasImport)} Undo match below.`
-            : `${left} Next: ${steps.applyN} Apply the next line.`
-        }`.replace(/\s+/g, " ").trim(),
-      );
     })();
   }
 
@@ -649,44 +673,69 @@ export default function BankingPage() {
 
   function resetCats() {
     void (async () => {
-      const n = await resetAllCategorisations(mode);
-      setTxns(await loadBankTransactions(mode));
-      setError(null);
-      setSuccess(
-        n === 0
-          ? `Nothing to reset. Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`
-          : `Reset ${n} categorisation${n === 1 ? "" : "s"}. Bank lines, opening, and CSV imports stayed. Next: ${steps.applyN} Apply on a line below.`,
-      );
+      try {
+        const n = await resetAllCategorisations(mode);
+        setTxns(await loadBankTransactions(mode));
+        setError(null);
+        setSuccess(
+          n === 0
+            ? `Nothing to reset. Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`
+            : `Reset ${n} categorisation${n === 1 ? "" : "s"}. Bank lines, opening, and CSV imports stayed. Next: ${steps.applyN} Apply on a line below.`,
+        );
+      } catch {
+        setError("Could not reset categorisations. Categories are unchanged — check the list.");
+        setSuccess(null);
+        try {
+          setTxns(await loadBankTransactions(mode));
+        } catch {
+          /* leave the table as last shown */
+        }
+      }
     })();
   }
 
   function clearImports() {
     void (async () => {
-      const n = await clearImportedTransactions(mode);
-      setTxns(await loadBankTransactions(mode));
-      setError(null);
-      setSuccess(
-        n === 0
-          ? `No CSV imports to clear. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply.`
-          : mode === "blank"
-            ? `Cleared ${n} imported row${n === 1 ? "" : "s"} and their categories. Opening left as-is. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply on remaining lines.`
-            : `Cleared ${n} imported row${n === 1 ? "" : "s"} and their categories (sample lines kept). Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`,
-      );
+      try {
+        const n = await clearImportedTransactions(mode);
+        setTxns(await loadBankTransactions(mode));
+        setError(null);
+        setSuccess(
+          n === 0
+            ? `No CSV imports to clear. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply.`
+            : mode === "blank"
+              ? `Cleared ${n} imported row${n === 1 ? "" : "s"} and their categories. Opening left as-is. Next: ${steps.importN} Import CSV, or ${steps.applyN} Apply on remaining lines.`
+              : `Cleared ${n} imported row${n === 1 ? "" : "s"} and their categories (sample lines kept). Next: ${steps.applyN} Apply, or ${steps.importN} Import CSV.`,
+        );
+      } catch {
+        setError("Could not clear CSV imports. Lines are unchanged — check the list.");
+        setSuccess(null);
+        try {
+          setTxns(await loadBankTransactions(mode));
+        } catch {
+          /* leave the table as last shown */
+        }
+      }
     })();
   }
 
   function clearOpening() {
     void (async () => {
-      const cleared = await clearBlankOpeningBalance();
-      setOpening(0);
-      setOpeningSet(false);
-      setOpeningDraft("");
-      setError(null);
-      setSuccess(
-        cleared
-          ? "Opening cleared. CSV lines, categories, and imports stayed. Next: 1 Save opening."
-          : "Opening was already unset. Next: 1 Save opening, or 2 Import CSV.",
-      );
+      try {
+        const cleared = await clearBlankOpeningBalance();
+        setOpening(0);
+        setOpeningSet(false);
+        setOpeningDraft("");
+        setError(null);
+        setSuccess(
+          cleared
+            ? "Opening cleared. CSV lines, categories, and imports stayed. Next: 1 Save opening."
+            : "Opening was already unset. Next: 1 Save opening, or 2 Import CSV.",
+        );
+      } catch {
+        setError("Could not clear opening. Opening is unchanged.");
+        setSuccess(null);
+      }
     })();
   }
 

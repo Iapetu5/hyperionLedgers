@@ -228,6 +228,7 @@ export default function InvoicesPage() {
     setFormError(null);
     setFormOk(null);
     void (async () => {
+      try {
       if (editingId) {
         const payload = {
           contact,
@@ -258,22 +259,46 @@ export default function InvoicesPage() {
         setFormError(`${res.error}${nudge}`);
         return;
       }
-      const updated = await updateInvoice(res.id, {
-        contact: res.contact,
-        lines: draftsToInputs(lines),
-        issueDate,
-        dueDate,
-        status,
-      });
-      if (!("error" in updated)) {
-        setPublicDocStatus("invoice", updated.id, updated.status);
+      let updated: Awaited<ReturnType<typeof updateInvoice>>;
+      try {
+        updated = await updateInvoice(res.id, {
+          contact: res.contact,
+          lines: draftsToInputs(lines),
+          issueDate,
+          dueDate,
+          status,
+        });
+      } catch (e) {
+        updated = { error: e instanceof Error ? e.message : "save failed" };
       }
-      const createdId = "error" in updated ? res.id : updated.id;
+      if ("error" in updated) {
+        setPublicDocStatus("invoice", res.id, res.status);
+        setEditingId(res.id);
+        setLastCreatedId(res.id);
+        setComposerOpen(true);
+        setFormError(
+          `Created ${res.id}, but dates/status did not save (${updated.error}). Update ${res.id} below to retry — do not create another.`,
+        );
+        setFormOk(null);
+        await reloadUser();
+        return;
+      }
+      setPublicDocStatus("invoice", updated.id, updated.status);
+      const createdId = updated.id;
       resetForm();
       setLastCreatedId(createdId);
       setComposerOpen(true);
       setFormOk(`Created ${createdId}.`);
       await reloadUser();
+      } catch {
+        setFormError("Could not finish saving. Check the list before creating again.");
+        setFormOk(null);
+        try {
+          await reloadUser();
+        } catch {
+          /* leave the list as last shown */
+        }
+      }
     })();
   }
 
