@@ -5,7 +5,7 @@ import { db, ensureSchema, isDbConfigured } from "@/lib/db";
 import { cookieSecure } from "@/lib/request-guard";
 import type { GstAccountingMethod, LedgerMode, OnboardingInput, ProfilePatch, PublicAccount } from "@/lib/auth";
 import { formatAbn, validateAbnField } from "@/lib/abn";
-import { PENDING_ORG_NAME, validateSignup } from "@/lib/auth";
+import { PENDING_ORG_NAME, validateLogin, validateSignup } from "@/lib/auth";
 
 const scrypt = promisify(scryptCb);
 export const SESSION_COOKIE = "hl_session";
@@ -207,8 +207,11 @@ export async function logInServer(
   password: string
 ): Promise<{ ok: true; account: PublicAccount } | { ok: false; error: string }> {
   await ensureSchema();
+  const fieldErrors = validateLogin(email, password);
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, error: Object.values(fieldErrors)[0] };
+  }
   const normalised = email.trim().toLowerCase();
-  if (!normalised || !password) return { ok: false, error: "Enter your email and password." };
   const rows = (await db()`SELECT * FROM users WHERE email = ${normalised} LIMIT 1`) as UserRow[];
   const user = rows[0];
   if (!user || !(await verifyPassword(password, user.password_hash))) {

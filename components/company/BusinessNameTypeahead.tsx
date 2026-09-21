@@ -2,7 +2,11 @@
 
 import { useId, useState } from "react";
 import type { AbrCompany } from "@/lib/abn";
-import { enrichAbrCompany, useAbrSearch } from "@/components/company/useAbrSearch";
+import {
+  abrEmptyResultsMessage,
+  enrichAbrCompany,
+  useAbrSearch,
+} from "@/components/company/useAbrSearch";
 
 type Props = {
   id?: string;
@@ -12,6 +16,7 @@ type Props = {
   onChange: (name: string) => void;
   onSelect?: (company: AbrCompany) => void;
   placeholder?: string;
+  invalid?: boolean;
 };
 
 export function BusinessNameTypeahead({
@@ -22,6 +27,7 @@ export function BusinessNameTypeahead({
   onChange,
   onSelect,
   placeholder = "Sunrise Cafe Pty Ltd",
+  invalid = false,
 }: Props) {
   const listId = useId();
   const [open, setOpen] = useState(false);
@@ -46,7 +52,9 @@ export function BusinessNameTypeahead({
     }
   }
 
-  const showList = open && value.trim().length >= 2 && (results.length > 0 || busy || error);
+  const longEnough = open && value.trim().length >= 2;
+  const showList = longEnough && results.length > 0;
+  const showEmpty = longEnough && !busy && !error && results.length === 0;
 
   return (
     <div>
@@ -63,7 +71,9 @@ export function BusinessNameTypeahead({
         value={value}
         role="combobox"
         aria-autocomplete="list"
-        aria-expanded={results.length > 0}
+        aria-expanded={showList}
+        aria-busy={busy}
+        aria-invalid={invalid}
         aria-controls={listId}
         aria-activedescendant={results[activeIndex] ? `${listId}-${activeIndex}` : undefined}
         onChange={(e) => {
@@ -104,9 +114,22 @@ export function BusinessNameTypeahead({
           . You can edit any field.
         </p>
       )}
-      {busy && <p className="mt-1 text-sm text-slate-300">Searching…</p>}
-      {error && <p className="mt-1 text-sm text-rose-300">{error}</p>}
-      {showList && results.length > 0 && (
+      {busy && (
+        <p className="mt-1 text-sm text-slate-300" aria-live="polite">
+          Searching…
+        </p>
+      )}
+      {error && (
+        <p className="mt-1 text-sm text-rose-300" role="alert">
+          {error} You can keep typing the name yourself.
+        </p>
+      )}
+      {showEmpty && (
+        <p className="mt-1 text-sm text-slate-300" role="status">
+          {abrEmptyResultsMessage(value)}
+        </p>
+      )}
+      {showList && (
         <ul
           id={listId}
           role="listbox"

@@ -61,3 +61,26 @@ Do not redo the step labels, one-question wizard, or Confirm company primary. Re
 - Account Save: **Save changes**, then `Saved your business details.`
 
 GST/FY/blank-vs-sample questions, simulated ABR, Stripe, and tax math stay as they are.
+
+## Follow-on after PR #11 (copy / a11y only)
+
+Do not redo recap, Back to add company, Business name/type, Save changes, or signup inline field errors. Remaining leftover wins:
+
+### Login (`/login`)
+- Same `noValidate` + inline field errors as signup (`Enter your email address.`, `Enter your password.`).
+- Incorrect password stays a form-level alert. Home / Sign up in the header.
+
+### Add company search
+- ABN-like empty results: `No business matches that ABN…` (name searches keep the spelling message).
+- Confirm heading: **Confirm these details**. Cancelled records get a warning.
+- Confirm stays dimmed until there is a business name, with `Enter the business name to confirm.`
+- Search again lives on the selected row; Clear and search again is only for typed-in details.
+
+### Account
+- Business type and address always visible. Empty name uses `Enter the business name.`
+- Save changes shows **Saving…**, then `Saved your business details.` (unchanged success copy).
+- Typeahead empty/error states match Add company. ABN helper/errors match Add company.
+
+### Onboarding
+- Next/Skip show a saving state. Skip copy names sample defaults. After Next, focus moves to the question heading.
+

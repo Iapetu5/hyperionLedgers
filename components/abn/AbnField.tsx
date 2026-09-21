@@ -82,8 +82,21 @@ export function AbnField({
           }
         }}
         autoComplete="off"
+        aria-invalid={Boolean(touched && error)}
+        aria-describedby={
+          touched && error ? `${id}-error` : `${id}-hint`
+        }
       />
-      {touched && error && <p className="mt-1 text-xs text-rose-300">{error}</p>}
+      {!(touched && error) && (
+        <p id={`${id}-hint`} className="mt-1 text-xs text-slate-400">
+          11 digits. Spaces are fine.{required ? "" : " You can leave this blank."}
+        </p>
+      )}
+      {touched && error && (
+        <p id={`${id}-error`} className="mt-1 text-sm text-rose-300" role="alert">
+          {error}
+        </p>
+      )}
       {remote && !error && (
         <div className="mt-2 rounded-lg border border-brand-400/30 bg-brand-500/10 px-3 py-2 text-xs text-slate-200">
           <p className="font-semibold text-white">{remote.legalName}</p>

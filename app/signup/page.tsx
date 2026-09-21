@@ -19,12 +19,23 @@ export default function SignupPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
+  function clearFieldError(key: string) {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     const local = validateSignup({ fullName, email, password });
     setFieldErrors(local);
     if (Object.keys(local).length > 0) {
       setError(null);
+      const first = (["fullName", "email", "password"] as const).find((key) => local[key]);
+      if (first) document.getElementById(first)?.focus();
       return;
     }
     setBusy(true);
@@ -83,10 +94,14 @@ export default function SignupPage() {
               placeholder="Alex Nguyen"
               value={fullName}
               aria-invalid={Boolean(fieldErrors.fullName)}
-              onChange={(e) => setFullName(e.target.value)}
+              aria-describedby={fieldErrors.fullName ? "fullName-error" : undefined}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                clearFieldError("fullName");
+              }}
             />
             {fieldErrors.fullName && (
-              <p className="mt-1 text-sm text-rose-300" role="alert">
+              <p id="fullName-error" className="mt-1 text-sm text-rose-300" role="alert">
                 {fieldErrors.fullName}
               </p>
             )}
@@ -102,10 +117,15 @@ export default function SignupPage() {
               placeholder="you@business.com.au"
               value={email}
               aria-invalid={Boolean(fieldErrors.email)}
-              onChange={(e) => setEmail(e.target.value)}
+              aria-describedby={fieldErrors.email ? "email-error" : undefined}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearFieldError("email");
+                if (error) setError(null);
+              }}
             />
             {fieldErrors.email && (
-              <p className="mt-1 text-sm text-rose-300" role="alert">
+              <p id="email-error" className="mt-1 text-sm text-rose-300" role="alert">
                 {fieldErrors.email}
               </p>
             )}
@@ -121,11 +141,21 @@ export default function SignupPage() {
               autoComplete="new-password"
               value={password}
               aria-invalid={Boolean(fieldErrors.password)}
-              onChange={(e) => setPassword(e.target.value)}
+              aria-describedby={
+                fieldErrors.password ? "password-error" : "password-hint"
+              }
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearFieldError("password");
+              }}
             />
-            <p className="mt-1 text-xs text-slate-400">Use at least 8 characters.</p>
+            {!fieldErrors.password && (
+              <p id="password-hint" className="mt-1 text-xs text-slate-400">
+                Use at least 8 characters.
+              </p>
+            )}
             {fieldErrors.password && (
-              <p className="mt-1 text-sm text-rose-300" role="alert">
+              <p id="password-error" className="mt-1 text-sm text-rose-300" role="alert">
                 {fieldErrors.password}
               </p>
             )}
@@ -135,7 +165,7 @@ export default function SignupPage() {
               {error}
             </p>
           )}
-          <button type="submit" className="btn-primary w-full" disabled={busy}>
+          <button type="submit" className="btn-primary w-full" disabled={busy} aria-busy={busy}>
             {busy ? "Creating…" : "Next: add your company"}
           </button>
           <p className="text-center text-xs text-slate-400">14-day trial, then $69 a month.</p>

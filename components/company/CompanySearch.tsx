@@ -2,7 +2,11 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { AbrCompany } from "@/lib/abn";
-import { enrichAbrCompany, useAbrSearch } from "@/components/company/useAbrSearch";
+import {
+  abrEmptyResultsMessage,
+  enrichAbrCompany,
+  useAbrSearch,
+} from "@/components/company/useAbrSearch";
 
 type Props = {
   selected: AbrCompany | null;
@@ -75,8 +79,10 @@ export function CompanySearch({ selected, onSelect }: Props) {
         spellCheck={false}
         role="combobox"
         aria-autocomplete="list"
-        aria-expanded={results.length > 0}
+        aria-expanded={query.trim().length >= 2 && (results.length > 0 || busy || Boolean(error))}
+        aria-busy={busy}
         aria-controls={listId}
+        aria-describedby="company-search-help"
         aria-activedescendant={results[activeIndex] ? `${listId}-${activeIndex}` : undefined}
         onKeyDown={(e) => {
           if (!results.length) return;
@@ -94,7 +100,7 @@ export function CompanySearch({ selected, onSelect }: Props) {
           }
         }}
       />
-      <p className="mt-2 text-xs text-slate-400">
+      <p id="company-search-help" className="mt-2 text-xs text-slate-400">
         Type at least two letters, then pick your business from the list.
         {simulated
           ? " This is a practice register — you can still enter the details yourself."
@@ -122,8 +128,7 @@ export function CompanySearch({ selected, onSelect }: Props) {
       )}
       {!busy && query.trim().length >= 2 && results.length === 0 && !error && (
         <p className="mt-3 text-sm text-slate-300" role="status">
-          We could not find a business matching “{query.trim()}”. Check the spelling, try the
-          ABN, or enter the details yourself.
+          {abrEmptyResultsMessage(query)}
         </p>
       )}
       {results.length > 0 && (

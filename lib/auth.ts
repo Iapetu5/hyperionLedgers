@@ -106,6 +106,15 @@ export function validateSignup(input: {
   return errors;
 }
 
+/** Field errors for `/login` — same email rules as signup; empty password is “your password”. */
+export function validateLogin(email: string, password: string): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const emailErr = validateEmail(email);
+  if (emailErr) errors.email = emailErr;
+  if (!password) errors.password = "Enter your password.";
+  return errors;
+}
+
 export async function hashPassword(email: string, password: string): Promise<string> {
   const payload = `${email.trim().toLowerCase()}:${password}:${AUTH_SALT}`;
   const data = new TextEncoder().encode(payload);
@@ -212,9 +221,10 @@ export async function signUp(input: {
 
 export async function logIn(email: string, password: string): Promise<AuthResult> {
   if (!isBrowser()) return { ok: false, error: "Log-in is only available in the browser." };
-  const emailErr = validateEmail(email);
-  if (emailErr) return { ok: false, error: emailErr };
-  if (!password) return { ok: false, error: "Enter your password." };
+  const fieldErrors = validateLogin(email, password);
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, error: Object.values(fieldErrors)[0] };
+  }
   const normalised = email.trim().toLowerCase();
   const account = listAccounts().find((a) => a.email === normalised);
   if (!account) return { ok: false, error: "Incorrect email or password." };
