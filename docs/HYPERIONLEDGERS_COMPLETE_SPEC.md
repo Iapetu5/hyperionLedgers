@@ -84,9 +84,9 @@ Overview, Banking, Invoices, Quotes, Bills, Products, GST & BAS, Reports, Accoun
 ### C. Blank ledger
 
 1. Onboarding chooses **Blank ledger** (`ledgerMode: "blank"`).
-2. Overview empty state: create mixed-tax invoice/quote/bill or explore Harbour (logs out if signed in, then `/demo` as guest).
+2. Overview empty state: create invoice, quote, or bill only. Signed-in blank books do not offer a Harbour guest tour.
 3. Own cheque account (`blank-chk`), opening balance, blank starter CSVs. No Harbour bank lines or sample KPIs in AI/reports/BAS figures.
-4. Explore Harbour & Co sample = `logOut()` + navigate `/demo`.
+4. Guest visitors without an account still open the sample from marketing “Try a demo” (`/demo`). That path is not a blank-ledger shell CTA.
 
 ### D. Log in
 
@@ -396,7 +396,7 @@ app/
   pay/invoice/[id]/page.tsx, pay/quote/[id]/page.tsx
 components/
   auth/AuthProvider.tsx
-  demo/{DemoShell,AiAssistant,LineItemsEditor,NextActionBanner,EmptyState,DocRowActions,ExploreSampleButton}.tsx
+  demo/{DemoShell,AiAssistant,LineItemsEditor,NextActionBanner,EmptyState,DocRowActions}.tsx
   pay/{CustomerDocPage,PrintDocButton,PrintBillButton,TaxDocPrintView,PrintableDocActions}.tsx
   marketing/{BrandLogo,SiteHeader,MarketingFooter}.tsx
   abn/AbnField.tsx, bas/BasDueDates.tsx, ui/StatusBadge.tsx

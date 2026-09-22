@@ -181,7 +181,7 @@ export default function DemoOverviewPage() {
               { label: "Create bill", href: "/demo/bills?mixed=1" },
               { label: "Account", href: "/demo/account" },
             ]}
-            hint="Guests can try a demo. Documents you create are saved to your organisation when you are signed in."
+            hint="Create an invoice, quote, or bill to fill this overview. Documents you create are saved to your organisation."
           />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {quickLinks.map((item) => (
