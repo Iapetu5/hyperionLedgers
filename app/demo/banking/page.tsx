@@ -887,12 +887,8 @@ export default function BankingPage() {
               </li>
             </ol>
             <p className="mt-4 border-t border-white/10 pt-3 text-xs text-slate-400">
-              Browser-only demo; no live feed. Generic starter lines stay separate from the guest sample. Want the
-              pre-loaded sample story?{" "}
-              <Link href="/demo" className="font-semibold text-brand-300 underline-offset-2 hover:underline">
-                Explore sample as guest
-              </Link>
-              .
+              Browser-only demo; no live feed. Starter CSV lines stay on this ledger. Create an invoice, quote, or
+              bill when you want figures in the rest of the books.
             </p>
           </div>
         </div>

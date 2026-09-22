@@ -22,10 +22,9 @@ import {
 } from "lucide-react";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { DEMO_BANNER, DEMO_CTA, DEMO_ORG_SHORT } from "@/lib/brand";
+import { DEMO_BANNER, DEMO_ORG_SHORT } from "@/lib/brand";
 import { nextSetupPath } from "@/lib/auth";
 import { AiAssistant } from "@/components/demo/AiAssistant";
-import { ExploreSampleButton } from "@/components/demo/ExploreSampleButton";
 import { loadBills, loadInvoices, loadQuotes } from "@/lib/books-client";
 import { booksLedgerBanner, usesServerBooksUi } from "@/lib/books-copy";
 import { SIGNUP_FOR_TRIAL } from "@/lib/trial-next";
@@ -225,13 +224,6 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
                 ? booksLedgerBanner(serverBooks)
                 : `${orgName} has no documents yet. Create an invoice, quote, or bill to get started.`}
             </p>
-            {!user ? (
-              <ExploreSampleButton
-                primary={false}
-                className="!px-3 !py-1.5 text-xs"
-                label={DEMO_CTA}
-              />
-            ) : null}
           </div>
         </div>
       )}
